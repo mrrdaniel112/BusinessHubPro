@@ -261,14 +261,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/invoices", requireAuth, async (req, res) => {
     try {
       const userId = req.user!.id;
-      const invoiceData = insertInvoiceSchema.parse({
+      
+      // Log the incoming request body for debugging
+      console.log("Invoice creation request body:", req.body);
+      
+      // Ensure dates are properly parsed
+      const bodyWithParsedDates = {
         ...req.body,
-        userId
-      });
+        userId,
+        // Ensure dates are Date objects
+        issueDate: new Date(req.body.issueDate),
+        dueDate: new Date(req.body.dueDate)
+      };
+      
+      console.log("Processed invoice data:", bodyWithParsedDates);
+      
+      const invoiceData = insertInvoiceSchema.parse(bodyWithParsedDates);
       
       const invoice = await storage.createInvoice(invoiceData);
       return res.status(201).json(invoice);
     } catch (error) {
+      console.error("Invoice creation error:", error);
       if (error instanceof ZodError) {
         return res.status(400).json({ message: fromZodError(error).message });
       }

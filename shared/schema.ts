@@ -120,16 +120,17 @@ export const invoices = pgTable("invoices", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const insertInvoiceSchema = createInsertSchema(invoices).pick({
-  userId: true,
-  invoiceNumber: true,
-  clientName: true,
-  amount: true,
-  issueDate: true,
-  dueDate: true,
-  status: true,
-  items: true,
-  notes: true,
+// Create a custom invoice schema with flexible date handling
+export const insertInvoiceSchema = z.object({
+  userId: z.number(),
+  invoiceNumber: z.string(),
+  clientName: z.string(),
+  amount: z.string().or(z.number()).transform(val => val.toString()),
+  issueDate: z.date(),
+  dueDate: z.date(),
+  status: z.string(),
+  items: z.string(),
+  notes: z.string().nullable().optional().transform(val => val || null)
 });
 
 // AI Insight schema

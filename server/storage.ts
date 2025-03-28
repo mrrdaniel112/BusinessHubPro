@@ -195,7 +195,8 @@ export class MemStorage implements IStorage {
         status: "paid",
         items: JSON.stringify([
           { description: "Consulting Services", amount: 5400 }
-        ])
+        ]),
+        notes: "Payment received on time"
       },
       {
         userId,
@@ -207,7 +208,8 @@ export class MemStorage implements IStorage {
         status: "pending",
         items: JSON.stringify([
           { description: "Web Development", amount: 3200 }
-        ])
+        ]),
+        notes: "Follow up on payment method"
       },
       {
         userId,
@@ -219,7 +221,8 @@ export class MemStorage implements IStorage {
         status: "overdue",
         items: JSON.stringify([
           { description: "Design Services", amount: 2750 }
-        ])
+        ]),
+        notes: "Need to call about late payment"
       }
     ];
     

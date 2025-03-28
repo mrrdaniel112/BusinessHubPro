@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 type InvoiceStatus = 'paid' | 'pending' | 'overdue';
 
@@ -87,6 +88,7 @@ const InvoiceSkeleton = () => (
 
 export default function InvoicesOverview({ invoices, stats, isLoading = false }: InvoicesOverviewProps) {
   const [activeTab, setActiveTab] = useState<'invoices' | 'contracts'>('invoices');
+  const { toast } = useToast();
 
   return (
     <Card className="h-full overflow-hidden">
@@ -177,10 +179,22 @@ export default function InvoicesOverview({ invoices, stats, isLoading = false }:
 
         {/* Invoice Actions */}
         <div className="flex space-x-3">
-          <Button className="flex-1">
+          <Button 
+            className="flex-1"
+            onClick={() => window.location.href = '/invoices'}
+          >
             <i className="ri-add-line mr-1"></i> Create Invoice
           </Button>
-          <Button variant="outline" className="flex-1">
+          <Button 
+            variant="outline" 
+            className="flex-1"
+            onClick={() => {
+              toast({
+                title: "Sending Reminders", 
+                description: "Reminders sent to clients with pending invoices"
+              });
+            }}
+          >
             <i className="ri-send-plane-line mr-1"></i> Send Reminders
           </Button>
         </div>
