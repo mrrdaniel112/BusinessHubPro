@@ -34,11 +34,11 @@ const invoiceTemplates = {
   // Website Development template
   website: {
     items: [
-      { description: "Website design and planning", quantity: 1, price: 2500 },
-      { description: "Frontend development", quantity: 1, price: 3500 },
-      { description: "Backend integration", quantity: 1, price: 4500 },
-      { description: "Responsive design implementation", quantity: 1, price: 2000 },
-      { description: "Content management system setup", quantity: 1, price: 1500 }
+      { description: "Website design and planning", quantity: 1, price: 4500 },
+      { description: "Frontend development", quantity: 1, price: 6500 },
+      { description: "Backend integration", quantity: 1, price: 8500 },
+      { description: "Responsive design implementation", quantity: 1, price: 3500 },
+      { description: "Content management system setup", quantity: 1, price: 2500 }
     ],
     costBreakdown: [
       { category: "Design & Planning", percentage: 20, description: "Initial conceptualization, wireframing, and UI/UX design" },
@@ -53,10 +53,10 @@ const invoiceTemplates = {
   // Consulting template
   consulting: {
     items: [
-      { description: "Initial business analysis", quantity: 1, price: 3500 },
-      { description: "Strategy development sessions", quantity: 3, price: 2000 },
-      { description: "Implementation planning", quantity: 1, price: 3000 },
-      { description: "Documentation and reporting", quantity: 1, price: 1500 }
+      { description: "Initial business analysis", quantity: 1, price: 5500 },
+      { description: "Strategy development sessions", quantity: 3, price: 3500 },
+      { description: "Implementation planning", quantity: 1, price: 5000 },
+      { description: "Documentation and reporting", quantity: 1, price: 3500 }
     ],
     costBreakdown: [
       { category: "Research & Analysis", percentage: 30, description: "Comprehensive market research and needs assessment" },
@@ -71,10 +71,10 @@ const invoiceTemplates = {
   // Marketing template
   marketing: {
     items: [
-      { description: "Marketing strategy development", quantity: 1, price: 4500 },
-      { description: "Content creation", quantity: 5, price: 800 },
-      { description: "Social media campaign setup", quantity: 1, price: 2500 },
-      { description: "Analytics and reporting setup", quantity: 1, price: 1500 }
+      { description: "Marketing strategy development", quantity: 1, price: 7500 },
+      { description: "Content creation", quantity: 5, price: 1200 },
+      { description: "Social media campaign setup", quantity: 1, price: 4500 },
+      { description: "Analytics and reporting setup", quantity: 1, price: 3000 }
     ],
     costBreakdown: [
       { category: "Strategy & Planning", percentage: 35, description: "Comprehensive marketing strategy development aligned with business goals" },
