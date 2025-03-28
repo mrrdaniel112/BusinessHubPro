@@ -45,8 +45,18 @@ export default function Invoices() {
         issueDate: invoice.issueDate instanceof Date ? invoice.issueDate.toISOString() : invoice.issueDate,
         dueDate: invoice.dueDate instanceof Date ? invoice.dueDate.toISOString() : invoice.dueDate
       };
-      const res = await apiRequest('POST', '/api/invoices', formattedInvoice);
-      return res.json();
+      
+      // Log the formatted data being sent to the API
+      console.log("Sending invoice data to API:", formattedInvoice);
+      
+      try {
+        const res = await apiRequest('POST', '/api/invoices', formattedInvoice);
+        const data = await res.json();
+        return data;
+      } catch (error) {
+        console.error("Error creating invoice:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
