@@ -4,9 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import DateFilter from "@/components/dashboard/date-filter";
+import { TransactionForm } from "@/components/forms/transaction-form";
 
 export default function Financials() {
   const [dateRange, setDateRange] = useState<"day" | "week" | "month">("week");
+  const [isTransactionFormOpen, setIsTransactionFormOpen] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['/api/transactions', dateRange],
@@ -46,11 +48,17 @@ export default function Financials() {
       <div className="py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 flex justify-between items-center">
           <h1 className="text-2xl font-semibold text-gray-900">Financial Management</h1>
-          <Button>
+          <Button onClick={() => setIsTransactionFormOpen(true)}>
             <i className="ri-add-line mr-1"></i> Add Transaction
           </Button>
         </div>
       </div>
+
+      {/* Transaction form dialog */}
+      <TransactionForm 
+        open={isTransactionFormOpen} 
+        onOpenChange={setIsTransactionFormOpen} 
+      />
 
       {/* Date filter */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 mb-6">
