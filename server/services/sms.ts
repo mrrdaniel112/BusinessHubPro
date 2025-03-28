@@ -1,24 +1,15 @@
 import twilio from 'twilio';
 
-// Helper function to create Twilio client
-function createTwilioClient() {
-  if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
-    console.log('Using Twilio client configuration');
-    return twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-  }
-  console.log('Twilio client not configured');
-  return null;
-}
+// SMS functionality is disabled
+// We'll log information instead of attempting to send SMS
 
-// Initialize Twilio client
-const twilioClient = createTwilioClient();
+// Mock Twilio client (not actually used)
+const twilioClient = null;
+const twilioPhoneNumber = '';
 
-// Get Twilio phone number from environment
-const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER || '';
-
-// Check Twilio configuration
+// Always return false to prevent any SMS sending attempts
 function isTwilioConfigured(): boolean {
-  return !!twilioClient && !!twilioPhoneNumber;
+  return false;
 }
 
 /**
@@ -78,12 +69,15 @@ Thank you for your business!`;
       formattedPhoneNumber = `+1${to.replace(/\D/g, '')}`;
     }
     
-    // Send the SMS (we already verified twilioClient exists with isTwilioConfigured)
-    const message = await twilioClient!.messages.create({
-      body: messageBody,
-      from: twilioPhoneNumber,
-      to: formattedPhoneNumber
+    // SMS sending is completely disabled - just log it instead
+    console.log('SMS would have been sent:', {
+      to: formattedPhoneNumber,
+      from: 'DISABLED',
+      body: messageBody
     });
+    
+    // Mock a successful response
+    const message = { sid: 'DISABLED-SMS-' + Date.now() };
     
     console.log('SMS sent successfully:', message.sid);
     return { success: true, info: message };
