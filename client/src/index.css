@@ -9,5 +9,44 @@
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
+    /* Prevent scrollbar jump on iOS Safari */
+    -webkit-overflow-scrolling: touch;
+    /* Prevent text size adjustment on orientation change in iOS */
+    -webkit-text-size-adjust: 100%;
   }
+}
+
+@layer utilities {
+  /* Utility for safe area padding at the bottom (especially for iOS) */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  
+  /* Utility for safe area padding at the top (for iOS notches) */
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  
+  /* Fix for iOS input fields */
+  input, textarea, button {
+    -webkit-appearance: none;
+    appearance: none;
+    border-radius: 0;
+  }
+  
+  /* Remove tap highlight on Android */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Fix for iOS scrolling momentum issues */
+.overflow-y-auto, .overflow-auto {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Fix for mobile 100vh issue */
+.h-screen {
+  height: 100vh;
+  height: 100dvh;
 }

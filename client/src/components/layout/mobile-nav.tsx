@@ -39,8 +39,8 @@ export default function MobileNav({ opened, onClose, location }: MobileNavProps)
 
   return (
     <Dialog open={opened} onOpenChange={() => onClose()}>
-      <DialogContent className="sm:max-w-[425px] p-0">
-        <div className="flex flex-col h-screen bg-white">
+      <DialogContent className="sm:max-w-[425px] p-0 max-h-[100dvh] inset-0 overflow-hidden">
+        <div className="flex flex-col h-full bg-white">
           <div className="flex items-center justify-between px-4 pt-5 pb-4 border-b">
             <div className="flex items-center flex-shrink-0">
               <span className="text-xl font-semibold text-primary-600">Business Platform</span>
@@ -49,12 +49,12 @@ export default function MobileNav({ opened, onClose, location }: MobileNavProps)
               type="button"
               className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
               onClick={onClose}
+              aria-label="Close menu"
             >
-              <span className="sr-only">Close menu</span>
               <i className="ri-close-line text-xl"></i>
             </button>
           </div>
-          <div className="flex-1 h-0 overflow-y-auto px-2 py-4 space-y-2">
+          <div className="flex-1 overflow-y-auto px-2 py-4 space-y-2 pb-safe">
             <MobileNavItem
               href="/"
               icon="dashboard-line"

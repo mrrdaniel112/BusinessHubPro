@@ -1,17 +1,19 @@
 import OpenAI from "openai";
 
-// Completely disable OpenAI API calls - always use templates
+// Configures OpenAI API based on valid OPENAI_API_KEY presence
 function isOpenAIConfigured(): boolean {
-  // Always return false to use template-based content
-  return false;
+  const apiKey = process.env.OPENAI_API_KEY;
+  return apiKey !== undefined && 
+         apiKey !== null && 
+         apiKey.trim() !== '' && 
+         apiKey !== 'disabled_key';
 }
 
-// This is just a placeholder - we're not actually using the OpenAI API anymore
-// With isOpenAIConfigured() always returning false, this won't be used
+// OpenAI instance that uses environment variable when available
 const openai = new OpenAI({ 
-  apiKey: "disabled_key", 
-  maxRetries: 0,
-  timeout: 5000,
+  apiKey: process.env.OPENAI_API_KEY || "disabled_key", 
+  maxRetries: 1,
+  timeout: 8000,
 });
 
 // Handle AI errors gracefully with fallback responses

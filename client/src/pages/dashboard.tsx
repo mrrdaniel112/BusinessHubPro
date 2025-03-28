@@ -68,14 +68,18 @@ export default function Dashboard() {
   const displayData = data || emptyData;
 
   return (
-    <div>
+    <div className="pb-safe">
       {/* Dashboard header */}
-      <div className="py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 flex justify-between items-center">
-          <h1 className="text-2xl font-semibold text-gray-900">Business Dashboard</h1>
-          <div className="flex items-center space-x-4">
+      <div className="py-4 sm:py-6">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 md:px-8 flex justify-between items-center">
+          <h1 className="text-xl sm:text-2xl font-semibold text-gray-900">Business Dashboard</h1>
+          <div className="flex items-center space-x-3 sm:space-x-4">
             <div className="relative">
-              <button type="button" className="p-2 bg-white text-gray-400 rounded-full hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+              <button 
+                type="button" 
+                className="p-2 bg-white text-gray-400 rounded-full hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                aria-label="Notifications"
+              >
                 <i className="ri-notification-3-line text-xl"></i>
               </button>
               <span className="absolute top-0 right-0 block h-2 w-2 rounded-full ring-2 ring-white bg-danger-500"></span>
@@ -93,26 +97,26 @@ export default function Dashboard() {
       </div>
 
       {/* Date filter */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 mb-6">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 md:px-8 mb-4 sm:mb-6">
         <DateFilter onRangeChange={handleDateRangeChange} />
       </div>
 
       {/* Key metrics */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 md:px-8">
         <KeyMetrics data={displayData.metrics} isLoading={isLoading} />
       </div>
 
       {/* Charts section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 mt-8">
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 md:px-8 mt-6 sm:mt-8">
+        <div className="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-2">
           <FinancialChart data={displayData.chartData} isLoading={isLoading} />
           <CashFlowForecast data={displayData.cashFlowForecast} isLoading={isLoading} />
         </div>
       </div>
 
       {/* Transactions and Invoices section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 mt-8">
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 md:px-8 mt-6 sm:mt-8">
+        <div className="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-2">
           <RecentTransactions transactions={displayData.recentTransactions} isLoading={isLoading} />
           <InvoicesOverview 
             invoices={displayData.recentInvoices} 
@@ -123,12 +127,12 @@ export default function Dashboard() {
       </div>
 
       {/* AI Insights section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 mt-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 md:px-8 mt-6 sm:mt-8">
         <AiInsights insights={displayData.insights} isLoading={isLoading} />
       </div>
 
       {/* Quick Actions section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 mt-8 mb-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 md:px-8 mt-6 sm:mt-8 mb-6 sm:mb-8">
         <QuickActions />
       </div>
     </div>
