@@ -3,6 +3,15 @@ import OpenAI from "openai";
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "demo_key" });
 
+// Handle AI errors gracefully with fallback responses
+const handleAiError = (error: any, errorSource: string) => {
+  console.error(`Error in ${errorSource}:`, error);
+  if (error.status === 429) {
+    console.error("OpenAI rate limit or quota exceeded");
+  }
+  return null;
+};
+
 // Generate AI-powered invoice details
 export async function generateInvoiceDetails(
   projectDescription: string,
@@ -268,6 +277,168 @@ export async function extractReceiptData(
       amount: 0,
       date: new Date().toISOString().split('T')[0],
       items: []
+    };
+  }
+}
+
+// Generate inventory item recommendations
+export async function generateInventoryRecommendations(
+  itemName: string, 
+  description?: string,
+  currentInventory?: any[]
+): Promise<{
+  suggestedPrice: number,
+  suggestedCategory: string,
+  suggestedLowStockThreshold: number,
+  relatedItems: string[],
+  insights: string
+}> {
+  try {
+    // Create a concise description of current inventory for context
+    const inventoryContext = currentInventory && currentInventory.length > 0
+      ? `Current inventory contains: ${currentInventory.slice(0, 5).map(item => item.name).join(', ')}${currentInventory.length > 5 ? '...' : ''}`
+      : 'No current inventory data available.';
+    
+    const prompt = `
+      Generate inventory recommendations for this item:
+      
+      Item Name: ${itemName}
+      ${description ? `Item Description: ${description}` : ''}
+      
+      ${inventoryContext}
+      
+      Please provide:
+      1. A suggested retail price in USD
+      2. The most appropriate category for this item
+      3. A recommended low stock threshold quantity
+      4. A list of 3-5 related items that would complement this product
+      5. Brief business insights about managing this inventory item
+      
+      Format your response as JSON in this structure:
+      {
+        "suggestedPrice": number,
+        "suggestedCategory": "string",
+        "suggestedLowStockThreshold": number,
+        "relatedItems": ["string", "string", ...],
+        "insights": "paragraph of insights"
+      }
+    `;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: "You are an AI inventory management expert that helps businesses optimize their product inventory. Provide realistic recommendations based on market knowledge."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      response_format: { type: "json_object" },
+    });
+
+    // Parse the response
+    const result = JSON.parse(response.choices[0].message.content || "{}");
+    
+    return {
+      suggestedPrice: typeof result.suggestedPrice === 'number' ? result.suggestedPrice : 0,
+      suggestedCategory: result.suggestedCategory || 'General',
+      suggestedLowStockThreshold: typeof result.suggestedLowStockThreshold === 'number' ? result.suggestedLowStockThreshold : 5,
+      relatedItems: Array.isArray(result.relatedItems) ? result.relatedItems : [],
+      insights: result.insights || "No specific insights available for this item."
+    };
+  } catch (error) {
+    console.error("Error generating inventory recommendations:", error);
+    
+    // Return fallback recommendations
+    return {
+      suggestedPrice: 0,
+      suggestedCategory: 'General',
+      suggestedLowStockThreshold: 5,
+      relatedItems: [],
+      insights: "Unable to generate recommendations at this time."
+    };
+  }
+}
+
+// Generate supply/reorder recommendations
+export async function generateSupplyRecommendations(
+  inventoryItems: any[]
+): Promise<{
+  itemsToReorder: Array<{id: number, name: string, currentQuantity: number, recommendedQuantity: number}>,
+  suggestedNewItems: string[],
+  optimizationTips: string
+}> {
+  try {
+    // Filter to just low stock items to simplify the prompt
+    const lowStockItems = inventoryItems.filter(item => 
+      item.quantity <= (item.lowStockThreshold || 5)
+    );
+    
+    const prompt = `
+      Based on the current inventory data, generate reordering recommendations:
+      
+      Current Inventory Items:
+      ${JSON.stringify(inventoryItems.slice(0, 10))}
+      
+      Low Stock Items:
+      ${JSON.stringify(lowStockItems)}
+      
+      Please provide:
+      1. A list of items that should be reordered, with recommended quantities
+      2. Suggestions for 2-3 new inventory items that would complement the existing inventory
+      3. Brief optimization tips for inventory management
+      
+      Format your response as JSON in this structure:
+      {
+        "itemsToReorder": [
+          {
+            "id": number,
+            "name": "string",
+            "currentQuantity": number,
+            "recommendedQuantity": number
+          },
+          ...
+        ],
+        "suggestedNewItems": ["string", "string", ...],
+        "optimizationTips": "paragraph of tips"
+      }
+    `;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: "You are an AI supply chain and inventory management expert. Provide practical, actionable recommendations for inventory optimization."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      response_format: { type: "json_object" },
+    });
+
+    // Parse the response
+    const result = JSON.parse(response.choices[0].message.content || "{}");
+    
+    // Validate the structure
+    return {
+      itemsToReorder: Array.isArray(result.itemsToReorder) ? result.itemsToReorder : [],
+      suggestedNewItems: Array.isArray(result.suggestedNewItems) ? result.suggestedNewItems : [],
+      optimizationTips: result.optimizationTips || "Focus on reordering items that are in low stock and have consistent demand."
+    };
+  } catch (error) {
+    console.error("Error generating supply recommendations:", error);
+    
+    // Return fallback empty recommendations
+    return {
+      itemsToReorder: [],
+      suggestedNewItems: [],
+      optimizationTips: "Consider setting up automatic reordering for items that frequently run low on stock."
     };
   }
 }

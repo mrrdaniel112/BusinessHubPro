@@ -12,7 +12,15 @@ import {
 } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
-import { categorizeTransaction, generateBusinessInsights, generateCashFlowForecast, extractReceiptData, generateInvoiceDetails } from "./openai";
+import { 
+  categorizeTransaction, 
+  generateBusinessInsights, 
+  generateCashFlowForecast, 
+  extractReceiptData, 
+  generateInvoiceDetails,
+  generateInventoryRecommendations,
+  generateSupplyRecommendations
+} from "./openai";
 
 // Mock authentication middleware (for demo purposes)
 const requireAuth = (req: Request, res: Response, next: Function) => {
@@ -141,6 +149,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.json(items);
     } catch (error) {
       return res.status(500).json({ message: "Server error" });
+    }
+  });
+  
+  // AI-powered inventory recommendations
+  app.post("/api/inventory/recommendations", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const { name, description, category, price } = req.body;
+      
+      if (!name) {
+        return res.status(400).json({ message: "Item name is required" });
+      }
+      
+      // Get existing inventory for context
+      const existingInventory = await storage.getInventoryItems(userId);
+      
+      // Generate AI recommendations
+      const recommendations = await generateInventoryRecommendations(
+        name,
+        description,
+        existingInventory
+      );
+      
+      return res.json(recommendations);
+    } catch (error) {
+      console.error("Error generating inventory recommendations:", error);
+      return res.status(500).json({ message: "Failed to generate recommendations" });
+    }
+  });
+  
+  // AI-powered supply/reorder recommendations
+  app.get("/api/inventory/supply-recommendations", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      
+      // Get inventory items for this user
+      const inventoryItems = await storage.getInventoryItems(userId);
+      
+      if (inventoryItems.length === 0) {
+        return res.json({
+          itemsToReorder: [],
+          suggestedNewItems: [],
+          optimizationTips: "Add some inventory items to get supply recommendations."
+        });
+      }
+      
+      // Generate AI recommendations for inventory supply
+      const recommendations = await generateSupplyRecommendations(inventoryItems);
+      
+      return res.json(recommendations);
+    } catch (error) {
+      console.error("Error generating supply recommendations:", error);
+      return res.status(500).json({ message: "Failed to generate supply recommendations" });
     }
   });
 
@@ -513,6 +574,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error generating AI invoice:", error);
       return res.status(500).json({ message: "Failed to generate invoice details" });
+    }
+  });
+
+  // AI Inventory Item Recommendations
+  app.post("/api/ai/inventory-recommendations", requireAuth, async (req, res) => {
+    try {
+      const { itemName, description } = req.body;
+      
+      if (!itemName) {
+        return res.status(400).json({ message: "Item name is required" });
+      }
+      
+      // Get current inventory for context
+      const inventoryItems = await storage.getInventoryItems(req.user.id);
+      
+      const recommendations = await generateInventoryRecommendations(
+        itemName, 
+        description,
+        inventoryItems
+      );
+      
+      return res.json(recommendations);
+    } catch (error) {
+      console.error("Error generating inventory recommendations:", error);
+      return res.status(500).json({ 
+        message: "Failed to generate inventory recommendations",
+        suggestedPrice: 0,
+        suggestedCategory: "",
+        suggestedLowStockThreshold: 5,
+        relatedItems: [],
+        insights: "Unable to generate recommendations at this time."
+      });
+    }
+  });
+
+  // AI Supply/Reorder Recommendations
+  app.get("/api/ai/supply-recommendations", requireAuth, async (req, res) => {
+    try {
+      // Get current inventory
+      const inventoryItems = await storage.getInventoryItems(req.user.id);
+      
+      if (inventoryItems.length === 0) {
+        return res.status(400).json({ 
+          message: "No inventory items found. Add some items first.",
+          itemsToReorder: [],
+          suggestedNewItems: [],
+          optimizationTips: "Add inventory items to get supply recommendations." 
+        });
+      }
+      
+      const recommendations = await generateSupplyRecommendations(inventoryItems);
+      return res.json(recommendations);
+    } catch (error) {
+      console.error("Error generating supply recommendations:", error);
+      return res.status(500).json({ 
+        message: "Failed to generate supply recommendations",
+        itemsToReorder: [],
+        suggestedNewItems: [],
+        optimizationTips: "Try again later or contact support."
+      });
     }
   });
 
