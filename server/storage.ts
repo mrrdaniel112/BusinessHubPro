@@ -327,11 +327,19 @@ export class MemStorage implements IStorage {
 
   async createTransaction(insertTransaction: InsertTransaction): Promise<Transaction> {
     const id = this.transactionCurrentId++;
+    
+    // Ensure date is a Date object
+    const date = insertTransaction.date instanceof Date 
+      ? insertTransaction.date 
+      : new Date();
+    
     const transaction: Transaction = { 
       ...insertTransaction, 
       id,
-      date: insertTransaction.date || new Date() 
+      date 
     };
+    
+    console.log("Creating transaction with data:", transaction);
     this.transactions.set(id, transaction);
     return transaction;
   }

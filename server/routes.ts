@@ -93,13 +93,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If category is not provided, use AI to categorize
       if (!transactionData.category && transactionData.description) {
-        transactionData.category = await categorizeTransaction(transactionData.description);
+        try {
+          transactionData.category = await categorizeTransaction(transactionData.description);
+        } catch (error) {
+          console.error("Error categorizing transaction:", error);
+          transactionData.category = "Uncategorized";
+        }
       }
       
-      const validatedData = insertTransactionSchema.parse({
+      // Ensure we have a proper date
+      if (!transactionData.date) {
+        transactionData.date = new Date();
+      }
+
+      const formattedData = {
         ...transactionData,
         userId
-      });
+      };
+      
+      console.log("Validated transaction data:", formattedData);
+      
+      const validatedData = insertTransactionSchema.parse(formattedData);
       
       const transaction = await storage.createTransaction(validatedData);
       return res.status(201).json(transaction);
