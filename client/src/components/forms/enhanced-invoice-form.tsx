@@ -85,9 +85,7 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
   const [projectDescription, setProjectDescription] = useState("");
   const [sendOptions, setSendOptions] = useState({
     sendEmail: false,
-    sendSMS: false,
-    emailAddress: "",
-    phoneNumber: ""
+    emailAddress: ""
   });
   
   const isEditing = !!invoiceToEdit;
@@ -323,11 +321,11 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
       // Include the notification options directly in the API request
       sendEmail: sendOptions.sendEmail,
       emailAddress: sendOptions.emailAddress,
-      sendSMS: sendOptions.sendSMS,
-      phoneNumber: sendOptions.phoneNumber,
-      // Still add the notification info to notes for reference
-      notes: formState.notes + (sendOptions.sendEmail || sendOptions.sendSMS ? 
-        `\n\nSend to: ${sendOptions.sendEmail ? sendOptions.emailAddress : ''}${sendOptions.sendEmail && sendOptions.sendSMS ? ' and ' : ''}${sendOptions.sendSMS ? sendOptions.phoneNumber : ''}` : '')
+      sendSMS: false, // SMS functionality has been removed
+      phoneNumber: "", // SMS functionality has been removed
+      // Add the notification info to notes for reference
+      notes: formState.notes + (sendOptions.sendEmail ? 
+        `\n\nSend to: ${sendOptions.emailAddress}` : '')
     });
   };
   
@@ -674,33 +672,7 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
                     </div>
                   )}
                   
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={sendOptions.sendSMS}
-                      onCheckedChange={(checked) => 
-                        setSendOptions({ ...sendOptions, sendSMS: checked })}
-                      id="sms-toggle"
-                    />
-                    <label
-                      htmlFor="sms-toggle"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      Send via SMS
-                    </label>
-                  </div>
-                  
-                  {sendOptions.sendSMS && (
-                    <div>
-                      <FormLabel htmlFor="phoneNumber">Phone Number</FormLabel>
-                      <Input
-                        id="phoneNumber"
-                        type="tel"
-                        value={sendOptions.phoneNumber}
-                        onChange={(e) => setSendOptions({ ...sendOptions, phoneNumber: e.target.value })}
-                        placeholder="+1 (555) 123-4567"
-                      />
-                    </div>
-                  )}
+                  {/* SMS functionality has been removed as requested */}
                 </div>
               </AccordionContent>
             </AccordionItem>
