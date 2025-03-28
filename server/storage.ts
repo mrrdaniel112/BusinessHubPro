@@ -414,7 +414,25 @@ export class MemStorage implements IStorage {
 
   async createInvoice(insertInvoice: InsertInvoice): Promise<Invoice> {
     const id = this.invoiceCurrentId++;
-    const invoice: Invoice = { ...insertInvoice, id, createdAt: new Date() };
+    
+    // Ensure dates are properly parsed from ISO strings if needed
+    const issueDate = insertInvoice.issueDate instanceof Date ? 
+      insertInvoice.issueDate : 
+      new Date(insertInvoice.issueDate);
+    
+    const dueDate = insertInvoice.dueDate instanceof Date ? 
+      insertInvoice.dueDate : 
+      new Date(insertInvoice.dueDate);
+    
+    const invoice: Invoice = { 
+      ...insertInvoice, 
+      id, 
+      createdAt: new Date(),
+      issueDate,
+      dueDate,
+      notes: insertInvoice.notes || null
+    };
+    
     this.invoices.set(id, invoice);
     return invoice;
   }
@@ -423,7 +441,26 @@ export class MemStorage implements IStorage {
     const existingInvoice = this.invoices.get(id);
     if (!existingInvoice) return undefined;
     
-    const updatedInvoice = { ...existingInvoice, ...invoiceUpdate };
+    // Process date fields if present
+    let processedUpdate: Partial<Invoice> = { ...invoiceUpdate };
+    
+    if (invoiceUpdate.issueDate) {
+      processedUpdate.issueDate = invoiceUpdate.issueDate instanceof Date ? 
+        invoiceUpdate.issueDate : 
+        new Date(invoiceUpdate.issueDate);
+    }
+    
+    if (invoiceUpdate.dueDate) {
+      processedUpdate.dueDate = invoiceUpdate.dueDate instanceof Date ? 
+        invoiceUpdate.dueDate : 
+        new Date(invoiceUpdate.dueDate);
+    }
+    
+    if (invoiceUpdate.notes !== undefined) {
+      processedUpdate.notes = invoiceUpdate.notes || null;
+    }
+    
+    const updatedInvoice = { ...existingInvoice, ...processedUpdate };
     this.invoices.set(id, updatedInvoice);
     return updatedInvoice;
   }

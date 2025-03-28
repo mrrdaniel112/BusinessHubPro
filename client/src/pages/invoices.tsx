@@ -39,7 +39,13 @@ export default function Invoices() {
   
   const createInvoiceMutation = useMutation({
     mutationFn: async (invoice: Omit<Invoice, 'id' | 'userId' | 'createdAt'>) => {
-      const res = await apiRequest('POST', '/api/invoices', invoice);
+      // Convert Date objects to ISO strings for API
+      const formattedInvoice = {
+        ...invoice,
+        issueDate: invoice.issueDate instanceof Date ? invoice.issueDate.toISOString() : invoice.issueDate,
+        dueDate: invoice.dueDate instanceof Date ? invoice.dueDate.toISOString() : invoice.dueDate
+      };
+      const res = await apiRequest('POST', '/api/invoices', formattedInvoice);
       return res.json();
     },
     onSuccess: () => {
