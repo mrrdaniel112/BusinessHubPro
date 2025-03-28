@@ -1,5 +1,10 @@
-import type { Express, Request, Response } from "express";
+import type { Express, Request as ExpressRequest, Response } from "express";
 import { createServer, type Server } from "http";
+
+// Extend Express Request to include user property
+interface Request extends ExpressRequest {
+  user?: { id: number };
+}
 import { storage } from "./storage";
 import { 
   insertUserSchema, 
@@ -21,6 +26,7 @@ import {
   generateInventoryRecommendations,
   generateSupplyRecommendations
 } from "./openai";
+import { NotificationOptions, sendInvoiceNotifications } from "./services/notification";
 
 // Mock authentication middleware (for demo purposes)
 const requireAuth = (req: Request, res: Response, next: Function) => {
@@ -348,13 +354,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Log the incoming request body for debugging
       console.log("Invoice creation request body:", req.body);
       
+      // Extract notification options if present
+      const notificationOptions: NotificationOptions = {
+        sendEmail: req.body.sendEmail || false,
+        emailAddress: req.body.emailAddress || '',
+        sendSMS: req.body.sendSMS || false,
+        phoneNumber: req.body.phoneNumber || ''
+      };
+      
+      // Remove notification fields from the data to be saved
+      const { sendEmail, emailAddress, sendSMS, phoneNumber, ...invoiceFields } = req.body;
+      
       // Ensure dates are properly parsed
       const bodyWithParsedDates = {
-        ...req.body,
+        ...invoiceFields,
         userId,
         // Ensure dates are Date objects
-        issueDate: new Date(req.body.issueDate),
-        dueDate: new Date(req.body.dueDate)
+        issueDate: new Date(invoiceFields.issueDate),
+        dueDate: new Date(invoiceFields.dueDate)
       };
       
       console.log("Processed invoice data:", bodyWithParsedDates);
@@ -362,7 +379,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const invoiceData = insertInvoiceSchema.parse(bodyWithParsedDates);
       
       const invoice = await storage.createInvoice(invoiceData);
-      return res.status(201).json(invoice);
+      
+      // Send notifications if requested
+      const notificationResults = { email: null, sms: null };
+      if (notificationOptions.sendEmail || notificationOptions.sendSMS) {
+        try {
+          console.log("Sending invoice notifications:", notificationOptions);
+          const results = await sendInvoiceNotifications(invoice, notificationOptions);
+          notificationResults.email = results.email;
+          notificationResults.sms = results.sms;
+          console.log("Notification results:", results);
+        } catch (notificationError) {
+          console.error("Error sending notifications:", notificationError);
+        }
+      }
+      
+      return res.status(201).json({ 
+        invoice, 
+        notifications: notificationResults 
+      });
     } catch (error) {
       console.error("Invoice creation error:", error);
       if (error instanceof ZodError) {

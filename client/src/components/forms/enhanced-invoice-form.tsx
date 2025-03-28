@@ -311,10 +311,15 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
       return;
     }
     
-    // Create the invoice with all the data
+    // Create the invoice with all the data including notification options
     invoiceMutation.mutate({
       ...formState,
-      // Include sending options in notes if selected
+      // Include the notification options directly in the API request
+      sendEmail: sendOptions.sendEmail,
+      emailAddress: sendOptions.emailAddress,
+      sendSMS: sendOptions.sendSMS,
+      phoneNumber: sendOptions.phoneNumber,
+      // Still add the notification info to notes for reference
       notes: formState.notes + (sendOptions.sendEmail || sendOptions.sendSMS ? 
         `\n\nSend to: ${sendOptions.sendEmail ? sendOptions.emailAddress : ''}${sendOptions.sendEmail && sendOptions.sendSMS ? ' and ' : ''}${sendOptions.sendSMS ? sendOptions.phoneNumber : ''}` : '')
     });
