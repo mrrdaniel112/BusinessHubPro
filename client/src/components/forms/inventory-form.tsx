@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { InventoryItem } from "@shared/schema";
 
 import {
   Dialog,
@@ -50,24 +51,60 @@ const defaultValues: Partial<InventoryFormValues> = {
 interface InventoryFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  itemToEdit?: InventoryItem;
 }
 
-export function InventoryForm({ open, onOpenChange }: InventoryFormProps) {
+export function InventoryForm({ open, onOpenChange, itemToEdit }: InventoryFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const isEditing = !!itemToEdit;
 
   const form = useForm<InventoryFormValues>({
     resolver: zodResolver(inventoryFormSchema),
-    defaultValues,
+    defaultValues: isEditing 
+      ? {
+          name: itemToEdit.name,
+          description: itemToEdit.description || "",
+          quantity: itemToEdit.quantity,
+          price: String(itemToEdit.price),
+          category: itemToEdit.category || "",
+          lowStockThreshold: itemToEdit.lowStockThreshold || 5,
+        }
+      : defaultValues,
   });
+
+  // Reset form when itemToEdit changes or dialog opens/closes
+  React.useEffect(() => {
+    if (open) {
+      if (isEditing) {
+        form.reset({
+          name: itemToEdit.name,
+          description: itemToEdit.description || "",
+          quantity: itemToEdit.quantity,
+          price: String(itemToEdit.price),
+          category: itemToEdit.category || "",
+          lowStockThreshold: itemToEdit.lowStockThreshold || 5,
+        });
+      } else {
+        form.reset(defaultValues);
+      }
+    }
+  }, [open, itemToEdit, form, isEditing]);
 
   async function onSubmit(data: InventoryFormValues) {
     try {
       setIsSubmitting(true);
       console.log("Sending inventory data to API:", data);
 
-      const response = await apiRequest("POST", "/api/inventory", data);
+      let response;
+      if (isEditing) {
+        // Update existing item
+        response = await apiRequest("PATCH", `/api/inventory/${itemToEdit.id}`, data);
+      } else {
+        // Create new item
+        response = await apiRequest("POST", "/api/inventory", data);
+      }
 
       if (response.ok) {
         // Reset form and close dialog
@@ -79,18 +116,20 @@ export function InventoryForm({ open, onOpenChange }: InventoryFormProps) {
         queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
 
         toast({
-          title: "Item added",
-          description: "Your inventory item has been added successfully.",
+          title: isEditing ? "Item updated" : "Item added",
+          description: isEditing 
+            ? "Your inventory item has been updated successfully." 
+            : "Your inventory item has been added successfully.",
         });
       } else {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to add inventory item");
+        throw new Error(errorData.message || `Failed to ${isEditing ? 'update' : 'add'} inventory item`);
       }
     } catch (error) {
-      console.error("Error adding inventory item:", error);
+      console.error(`Error ${isEditing ? 'updating' : 'adding'} inventory item:`, error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to add inventory item",
+        description: error instanceof Error ? error.message : `Failed to ${isEditing ? 'update' : 'add'} inventory item`,
         variant: "destructive",
       });
     } finally {
@@ -102,9 +141,12 @@ export function InventoryForm({ open, onOpenChange }: InventoryFormProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Add Inventory Item</DialogTitle>
+          <DialogTitle>{isEditing ? 'Edit' : 'Add'} Inventory Item</DialogTitle>
           <DialogDescription>
-            Enter the details for your new inventory item
+            {isEditing 
+              ? 'Update the details of your inventory item' 
+              : 'Enter the details for your new inventory item'
+            }
           </DialogDescription>
         </DialogHeader>
 
@@ -225,7 +267,7 @@ export function InventoryForm({ open, onOpenChange }: InventoryFormProps) {
                 type="submit" 
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "Saving..." : "Save Item"}
+                {isSubmitting ? "Saving..." : (isEditing ? "Update Item" : "Save Item")}
               </Button>
             </DialogFooter>
           </form>

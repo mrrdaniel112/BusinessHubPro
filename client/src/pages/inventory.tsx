@@ -11,6 +11,7 @@ import { InventoryForm } from "@/components/forms/inventory-form";
 export default function Inventory() {
   const [searchTerm, setSearchTerm] = useState("");
   const [inventoryFormOpen, setInventoryFormOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<InventoryItem | undefined>(undefined);
 
   const { data: inventoryItems = [], isLoading } = useQuery<InventoryItem[]>({
     queryKey: ['/api/inventory'],
@@ -53,7 +54,11 @@ export default function Inventory() {
       {/* Inventory Form */}
       <InventoryForm 
         open={inventoryFormOpen} 
-        onOpenChange={setInventoryFormOpen} 
+        onOpenChange={(open) => {
+          setInventoryFormOpen(open);
+          if (!open) setSelectedItem(undefined); // Clear selection when dialog closes
+        }}
+        itemToEdit={selectedItem}
       />
 
       {/* Inventory stats */}
@@ -153,6 +158,7 @@ export default function Inventory() {
                       <TableHead className="text-right">Price</TableHead>
                       <TableHead className="text-right">Value</TableHead>
                       <TableHead className="text-right">Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -182,6 +188,18 @@ export default function Inventory() {
                           ) : (
                             <Badge variant="outline">In Stock</Badge>
                           )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => {
+                              setSelectedItem(item);
+                              setInventoryFormOpen(true);
+                            }}
+                          >
+                            <i className="ri-edit-line mr-1"></i> Edit
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
