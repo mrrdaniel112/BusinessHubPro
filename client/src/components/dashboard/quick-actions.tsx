@@ -12,32 +12,32 @@ export default function QuickActions() {
     { 
       icon: "file-add-line",
       label: "Create Invoice",
-      href: "/invoices/new"
+      href: "/invoices"
     },
     { 
       icon: "receipt-line",
       label: "Scan Receipt",
-      href: "/expenses/scan"
+      href: "/expenses"
     },
     { 
       icon: "file-text-line",
       label: "New Contract",
-      href: "/contracts/new"
+      href: "/contracts"
     },
     { 
       icon: "user-add-line",
       label: "Add Client",
-      href: "/clients/new"
+      href: "/financials"
     },
     { 
       icon: "store-2-line",
       label: "Add Inventory",
-      href: "/inventory/new"
+      href: "/inventory"
     },
     { 
       icon: "line-chart-line",
       label: "Financial Report",
-      href: "/reports/financial"
+      href: "/financials"
     }
   ];
 
@@ -50,10 +50,10 @@ export default function QuickActions() {
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-6">
           {actions.map((action, index) => (
             <Link key={index} href={action.href}>
-              <a className="p-4 bg-gray-50 rounded-lg flex flex-col items-center justify-center hover:bg-gray-100 transition-colors">
+              <div className="p-4 bg-gray-50 rounded-lg flex flex-col items-center justify-center hover:bg-gray-100 transition-colors cursor-pointer">
                 <i className={`${action.icon} text-2xl text-primary-600 mb-2`}></i>
                 <span className="text-xs text-gray-500 text-center">{action.label}</span>
-              </a>
+              </div>
             </Link>
           ))}
         </div>

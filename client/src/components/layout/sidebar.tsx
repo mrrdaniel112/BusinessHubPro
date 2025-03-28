@@ -10,9 +10,9 @@ type NavItemProps = {
 
 const NavItem = ({ href, icon, label, active }: NavItemProps) => (
   <Link href={href}>
-    <a
+    <div
       className={cn(
-        "flex items-center px-2 py-2 text-sm font-medium rounded-md group",
+        "flex items-center px-2 py-2 text-sm font-medium rounded-md group cursor-pointer",
         active
           ? "text-white bg-primary-600"
           : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
@@ -20,7 +20,7 @@ const NavItem = ({ href, icon, label, active }: NavItemProps) => (
     >
       <i className={cn(`ri-${icon} mr-3 text-lg`, active ? "" : "text-gray-400")}></i>
       {label}
-    </a>
+    </div>
   </Link>
 );
 
@@ -93,12 +93,12 @@ export default function Sidebar() {
                 <div className="mt-1 w-full bg-gray-200 rounded-full h-2">
                   <div className="bg-primary-600 h-2 rounded-full" style={{ width: '71%' }}></div>
                 </div>
-                <a
-                  href="#"
+                <button
+                  onClick={() => {}}
                   className="mt-3 block w-full px-4 py-2 text-sm font-medium text-center text-white bg-primary-600 rounded-md hover:bg-primary-700"
                 >
                   Upgrade Now
-                </a>
+                </button>
               </div>
             </div>
           </div>
