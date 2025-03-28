@@ -12,7 +12,54 @@ const handleAiError = (error: any, errorSource: string) => {
   return null;
 };
 
-// Generate AI-powered invoice details
+// Smart templates for invoice generation when AI is unavailable
+const invoiceTemplates = {
+  // Website Development template
+  website: {
+    items: [
+      { description: "Website design and planning", quantity: 1, price: 1200 },
+      { description: "Frontend development", quantity: 1, price: 1500 },
+      { description: "Backend integration", quantity: 1, price: 1800 },
+      { description: "Responsive design implementation", quantity: 1, price: 800 },
+      { description: "Content management system setup", quantity: 1, price: 600 }
+    ],
+    notes: "Thank you for your business! This invoice covers all agreed website development services. Payment is due within 30 days of issue. We offer a 30-day support period for any questions or minor adjustments needed after delivery."
+  },
+  
+  // Consulting template
+  consulting: {
+    items: [
+      { description: "Initial business analysis", quantity: 1, price: 1500 },
+      { description: "Strategy development sessions", quantity: 3, price: 800 },
+      { description: "Implementation planning", quantity: 1, price: 1200 },
+      { description: "Documentation and reporting", quantity: 1, price: 600 }
+    ],
+    notes: "Thank you for choosing our consulting services! This invoice covers all consulting services as outlined in our agreement. Payment terms: Net 15 days. Please include the invoice number with your payment."
+  },
+  
+  // Marketing template
+  marketing: {
+    items: [
+      { description: "Marketing strategy development", quantity: 1, price: 1800 },
+      { description: "Content creation", quantity: 5, price: 300 },
+      { description: "Social media campaign setup", quantity: 1, price: 900 },
+      { description: "Analytics and reporting setup", quantity: 1, price: 600 }
+    ],
+    notes: "Thank you for your business! This invoice covers all marketing services as outlined in our agreement. Payment is due within 21 days. For questions regarding this invoice, please contact our accounting department."
+  },
+  
+  // Default template
+  default: {
+    items: [
+      { description: "Professional services", quantity: 1, price: 1500 },
+      { description: "Project management", quantity: 1, price: 800 },
+      { description: "Implementation and delivery", quantity: 1, price: 1200 }
+    ],
+    notes: "Thank you for your business! Payment is due within 30 days of receipt. If you have any questions about this invoice, please contact us."
+  }
+};
+
+// Generate invoice details - uses templates as fallback when OpenAI is unavailable
 export async function generateInvoiceDetails(
   projectDescription: string,
   clientName: string
@@ -21,6 +68,7 @@ export async function generateInvoiceDetails(
   notes: string
 }> {
   try {
+    // First attempt to use OpenAI
     const prompt = `
       Based on the following project description, generate realistic and detailed invoice line items and a professional invoice note.
 
@@ -45,34 +93,65 @@ export async function generateInvoiceDetails(
       }
     `;
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: "You are an AI expert in business finance and professional invoicing. Generate realistic, detailed invoice items and notes based on project descriptions."
-        },
-        {
-          role: "user",
-          content: prompt
-        }
-      ],
-      response_format: { type: "json_object" },
-    });
+    try {
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: "You are an AI expert in business finance and professional invoicing. Generate realistic, detailed invoice items and notes based on project descriptions."
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        response_format: { type: "json_object" },
+      });
 
-    const result = JSON.parse(response.choices[0].message.content || "{}");
-    return {
-      items: Array.isArray(result.items) ? result.items : [],
-      notes: result.notes || "Thank you for your business. Payment is due within 30 days of receipt."
-    };
+      const result = JSON.parse(response.choices[0].message.content || "{}");
+      return {
+        items: Array.isArray(result.items) ? result.items : [],
+        notes: result.notes || "Thank you for your business. Payment is due within 30 days of receipt."
+      };
+    } catch (aiError) {
+      console.error("Error connecting to OpenAI service:", aiError);
+      // Continue to fallback template system
+    }
   } catch (error) {
     console.error("Error generating invoice details:", error);
+    
+    // Choose an appropriate template based on the project description
+    const description = projectDescription.toLowerCase();
+    
+    // Detect the type of project to use the most appropriate template
+    let template;
+    if (description.includes('website') || description.includes('web') || description.includes('site') || 
+        description.includes('app') || description.includes('application') || description.includes('software') ||
+        description.includes('development') || description.includes('coding')) {
+      template = invoiceTemplates.website;
+      
+    } else if (description.includes('marketing') || description.includes('social media') || 
+               description.includes('campaign') || description.includes('promotion') || 
+               description.includes('content') || description.includes('advertising')) {
+      template = invoiceTemplates.marketing;
+      
+    } else if (description.includes('consult') || description.includes('advice') || 
+               description.includes('strategy') || description.includes('planning') || 
+               description.includes('analysis')) {
+      template = invoiceTemplates.consulting;
+      
+    } else {
+      // Default template if we can't detect a clear pattern
+      template = invoiceTemplates.default; 
+    }
+    
+    // Personalize the template with the client name
+    const personalizedNotes = template.notes.replace(/your business/g, `your business, ${clientName}`);
+    
     return {
-      items: [
-        { description: "Professional services", quantity: 1, price: 500 },
-        { description: "Material costs", quantity: 1, price: 250 }
-      ],
-      notes: "Thank you for your business. Payment is due within 30 days of receipt."
+      items: template.items,
+      notes: personalizedNotes
     };
   }
 }
