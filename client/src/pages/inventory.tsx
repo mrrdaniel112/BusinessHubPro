@@ -6,9 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { InventoryItem } from "@shared/schema";
+import { InventoryForm } from "@/components/forms/inventory-form";
 
 export default function Inventory() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [inventoryFormOpen, setInventoryFormOpen] = useState(false);
 
   const { data: inventoryItems = [], isLoading } = useQuery<InventoryItem[]>({
     queryKey: ['/api/inventory'],
@@ -42,11 +44,17 @@ export default function Inventory() {
       <div className="py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0">
           <h1 className="text-2xl font-semibold text-gray-900">Inventory Management</h1>
-          <Button>
+          <Button onClick={() => setInventoryFormOpen(true)}>
             <i className="ri-add-line mr-1"></i> Add Inventory Item
           </Button>
         </div>
       </div>
+      
+      {/* Inventory Form */}
+      <InventoryForm 
+        open={inventoryFormOpen} 
+        onOpenChange={setInventoryFormOpen} 
+      />
 
       {/* Inventory stats */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
