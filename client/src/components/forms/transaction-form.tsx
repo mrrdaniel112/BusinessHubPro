@@ -37,6 +37,7 @@ const transactionFormSchema = z.object({
   amount: z.string().min(1, "Amount is required"),
   description: z.string().min(1, "Description is required"),
   category: z.string().min(1, "Category is required"),
+  date: z.date().optional(),
 });
 
 type TransactionFormValues = z.infer<typeof transactionFormSchema>;
@@ -46,6 +47,7 @@ const defaultValues: Partial<TransactionFormValues> = {
   amount: "",
   description: "",
   category: "",
+  date: new Date(),
 };
 
 interface TransactionFormProps {
@@ -71,7 +73,7 @@ export function TransactionForm({ open, onOpenChange }: TransactionFormProps) {
       // Format the data for API submission
       const formattedData = {
         ...data,
-        date: new Date().toISOString(),
+        date: new Date(),
       };
 
       const response = await apiRequest("POST", "/api/transactions", formattedData);
