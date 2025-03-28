@@ -1,16 +1,17 @@
 import OpenAI from "openai";
 
-// Check if OpenAI API key is configured
+// Completely disable OpenAI API calls - always use templates
 function isOpenAIConfigured(): boolean {
-  return !!process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== "demo_key";
+  // Always return false to use template-based content
+  return false;
 }
 
-// Initialize OpenAI client
-// the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+// This is just a placeholder - we're not actually using the OpenAI API anymore
+// With isOpenAIConfigured() always returning false, this won't be used
 const openai = new OpenAI({ 
-  apiKey: process.env.OPENAI_API_KEY || "demo_key", 
-  maxRetries: 3, // Retry API calls up to 3 times with exponential backoff
-  timeout: 30000, // 30 second timeout
+  apiKey: "disabled_key", 
+  maxRetries: 0,
+  timeout: 5000,
 });
 
 // Handle AI errors gracefully with fallback responses
