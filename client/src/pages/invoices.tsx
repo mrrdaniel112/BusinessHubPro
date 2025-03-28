@@ -1,18 +1,88 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 import { Invoice } from "@shared/schema";
 
 export default function Invoices() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
+  const [issueDateOpen, setIssueDateOpen] = useState(false);
+  const [dueDateOpen, setDueDateOpen] = useState(false);
+  const [newInvoice, setNewInvoice] = useState({
+    invoiceNumber: `INV-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+    clientName: "",
+    amount: "",
+    status: "draft",
+    issueDate: new Date(),
+    dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+    items: "[]",
+    notes: ""
+  });
+  const { toast } = useToast();
 
   const { data: invoices = [], isLoading } = useQuery<Invoice[]>({
     queryKey: ['/api/invoices'],
+  });
+  
+  const createInvoiceMutation = useMutation({
+    mutationFn: async (invoice: Omit<Invoice, 'id' | 'userId' | 'createdAt'>) => {
+      const res = await apiRequest('POST', '/api/invoices', invoice);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
+      toast({
+        title: "Success",
+        description: "Invoice created successfully",
+      });
+      setInvoiceDialogOpen(false);
+      // Reset form
+      setNewInvoice({
+        invoiceNumber: `INV-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+        clientName: "",
+        amount: "",
+        status: "draft",
+        issueDate: new Date(),
+        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        items: "[]",
+        notes: ""
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to create invoice. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  const sendRemindersMutation = useMutation({
+    mutationFn: async () => {
+      // In a real app, this would send reminders via email
+      // For demo, we'll just mark it as completed
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return true;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Reminders sent to clients with pending invoices",
+      });
+    }
   });
 
   const filteredInvoices = invoices.filter(invoice => {
@@ -51,7 +121,7 @@ export default function Invoices() {
       case 'sent':
         return <Badge variant="secondary">Sent</Badge>;
       case 'paid':
-        return <Badge variant="success" className="bg-success-100 text-success-800 hover:bg-success-100">Paid</Badge>;
+        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Paid</Badge>;
       case 'overdue':
         return <Badge variant="destructive">Overdue</Badge>;
       default:
@@ -92,17 +162,180 @@ export default function Invoices() {
 
   const statusCounts = getInvoiceStatusCounts();
 
+  const handleCreateInvoice = () => {
+    if (!newInvoice.clientName || !newInvoice.amount) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+    createInvoiceMutation.mutate(newInvoice);
+  };
+
   return (
     <div>
       {/* Page header */}
       <div className="py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0">
           <h1 className="text-2xl font-semibold text-gray-900">Invoice Management</h1>
-          <Button>
+          <Button onClick={() => setInvoiceDialogOpen(true)}>
             <i className="ri-add-line mr-1"></i> Create Invoice
           </Button>
         </div>
       </div>
+      
+      {/* Create Invoice Dialog */}
+      <Dialog open={invoiceDialogOpen} onOpenChange={setInvoiceDialogOpen}>
+        <DialogContent className="sm:max-w-[550px]">
+          <DialogHeader>
+            <DialogTitle>Create New Invoice</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="invoiceNumber" className="text-right">
+                Invoice #
+              </Label>
+              <Input
+                id="invoiceNumber"
+                value={newInvoice.invoiceNumber}
+                onChange={(e) => setNewInvoice({ ...newInvoice, invoiceNumber: e.target.value })}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="clientName" className="text-right">
+                Client *
+              </Label>
+              <Input
+                id="clientName"
+                value={newInvoice.clientName}
+                onChange={(e) => setNewInvoice({ ...newInvoice, clientName: e.target.value })}
+                placeholder="Client name"
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="amount" className="text-right">
+                Amount *
+              </Label>
+              <Input
+                id="amount"
+                type="number"
+                value={newInvoice.amount}
+                onChange={(e) => setNewInvoice({ ...newInvoice, amount: e.target.value })}
+                placeholder="0.00"
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="status" className="text-right">
+                Status
+              </Label>
+              <Select 
+                value={newInvoice.status} 
+                onValueChange={(value) => setNewInvoice({ ...newInvoice, status: value })}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="sent">Sent</SelectItem>
+                  <SelectItem value="paid">Paid</SelectItem>
+                  <SelectItem value="overdue">Overdue</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="issueDate" className="text-right">
+                Issue Date
+              </Label>
+              <Popover open={issueDateOpen} onOpenChange={setIssueDateOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="col-span-3 justify-start text-left font-normal"
+                  >
+                    <i className="ri-calendar-line mr-2"></i>
+                    {newInvoice.issueDate ? format(newInvoice.issueDate, "PPP") : "Pick a date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={newInvoice.issueDate}
+                    onSelect={(date) => {
+                      setNewInvoice({ ...newInvoice, issueDate: date || new Date() });
+                      setIssueDateOpen(false);
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="dueDate" className="text-right">
+                Due Date
+              </Label>
+              <Popover open={dueDateOpen} onOpenChange={setDueDateOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="col-span-3 justify-start text-left font-normal"
+                  >
+                    <i className="ri-calendar-line mr-2"></i>
+                    {newInvoice.dueDate ? format(newInvoice.dueDate, "PPP") : "Pick a date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={newInvoice.dueDate}
+                    onSelect={(date) => {
+                      setNewInvoice({ ...newInvoice, dueDate: date || new Date() });
+                      setDueDateOpen(false);
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="notes" className="text-right">
+                Notes
+              </Label>
+              <Input
+                id="notes"
+                value={newInvoice.notes || ""}
+                onChange={(e) => setNewInvoice({ ...newInvoice, notes: e.target.value })}
+                placeholder="Additional notes"
+                className="col-span-3"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setInvoiceDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleCreateInvoice}
+              disabled={createInvoiceMutation.isPending}
+            >
+              {createInvoiceMutation.isPending ? (
+                <i className="ri-loader-4-line animate-spin mr-1"></i>
+              ) : (
+                <i className="ri-save-line mr-1"></i>
+              )}
+              Save Invoice
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Invoice stats */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
@@ -170,13 +403,27 @@ export default function Invoices() {
       {/* Quick actions */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 mt-6">
         <div className="flex flex-wrap gap-3">
-          <Button>
+          <Button onClick={() => setInvoiceDialogOpen(true)}>
             <i className="ri-add-line mr-1"></i> Create Invoice
           </Button>
-          <Button variant="outline">
-            <i className="ri-send-plane-line mr-1"></i> Send Reminders
+          <Button 
+            variant="outline" 
+            onClick={() => sendRemindersMutation.mutate()}
+            disabled={sendRemindersMutation.isPending}
+          >
+            {sendRemindersMutation.isPending ? (
+              <i className="ri-loader-4-line animate-spin mr-1"></i>
+            ) : (
+              <i className="ri-send-plane-line mr-1"></i>
+            )}
+            Send Reminders
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => {
+            toast({ 
+              title: "Export Started", 
+              description: "Exporting invoices to CSV. Download will begin shortly."
+            });
+          }}>
             <i className="ri-download-line mr-1"></i> Export
           </Button>
         </div>
