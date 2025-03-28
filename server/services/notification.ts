@@ -1,5 +1,4 @@
 import { sendInvoiceEmail } from './email';
-import { sendInvoiceSMS } from './sms';
 import { Invoice } from '../../shared/schema';
 
 /**
@@ -8,12 +7,11 @@ import { Invoice } from '../../shared/schema';
 export interface NotificationOptions {
   sendEmail?: boolean;
   emailAddress?: string;
-  sendSMS?: boolean;
-  phoneNumber?: string;
+  // SMS functionality has been removed as per user request
 }
 
 /**
- * Send invoice notifications via specified channels
+ * Send invoice notifications via email
  * @param invoice The invoice data
  * @param options The notification options
  * @returns Results of notification attempts
@@ -22,12 +20,10 @@ export async function sendInvoiceNotifications(
   invoice: Invoice,
   options: NotificationOptions
 ): Promise<{
-  email: { sent: boolean, error?: any } | null,
-  sms: { sent: boolean, error?: any } | null
+  email: { sent: boolean, error?: any } | null
 }> {
   const result = {
-    email: null as { sent: boolean, error?: any } | null,
-    sms: null as { sent: boolean, error?: any } | null
+    email: null as { sent: boolean, error?: any } | null
   };
 
   // Check if we need to send an email
@@ -53,30 +49,6 @@ export async function sendInvoiceNotifications(
       };
     } catch (error) {
       result.email = {
-        sent: false,
-        error
-      };
-    }
-  }
-
-  // Check if we need to send an SMS
-  if (options.sendSMS && options.phoneNumber) {
-    try {
-      // Send the SMS
-      const smsResult = await sendInvoiceSMS(
-        options.phoneNumber,
-        invoice.invoiceNumber,
-        invoice.clientName,
-        invoice.amount,
-        invoice.dueDate
-      );
-      
-      result.sms = {
-        sent: smsResult.success,
-        error: smsResult.error
-      };
-    } catch (error) {
-      result.sms = {
         sent: false,
         error
       };

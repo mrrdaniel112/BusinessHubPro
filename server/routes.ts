@@ -357,13 +357,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Extract notification options if present
       const notificationOptions: NotificationOptions = {
         sendEmail: req.body.sendEmail || false,
-        emailAddress: req.body.emailAddress || '',
-        sendSMS: req.body.sendSMS || false,
-        phoneNumber: req.body.phoneNumber || ''
+        emailAddress: req.body.emailAddress || ''
+        // SMS functionality has been removed
       };
       
       // Remove notification fields from the data to be saved
-      const { sendEmail, emailAddress, sendSMS, phoneNumber, ...invoiceFields } = req.body;
+      const { sendEmail, emailAddress, ...invoiceFields } = req.body;
       
       // Ensure dates are properly parsed
       const bodyWithParsedDates = {
@@ -380,17 +379,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const invoice = await storage.createInvoice(invoiceData);
       
-      // Send notifications if requested
-      const notificationResults = { email: null, sms: null };
-      if (notificationOptions.sendEmail || notificationOptions.sendSMS) {
+      // Send email notifications if requested
+      const notificationResults = { email: null };
+      if (notificationOptions.sendEmail) {
         try {
-          console.log("Sending invoice notifications:", notificationOptions);
+          console.log("Sending invoice email notification:", notificationOptions);
           const results = await sendInvoiceNotifications(invoice, notificationOptions);
           notificationResults.email = results.email;
-          notificationResults.sms = results.sms;
           console.log("Notification results:", results);
         } catch (notificationError) {
-          console.error("Error sending notifications:", notificationError);
+          console.error("Error sending email notification:", notificationError);
         }
       }
       
@@ -668,6 +666,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
         itemsToReorder: [],
         suggestedNewItems: [],
         optimizationTips: "Try again later or contact support."
+      });
+    }
+  });
+
+  // Test email route
+  app.post("/api/test-email", async (req, res) => {
+    try {
+      const { to, subject, text } = req.body;
+      
+      if (!to || !subject || !text) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Missing required fields: to, subject, text" 
+        });
+      }
+      
+      // Generate test invoice data
+      const testInvoice = {
+        invoiceNumber: "TEST-001",
+        clientName: "Test Client",
+        amount: 123.45,
+        issueDate: new Date(),
+        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      };
+      
+      const items = [
+        { description: "Test Item 1", quantity: 1, price: 100 },
+        { description: "Test Item 2", quantity: 2, price: 10 }
+      ];
+      
+      // Using our existing email function from notification service
+      const notificationOptions: NotificationOptions = {
+        sendEmail: true,
+        emailAddress: to
+      };
+      
+      // Create test invoice object with required fields
+      const mockInvoice = {
+        id: 999,
+        userId: 1,
+        invoiceNumber: testInvoice.invoiceNumber,
+        clientName: testInvoice.clientName,
+        amount: testInvoice.amount.toString(),
+        issueDate: testInvoice.issueDate,
+        dueDate: testInvoice.dueDate,
+        status: 'pending',
+        items: JSON.stringify(items),
+        createdAt: new Date(),
+        notes: text || "Test email from the Business Platform"
+      };
+      
+      // Send test email
+      const results = await sendInvoiceNotifications(mockInvoice, notificationOptions);
+      
+      console.log("Email test result:", results);
+      
+      const emailResult = results.email || { sent: false };
+      
+      return res.json({ 
+        success: emailResult.sent,
+        message: emailResult.sent ? "Email sent successfully" : "Failed to send email",
+        info: emailResult,
+        error: emailResult.error
+      });
+    } catch (error) {
+      console.error("Error in test-email route:", error);
+      return res.status(500).json({ 
+        success: false,
+        message: "Failed to send email", 
+        error: error.message
       });
     }
   });
