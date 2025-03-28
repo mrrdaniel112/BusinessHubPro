@@ -79,7 +79,7 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
     id: Math.random().toString(36).substring(2, 9),
     description: "",
     quantity: 1,
-    price: 0
+    price: 15000 // Set high default price of $15,000
   });
   const [notesType, setNotesType] = useState('manual'); // 'manual' or 'ai'
   const [projectDescription, setProjectDescription] = useState("");
@@ -140,7 +140,7 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
         id: Math.random().toString(36).substring(2, 9),
         description: "",
         quantity: 1,
-        price: 0
+        price: 15000 // Set high default price of $15,000
       });
     }
   }, [open, isEditing, invoiceToEdit]);
@@ -233,7 +233,7 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
         id: Math.random().toString(36).substring(2, 9),
         description: "",
         quantity: 1,
-        price: 0
+        price: 15000 // Set high default price of $15,000
       });
     } else {
       toast({
