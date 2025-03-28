@@ -102,12 +102,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Ensure we have a proper date
-      if (!transactionData.date) {
-        transactionData.date = new Date();
+      let dateObj: Date;
+      if (transactionData.date) {
+        if (typeof transactionData.date === 'string') {
+          dateObj = new Date(transactionData.date);
+        } else {
+          dateObj = transactionData.date;
+        }
+      } else {
+        dateObj = new Date();
       }
 
       const formattedData = {
         ...transactionData,
+        date: dateObj,
         userId
       };
       

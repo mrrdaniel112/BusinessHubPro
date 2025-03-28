@@ -68,10 +68,10 @@ export function TransactionForm({ open, onOpenChange }: TransactionFormProps) {
       setIsSubmitting(true);
       console.log("Sending transaction data to API:", data);
 
-      // Format the data for API submission
+      // Format the data for API submission - don't include date field in formattedData
+      // since the server will handle setting it to the current date
       const formattedData = {
-        ...data,
-        date: new Date(),
+        ...data
       };
 
       const response = await apiRequest("POST", "/api/transactions", formattedData);
