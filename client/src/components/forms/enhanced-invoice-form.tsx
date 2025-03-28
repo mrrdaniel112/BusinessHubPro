@@ -34,6 +34,14 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -249,6 +257,110 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
     setItems(items.filter(item => item.id !== id));
   };
   
+  // Invoice templates
+  const invoiceTemplates = {
+    default: {
+      title: "Professional Services",
+      description: "Default business services template",
+      items: [
+        { id: "def1", description: "Professional services and expert consultation", quantity: 1, price: 8500 },
+        { id: "def2", description: "Strategic project management and oversight", quantity: 1, price: 5500 },
+        { id: "def3", description: "Implementation and delivery of core deliverables", quantity: 1, price: 6500 },
+        { id: "def4", description: "Technical architecture and system design", quantity: 1, price: 7500 },
+        { id: "def5", description: "Custom development and specialized programming", quantity: 1, price: 7000 },
+        { id: "def6", description: "Quality assurance and comprehensive testing", quantity: 1, price: 4500 },
+        { id: "def7", description: "User experience design and optimization", quantity: 1, price: 5000 },
+        { id: "def8", description: "Documentation and knowledge transfer", quantity: 1, price: 3500 },
+        { id: "def9", description: "Performance optimization and system tuning", quantity: 1, price: 4000 },
+        { id: "def10", description: "Post-implementation support and maintenance", quantity: 1, price: 4500 }
+      ],
+      notes: "Thank you for your business! Payment is due within 30 days of receipt. If you have any questions about this invoice, please contact us."
+    },
+    website: {
+      title: "Website Development",
+      description: "Complete website design and development",
+      items: [
+        { id: "web1", description: "Website design and strategic planning", quantity: 1, price: 7500 },
+        { id: "web2", description: "Advanced frontend development with animations", quantity: 1, price: 8500 },
+        { id: "web3", description: "Custom backend integration and APIs", quantity: 1, price: 9500 },
+        { id: "web4", description: "Responsive design across all devices", quantity: 1, price: 5500 },
+        { id: "web5", description: "Content management system customization", quantity: 1, price: 6500 },
+        { id: "web6", description: "E-commerce functionality integration", quantity: 1, price: 7500 },
+        { id: "web7", description: "SEO optimization and structured data", quantity: 1, price: 4500 },
+        { id: "web8", description: "Performance optimization and caching", quantity: 1, price: 5000 },
+        { id: "web9", description: "Security implementation and testing", quantity: 1, price: 6000 },
+        { id: "web10", description: "Analytics setup and user tracking", quantity: 1, price: 4500 }
+      ],
+      notes: "Thank you for your business! This invoice covers all agreed website development services. Payment is due within 30 days of issue. We offer a 30-day support period for any questions or minor adjustments needed after delivery."
+    },
+    marketing: {
+      title: "Marketing Campaign",
+      description: "Strategic marketing and campaign management",
+      items: [
+        { id: "mkt1", description: "Comprehensive marketing strategy development and planning", quantity: 1, price: 8500 },
+        { id: "mkt2", description: "Target audience research and persona development", quantity: 1, price: 5500 },
+        { id: "mkt3", description: "Brand messaging and value proposition refinement", quantity: 1, price: 6000 },
+        { id: "mkt4", description: "Premium content creation and copywriting", quantity: 5, price: 3500 },
+        { id: "mkt5", description: "High-quality visual asset design and production", quantity: 1, price: 6500 },
+        { id: "mkt6", description: "Multi-platform social media campaign setup", quantity: 1, price: 5500 },
+        { id: "mkt7", description: "Search engine optimization and digital presence", quantity: 1, price: 5000 },
+        { id: "mkt8", description: "Email marketing campaign development", quantity: 1, price: 4500 },
+        { id: "mkt9", description: "Marketing automation workflow implementation", quantity: 1, price: 5000 },
+        { id: "mkt10", description: "Advanced analytics and performance tracking", quantity: 1, price: 4500 }
+      ],
+      notes: "Thank you for your business! This invoice covers all marketing services as outlined in our agreement. Payment is due within 21 days. For questions regarding this invoice, please contact our accounting department."
+    },
+    consulting: {
+      title: "Business Consulting",
+      description: "Strategic business consulting and analysis",
+      items: [
+        { id: "con1", description: "Comprehensive initial business analysis and assessment", quantity: 1, price: 7500 },
+        { id: "con2", description: "In-depth market research and competitor analysis", quantity: 1, price: 6500 },
+        { id: "con3", description: "Executive strategy development workshops", quantity: 3, price: 5500 },
+        { id: "con4", description: "Custom business growth roadmap creation", quantity: 1, price: 8000 },
+        { id: "con5", description: "Financial modeling and projection analysis", quantity: 1, price: 7000 },
+        { id: "con6", description: "Operational process optimization planning", quantity: 1, price: 6000 },
+        { id: "con7", description: "Risk assessment and mitigation strategies", quantity: 1, price: 5500 },
+        { id: "con8", description: "Detailed implementation planning and timelines", quantity: 1, price: 6500 },
+        { id: "con9", description: "Comprehensive documentation and reporting", quantity: 1, price: 4500 },
+        { id: "con10", description: "Follow-up review and adjustment sessions", quantity: 2, price: 3500 }
+      ],
+      notes: "Thank you for choosing our consulting services! This invoice covers all consulting services as outlined in our agreement. Payment terms: Net 15 days. Please include the invoice number with your payment."
+    },
+    software: {
+      title: "Software Development",
+      description: "Custom software development and implementation",
+      items: [
+        { id: "sw1", description: "Comprehensive requirements gathering and analysis", quantity: 1, price: 5500 },
+        { id: "sw2", description: "Advanced software architecture and system design", quantity: 1, price: 7500 },
+        { id: "sw3", description: "Core development and feature implementation", quantity: 1, price: 9000 },
+        { id: "sw4", description: "Database design and data migration services", quantity: 1, price: 6500 },
+        { id: "sw5", description: "API development and third-party integrations", quantity: 1, price: 7000 },
+        { id: "sw6", description: "Frontend user interface development", quantity: 1, price: 6000 },
+        { id: "sw7", description: "Comprehensive quality assurance and testing", quantity: 1, price: 5500 },
+        { id: "sw8", description: "Security implementation and vulnerability testing", quantity: 1, price: 6000 },
+        { id: "sw9", description: "Production deployment and system configuration", quantity: 1, price: 4000 },
+        { id: "sw10", description: "Documentation and knowledge transfer sessions", quantity: 1, price: 4500 }
+      ],
+      notes: "Thank you for choosing us for your software development needs! This invoice covers all development services as outlined in our agreement. Payment is due within 30 days of receipt. We provide 60 days of post-deployment support to ensure a smooth transition."
+    }
+  };
+  
+  // Apply template to form
+  const applyTemplate = (templateName: string) => {
+    const template = invoiceTemplates[templateName as keyof typeof invoiceTemplates] || invoiceTemplates.default;
+    setItems(template.items);
+    setFormState(prev => ({
+      ...prev,
+      notes: template.notes
+    }));
+    
+    toast({
+      title: `${template.title} Template Applied`,
+      description: `Applied the ${template.description} template to your invoice`,
+    });
+  };
+
   // Generate invoice details with AI
   const generateAIInvoiceDetails = async () => {
     if (!projectDescription) {
@@ -482,6 +594,32 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
               </AccordionContent>
             </AccordionItem>
           </Accordion>
+          
+          {/* Template Selection */}
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-medium">Invoice Templates</h3>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              {Object.entries(invoiceTemplates).map(([key, template]) => (
+                <Card 
+                  key={key} 
+                  className={`cursor-pointer hover:border-primary transition-all duration-200 ${items.some(item => item.id.startsWith(key.substring(0, 3))) ? 'border-primary' : ''}`}
+                  onClick={() => applyTemplate(key)}
+                >
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-md font-medium">{template.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pb-3">
+                    <p className="text-sm text-muted-foreground">{template.description}</p>
+                    <p className="text-sm mt-1 font-medium">
+                      {template.items.length} items - Total: ${template.items.reduce((sum, item) => sum + (item.price * item.quantity), 0).toLocaleString()}
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
           
           {/* Line Items */}
           <div className="space-y-4">
