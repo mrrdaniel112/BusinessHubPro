@@ -12,7 +12,7 @@ const handleAiError = (error: any, errorSource: string) => {
   return null;
 };
 
-// Smart templates for invoice generation when AI is unavailable
+// Enhanced smart templates with project stories and cost breakdowns
 const invoiceTemplates = {
   // Website Development template
   website: {
@@ -23,6 +23,13 @@ const invoiceTemplates = {
       { description: "Responsive design implementation", quantity: 1, price: 800 },
       { description: "Content management system setup", quantity: 1, price: 600 }
     ],
+    costBreakdown: [
+      { category: "Design & Planning", percentage: 20, description: "Initial conceptualization, wireframing, and UI/UX design" },
+      { category: "Development", percentage: 55, description: "Frontend and backend coding, database implementation" },
+      { category: "Testing & Optimization", percentage: 15, description: "Cross-browser testing, performance tuning, security hardening" },
+      { category: "Project Management", percentage: 10, description: "Communication, coordination, and timeline management" }
+    ],
+    projectStory: "This website development project began with an in-depth discovery phase where we identified your key business goals and target audience needs. Our design team crafted a modern, user-friendly interface that highlights your unique value proposition while ensuring intuitive navigation. The development phase implemented responsive design principles to deliver a seamless experience across all devices. We integrated a powerful content management system that allows you to easily update content without technical expertise. Throughout the project, we conducted rigorous testing to ensure optimal performance, security, and accessibility.",
     notes: "Thank you for your business! This invoice covers all agreed website development services. Payment is due within 30 days of issue. We offer a 30-day support period for any questions or minor adjustments needed after delivery."
   },
   
@@ -34,6 +41,13 @@ const invoiceTemplates = {
       { description: "Implementation planning", quantity: 1, price: 1200 },
       { description: "Documentation and reporting", quantity: 1, price: 600 }
     ],
+    costBreakdown: [
+      { category: "Research & Analysis", percentage: 30, description: "Comprehensive market research and needs assessment" },
+      { category: "Strategy Development", percentage: 40, description: "Custom strategy formulation based on insights and industry best practices" },
+      { category: "Implementation Planning", percentage: 20, description: "Detailed action plans and execution roadmaps" },
+      { category: "Documentation", percentage: 10, description: "Comprehensive reporting and future reference materials" }
+    ],
+    projectStory: "Our consulting engagement began with a thorough analysis of your current business operations, market position, and competitive landscape. We identified key areas of opportunity and potential challenges that needed addressing. Through collaborative strategy sessions, we developed a comprehensive roadmap tailored to your specific goals and resources. The implementation planning phase translated these strategies into actionable steps with clear timelines and accountability measures. Throughout the process, we documented our findings, recommendations, and plans to provide you with a valuable resource for ongoing reference and implementation.",
     notes: "Thank you for choosing our consulting services! This invoice covers all consulting services as outlined in our agreement. Payment terms: Net 15 days. Please include the invoice number with your payment."
   },
   
@@ -45,7 +59,33 @@ const invoiceTemplates = {
       { description: "Social media campaign setup", quantity: 1, price: 900 },
       { description: "Analytics and reporting setup", quantity: 1, price: 600 }
     ],
+    costBreakdown: [
+      { category: "Strategy & Planning", percentage: 35, description: "Comprehensive marketing strategy development aligned with business goals" },
+      { category: "Content Creation", percentage: 25, description: "Professional content development optimized for target audiences" },
+      { category: "Campaign Implementation", percentage: 30, description: "Platform setup, audience targeting, and campaign execution" },
+      { category: "Measurement & Analytics", percentage: 10, description: "Performance tracking system implementation and baseline reporting" }
+    ],
+    projectStory: "This marketing project began with a deep dive into your brand identity, target audience, and business objectives. We crafted a comprehensive marketing strategy designed to maximize your reach and impact across multiple channels. Our creative team developed engaging content that resonates with your audience while maintaining consistent brand voice and messaging. The campaign implementation phase included detailed audience targeting, platform optimization, and testing to ensure maximum effectiveness. We also established robust analytics systems that provide real-time insights into campaign performance, allowing for data-driven optimization and demonstrable ROI tracking.",
     notes: "Thank you for your business! This invoice covers all marketing services as outlined in our agreement. Payment is due within 21 days. For questions regarding this invoice, please contact our accounting department."
+  },
+  
+  // Software Development template
+  software: {
+    items: [
+      { description: "Requirements gathering and analysis", quantity: 1, price: 1600 },
+      { description: "Software architecture and design", quantity: 1, price: 2200 },
+      { description: "Development and implementation", quantity: 1, price: 3500 },
+      { description: "Quality assurance and testing", quantity: 1, price: 1200 },
+      { description: "Deployment and knowledge transfer", quantity: 1, price: 800 }
+    ],
+    costBreakdown: [
+      { category: "Analysis & Planning", percentage: 20, description: "Requirements gathering, specification development, architecture planning" },
+      { category: "Development", percentage: 50, description: "Core development work including coding, integration, and feature implementation" },
+      { category: "Quality Assurance", percentage: 20, description: "Comprehensive testing, bug fixing, and performance optimization" },
+      { category: "Deployment & Training", percentage: 10, description: "System deployment, documentation, and knowledge transfer" }
+    ],
+    projectStory: "This software development project started with thorough requirements gathering sessions to deeply understand your business needs and user expectations. Our architecture team designed a robust, scalable solution that accommodates both current needs and future growth. Throughout the development phase, we maintained close communication, providing regular demos and collecting feedback to ensure alignment with your vision. Our QA team rigorously tested all aspects of the software to ensure reliability, security, and optimal performance. The deployment process included comprehensive knowledge transfer sessions to ensure your team can effectively manage and utilize the new system.",
+    notes: "Thank you for choosing us for your software development needs! This invoice covers all development services as outlined in our agreement. Payment is due within 30 days of receipt. We provide 60 days of post-deployment support to ensure a smooth transition."
   },
   
   // Default template
@@ -55,6 +95,13 @@ const invoiceTemplates = {
       { description: "Project management", quantity: 1, price: 800 },
       { description: "Implementation and delivery", quantity: 1, price: 1200 }
     ],
+    costBreakdown: [
+      { category: "Professional Services", percentage: 45, description: "Core service delivery and implementation" },
+      { category: "Management & Coordination", percentage: 25, description: "Project oversight, communication, and resource management" },
+      { category: "Implementation", percentage: 20, description: "Practical application and system integration" },
+      { category: "Quality Assurance", percentage: 10, description: "Testing, verification, and refinement" }
+    ],
+    projectStory: "This project was executed using our proven methodology to ensure maximum value and efficiency. We began with a thorough assessment of your needs, followed by careful planning to establish clear objectives and timelines. Our team of specialists applied their expertise to deliver high-quality results that meet or exceed industry standards. Throughout the process, we maintained clear communication and collaborative problem-solving to address any challenges that arose. The final deliverables were subject to comprehensive quality assurance to ensure they fully meet your requirements and expectations.",
     notes: "Thank you for your business! Payment is due within 30 days of receipt. If you have any questions about this invoice, please contact us."
   }
 };
@@ -65,12 +112,14 @@ export async function generateInvoiceDetails(
   clientName: string
 ): Promise<{
   items: Array<{ description: string, quantity: number, price: number }>,
-  notes: string
+  notes: string,
+  projectStory?: string,
+  costBreakdown?: Array<{ category: string, percentage: number, description: string }>
 }> {
   try {
     // First attempt to use OpenAI
     const prompt = `
-      Based on the following project description, generate realistic and detailed invoice line items and a professional invoice note.
+      Based on the following project description, generate a rich, detailed invoice that tells a compelling story about the project while providing an intelligent breakdown of costs.
 
       Project Description: ${projectDescription}
       Client Name: ${clientName}
@@ -78,6 +127,8 @@ export async function generateInvoiceDetails(
       Please generate:
       1. Between 3-6 line items with descriptions, quantities, and prices that accurately reflect the work described.
       2. A professional invoice note that includes payment terms, a thank you message, and any relevant delivery or completion details.
+      3. A compelling project story that narrates the journey of this project from conception to delivery, highlighting key challenges overcome and value delivered (approximately 150 words).
+      4. A cost breakdown that intelligently divides the total cost into meaningful categories with percentages and descriptions.
 
       Format your response as JSON in this structure:
       {
@@ -89,35 +140,41 @@ export async function generateInvoiceDetails(
           },
           ...
         ],
-        "notes": "Professional invoice note with payment terms and other information"
+        "notes": "Professional invoice note with payment terms and other information",
+        "projectStory": "Narrative description of the project journey...",
+        "costBreakdown": [
+          {
+            "category": "Category name (e.g., Research & Planning)",
+            "percentage": number (e.g., 20),
+            "description": "Brief explanation of what this category includes"
+          },
+          ...
+        ]
       }
     `;
 
-    try {
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content: "You are an AI expert in business finance and professional invoicing. Generate realistic, detailed invoice items and notes based on project descriptions."
-          },
-          {
-            role: "user",
-            content: prompt
-          }
-        ],
-        response_format: { type: "json_object" },
-      });
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: "You are an AI expert in business finance and professional invoicing. Generate realistic, detailed invoice items and notes based on project descriptions."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      response_format: { type: "json_object" },
+    });
 
-      const result = JSON.parse(response.choices[0].message.content || "{}");
-      return {
-        items: Array.isArray(result.items) ? result.items : [],
-        notes: result.notes || "Thank you for your business. Payment is due within 30 days of receipt."
-      };
-    } catch (aiError) {
-      console.error("Error connecting to OpenAI service:", aiError);
-      // Continue to fallback template system
-    }
+    const result = JSON.parse(response.choices[0].message.content || "{}");
+    return {
+      items: Array.isArray(result.items) ? result.items : [],
+      notes: result.notes || "Thank you for your business. Payment is due within 30 days of receipt.",
+      projectStory: result.projectStory || undefined,
+      costBreakdown: Array.isArray(result.costBreakdown) ? result.costBreakdown : undefined
+    };
   } catch (error) {
     console.error("Error generating invoice details:", error);
     
@@ -151,7 +208,9 @@ export async function generateInvoiceDetails(
     
     return {
       items: template.items,
-      notes: personalizedNotes
+      notes: personalizedNotes,
+      projectStory: template.projectStory || undefined,
+      costBreakdown: template.costBreakdown || undefined
     };
   }
 }
