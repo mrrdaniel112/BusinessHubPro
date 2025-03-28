@@ -12,7 +12,7 @@ import {
 } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
-import { categorizeTransaction, generateBusinessInsights, generateCashFlowForecast, extractReceiptData } from "./openai";
+import { categorizeTransaction, generateBusinessInsights, generateCashFlowForecast, extractReceiptData, generateInvoiceDetails } from "./openai";
 
 // Mock authentication middleware (for demo purposes)
 const requireAuth = (req: Request, res: Response, next: Function) => {
@@ -496,6 +496,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error(error);
       return res.status(500).json({ message: "Failed to fetch dashboard data" });
+    }
+  });
+  
+  // AI Invoice Generation
+  app.post("/api/ai/generate-invoice", requireAuth, async (req, res) => {
+    try {
+      const { projectDescription, clientName } = req.body;
+      
+      if (!projectDescription) {
+        return res.status(400).json({ message: "Project description is required" });
+      }
+      
+      const invoiceDetails = await generateInvoiceDetails(projectDescription, clientName || "Client");
+      return res.json(invoiceDetails);
+    } catch (error) {
+      console.error("Error generating AI invoice:", error);
+      return res.status(500).json({ message: "Failed to generate invoice details" });
     }
   });
 

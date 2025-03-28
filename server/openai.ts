@@ -3,6 +3,71 @@ import OpenAI from "openai";
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "demo_key" });
 
+// Generate AI-powered invoice details
+export async function generateInvoiceDetails(
+  projectDescription: string,
+  clientName: string
+): Promise<{
+  items: Array<{ description: string, quantity: number, price: number }>,
+  notes: string
+}> {
+  try {
+    const prompt = `
+      Based on the following project description, generate realistic and detailed invoice line items and a professional invoice note.
+
+      Project Description: ${projectDescription}
+      Client Name: ${clientName}
+
+      Please generate:
+      1. Between 3-6 line items with descriptions, quantities, and prices that accurately reflect the work described.
+      2. A professional invoice note that includes payment terms, a thank you message, and any relevant delivery or completion details.
+
+      Format your response as JSON in this structure:
+      {
+        "items": [
+          {
+            "description": "Detailed item description",
+            "quantity": number,
+            "price": number (in USD)
+          },
+          ...
+        ],
+        "notes": "Professional invoice note with payment terms and other information"
+      }
+    `;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: "You are an AI expert in business finance and professional invoicing. Generate realistic, detailed invoice items and notes based on project descriptions."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      response_format: { type: "json_object" },
+    });
+
+    const result = JSON.parse(response.choices[0].message.content || "{}");
+    return {
+      items: Array.isArray(result.items) ? result.items : [],
+      notes: result.notes || "Thank you for your business. Payment is due within 30 days of receipt."
+    };
+  } catch (error) {
+    console.error("Error generating invoice details:", error);
+    return {
+      items: [
+        { description: "Professional services", quantity: 1, price: 500 },
+        { description: "Material costs", quantity: 1, price: 250 }
+      ],
+      notes: "Thank you for your business. Payment is due within 30 days of receipt."
+    };
+  }
+}
+
 // Categorize transaction
 export async function categorizeTransaction(description: string): Promise<string> {
   try {

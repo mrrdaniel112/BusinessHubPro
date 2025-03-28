@@ -6,19 +6,21 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Calendar } from "@/components/ui/calendar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Invoice } from "@shared/schema";
+import { EnhancedInvoiceForm } from "@/components/forms/enhanced-invoice-form";
 
 export default function Invoices() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | undefined>(undefined);
   const [issueDateOpen, setIssueDateOpen] = useState(false);
   const [dueDateOpen, setDueDateOpen] = useState(false);
   const [newInvoice, setNewInvoice] = useState({
@@ -202,156 +204,17 @@ export default function Invoices() {
         </div>
       </div>
       
-      {/* Create Invoice Dialog */}
-      <Dialog open={invoiceDialogOpen} onOpenChange={setInvoiceDialogOpen}>
-        <DialogContent className="sm:max-w-[550px]">
-          <DialogHeader>
-            <DialogTitle>Create New Invoice</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="invoiceNumber" className="text-right">
-                Invoice #
-              </Label>
-              <Input
-                id="invoiceNumber"
-                value={newInvoice.invoiceNumber}
-                onChange={(e) => setNewInvoice({ ...newInvoice, invoiceNumber: e.target.value })}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="clientName" className="text-right">
-                Client *
-              </Label>
-              <Input
-                id="clientName"
-                value={newInvoice.clientName}
-                onChange={(e) => setNewInvoice({ ...newInvoice, clientName: e.target.value })}
-                placeholder="Client name"
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="amount" className="text-right">
-                Amount *
-              </Label>
-              <Input
-                id="amount"
-                type="number"
-                value={newInvoice.amount}
-                onChange={(e) => setNewInvoice({ ...newInvoice, amount: e.target.value })}
-                placeholder="0.00"
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="status" className="text-right">
-                Status
-              </Label>
-              <Select 
-                value={newInvoice.status} 
-                onValueChange={(value) => setNewInvoice({ ...newInvoice, status: value })}
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="draft">Draft</SelectItem>
-                  <SelectItem value="sent">Sent</SelectItem>
-                  <SelectItem value="paid">Paid</SelectItem>
-                  <SelectItem value="overdue">Overdue</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="issueDate" className="text-right">
-                Issue Date
-              </Label>
-              <Popover open={issueDateOpen} onOpenChange={setIssueDateOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="col-span-3 justify-start text-left font-normal"
-                  >
-                    <i className="ri-calendar-line mr-2"></i>
-                    {newInvoice.issueDate ? format(newInvoice.issueDate, "PPP") : "Pick a date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={newInvoice.issueDate}
-                    onSelect={(date) => {
-                      setNewInvoice({ ...newInvoice, issueDate: date || new Date() });
-                      setIssueDateOpen(false);
-                    }}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="dueDate" className="text-right">
-                Due Date
-              </Label>
-              <Popover open={dueDateOpen} onOpenChange={setDueDateOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="col-span-3 justify-start text-left font-normal"
-                  >
-                    <i className="ri-calendar-line mr-2"></i>
-                    {newInvoice.dueDate ? format(newInvoice.dueDate, "PPP") : "Pick a date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={newInvoice.dueDate}
-                    onSelect={(date) => {
-                      setNewInvoice({ ...newInvoice, dueDate: date || new Date() });
-                      setDueDateOpen(false);
-                    }}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="notes" className="text-right">
-                Notes
-              </Label>
-              <Input
-                id="notes"
-                value={newInvoice.notes || ""}
-                onChange={(e) => setNewInvoice({ ...newInvoice, notes: e.target.value })}
-                placeholder="Additional notes"
-                className="col-span-3"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => setInvoiceDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleCreateInvoice}
-              disabled={createInvoiceMutation.isPending}
-            >
-              {createInvoiceMutation.isPending ? (
-                <i className="ri-loader-4-line animate-spin mr-1"></i>
-              ) : (
-                <i className="ri-save-line mr-1"></i>
-              )}
-              Save Invoice
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* AI-Enhanced Invoice Form */}
+      <EnhancedInvoiceForm 
+        open={invoiceDialogOpen}
+        onOpenChange={(open) => {
+          setInvoiceDialogOpen(open);
+          if (!open) {
+            setSelectedInvoice(undefined);
+          }
+        }}
+        invoiceToEdit={selectedInvoice}
+      />
 
       {/* Invoice stats */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
@@ -507,9 +370,27 @@ export default function Invoices() {
                           {getStatusBadge(invoice.status)}
                         </td>
                         <td className="py-3 text-right">
-                          <Button variant="ghost" size="sm">
-                            <i className="ri-more-2-fill"></i>
-                          </Button>
+                          <div className="flex justify-end space-x-1">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => {
+                                setSelectedInvoice(invoice);
+                                setInvoiceDialogOpen(true);
+                              }}
+                            >
+                              <i className="ri-edit-line text-primary-500"></i>
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => {
+                                window.open(`#/invoices/preview/${invoice.id}`, '_blank');
+                              }}
+                            >
+                              <i className="ri-eye-line text-gray-500"></i>
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     ))}

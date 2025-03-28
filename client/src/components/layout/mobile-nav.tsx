@@ -17,9 +17,9 @@ const MobileNavItem = ({ href, icon, label, active, onClick }: {
   onClick: () => void;
 }) => (
   <Link href={href}>
-    <a
+    <div
       className={cn(
-        "flex items-center px-2 py-2 text-base font-medium rounded-md",
+        "flex items-center px-2 py-2 text-base font-medium rounded-md cursor-pointer",
         active
           ? "text-white bg-primary-600"
           : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
@@ -28,7 +28,7 @@ const MobileNavItem = ({ href, icon, label, active, onClick }: {
     >
       <i className={cn(`ri-${icon} mr-3 text-lg`, active ? "" : "text-gray-400")}></i>
       {label}
-    </a>
+    </div>
   </Link>
 );
 
