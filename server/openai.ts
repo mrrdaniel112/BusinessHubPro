@@ -1,13 +1,29 @@
 import OpenAI from "openai";
 
+// Check if OpenAI API key is configured
+function isOpenAIConfigured(): boolean {
+  return !!process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== "demo_key";
+}
+
+// Initialize OpenAI client
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "demo_key" });
+const openai = new OpenAI({ 
+  apiKey: process.env.OPENAI_API_KEY || "demo_key", 
+  maxRetries: 3, // Retry API calls up to 3 times with exponential backoff
+  timeout: 30000, // 30 second timeout
+});
 
 // Handle AI errors gracefully with fallback responses
 const handleAiError = (error: any, errorSource: string) => {
-  console.error(`Error in ${errorSource}:`, error);
+  // Detailed error logging
   if (error.status === 429) {
-    console.error("OpenAI rate limit or quota exceeded");
+    console.error(`Error in ${errorSource}: OpenAI rate limit or quota exceeded`);
+  } else if (error.status === 401) {
+    console.error(`Error in ${errorSource}: Authentication error - Invalid API key`);
+  } else if (error.status === 500) {
+    console.error(`Error in ${errorSource}: OpenAI server error`);
+  } else {
+    console.error(`Error in ${errorSource}:`, error.message || error);
   }
   return null;
 };
@@ -117,36 +133,45 @@ export async function generateInvoiceDetails(
   costBreakdown?: Array<{ category: string, percentage: number, description: string }>
 }> {
   try {
-    // First attempt to use OpenAI
+    // First check if OpenAI API is properly configured
+    if (!isOpenAIConfigured()) {
+      console.log('OpenAI API key not configured properly, using template fallback');
+      throw new Error('OpenAI API key not configured');
+    }
+    
+    // Use OpenAI to generate custom invoice content
     const prompt = `
-      Based on the following project description, generate a rich, detailed invoice that tells a compelling story about the project while providing an intelligent breakdown of costs.
+      Based on the following project description, generate a highly detailed and professional invoice that tells a compelling story about the project while providing an intelligent breakdown of costs. BE VERY SPECIFIC and directly address the exact details provided.
 
       Project Description: ${projectDescription}
       Client Name: ${clientName}
 
       Please generate:
-      1. Between 3-6 line items with descriptions, quantities, and prices that accurately reflect the work described.
-      2. A professional invoice note that includes payment terms, a thank you message, and any relevant delivery or completion details.
-      3. A compelling project story that narrates the journey of this project from conception to delivery, highlighting key challenges overcome and value delivered (approximately 150 words).
-      4. A cost breakdown that intelligently divides the total cost into meaningful categories with percentages and descriptions.
+      1. Between 3-6 line items with DETAILED descriptions that precisely match the project described. Each description should be very specific (not generic) and use at least 6-10 words.
+      2. Set realistic prices based on industry standards - each line item should have a specific price that reflects the complexity and scope of work.
+      3. A professional invoice note that includes payment terms (30 days), a thank you message to ${clientName} specifically, and relevant completion details.
+      4. A compelling project story (150-200 words) that narrates the exact journey of THIS specific project from start to finish. Include specific challenges faced and how they were overcome, specific deliverables created, and clear value provided to ${clientName}.
+      5. A detailed cost breakdown that divides the total cost into 4-5 meaningful categories with accurate percentages and specific descriptions of what each category includes.
+
+      IMPORTANT: Be extremely specific to the project described. Do NOT use generic language or templates. Read the project description carefully and ensure every aspect of your response directly relates to the specific work mentioned.
 
       Format your response as JSON in this structure:
       {
         "items": [
           {
-            "description": "Detailed item description",
+            "description": "Very detailed and specific item description that clearly relates to the project",
             "quantity": number,
-            "price": number (in USD)
+            "price": number (realistic USD amount)
           },
           ...
         ],
-        "notes": "Professional invoice note with payment terms and other information",
-        "projectStory": "Narrative description of the project journey...",
+        "notes": "Professional invoice note specifically addressing ${clientName} with payment terms and other information",
+        "projectStory": "Detailed narrative description of THIS specific project journey...",
         "costBreakdown": [
           {
-            "category": "Category name (e.g., Research & Planning)",
-            "percentage": number (e.g., 20),
-            "description": "Brief explanation of what this category includes"
+            "category": "Specific category name relevant to this project",
+            "percentage": number (must add up to 100),
+            "description": "Detailed explanation of exactly what this category includes for THIS project"
           },
           ...
         ]
@@ -158,7 +183,7 @@ export async function generateInvoiceDetails(
       messages: [
         {
           role: "system",
-          content: "You are an AI expert in business finance and professional invoicing. Generate realistic, detailed invoice items and notes based on project descriptions."
+          content: "You are an AI expert in business finance and professional invoicing with decades of experience. Your specialty is creating highly customized, accurate, and detailed invoices that precisely match the specific project described. Generate realistic, detailed invoice items and notes based on project descriptions. NEVER use generic descriptions or placeholder text. Each output MUST directly relate to the specific details mentioned in the project description. Your invoices should be professional, detailed, and personalized to the exact client and project."
         },
         {
           role: "user",
@@ -166,6 +191,7 @@ export async function generateInvoiceDetails(
         }
       ],
       response_format: { type: "json_object" },
+      temperature: 0.7, // Slightly creative but still focused
     });
 
     const result = JSON.parse(response.choices[0].message.content || "{}");
@@ -218,6 +244,29 @@ export async function generateInvoiceDetails(
 // Categorize transaction
 export async function categorizeTransaction(description: string): Promise<string> {
   try {
+    // Check if OpenAI API is properly configured
+    if (!isOpenAIConfigured()) {
+      console.log('OpenAI API key not configured properly, using fallback categorization');
+      
+      // Use keyword matching as fallback
+      const lowerDesc = description.toLowerCase();
+      if (lowerDesc.includes('sale') || lowerDesc.includes('revenue') || lowerDesc.includes('income')) {
+        return "Sales";
+      } else if (lowerDesc.includes('software') || lowerDesc.includes('subscription')) {
+        return "Software";
+      } else if (lowerDesc.includes('marketing') || lowerDesc.includes('advertis')) {
+        return "Marketing";
+      } else if (lowerDesc.includes('travel') || lowerDesc.includes('flight') || lowerDesc.includes('hotel')) {
+        return "Travel";
+      } else if (lowerDesc.includes('food') || lowerDesc.includes('restaurant') || lowerDesc.includes('meal')) {
+        return "Food";
+      } else if (lowerDesc.includes('office') || lowerDesc.includes('supplies')) {
+        return "Office";
+      } else {
+        return "Other";
+      }
+    }
+    
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
@@ -247,6 +296,28 @@ export async function generateBusinessInsights(
   inventoryItems: any[]
 ): Promise<Array<{type: string, title: string, content: string}>> {
   try {
+    // Check if OpenAI API is properly configured
+    if (!isOpenAIConfigured()) {
+      console.log('OpenAI API key not configured properly, using fallback business insights');
+      return [
+        {
+          type: "cash_flow",
+          title: "Cash Flow Optimization",
+          content: "Consider following up on your pending invoices to improve cash flow."
+        },
+        {
+          type: "revenue",
+          title: "Revenue Opportunity",
+          content: "Analyze your most profitable clients and consider offering additional services."
+        },
+        {
+          type: "expense",
+          title: "Expense Alert",
+          content: "Review your recurring subscription costs to identify potential savings."
+        }
+      ];
+    }
+    
     const prompt = `
       Generate 3 business insights based on the following data:
       

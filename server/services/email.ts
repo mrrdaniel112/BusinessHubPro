@@ -1,15 +1,34 @@
 import nodemailer from 'nodemailer';
 
-// Create a transporter object
-const transporter = nodemailer.createTransport({
-  host: 'smtp.ethereal.email', // For development/testing
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER || 'demo_user@example.com',
-    pass: process.env.EMAIL_PASSWORD || 'demo_password'
+// Helper function to create transporter
+function createTransporter() {
+  // Check for Gmail configuration
+  if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+    console.log('Using Gmail SMTP configuration');
+    return nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_APP_PASSWORD // This should be an app password, not the regular Gmail password
+      }
+    });
   }
-});
+  
+  // Fallback to Ethereal for testing/development
+  console.log('Using Ethereal test mail configuration');
+  return nodemailer.createTransport({
+    host: 'smtp.ethereal.email',
+    port: 587,
+    secure: false,
+    auth: {
+      user: process.env.EMAIL_USER || 'demo_user@example.com',
+      pass: process.env.EMAIL_PASSWORD || 'demo_password'
+    }
+  });
+}
+
+// Create the transporter object
+const transporter = createTransporter();
 
 /**
  * Send an invoice email
@@ -32,6 +51,16 @@ export async function sendInvoiceEmail(
   items?: Array<{ description: string, quantity: number, price: number }>
 ): Promise<{ success: boolean, info?: any, error?: any }> {
   try {
+    // Check if email configuration is available
+    if (!process.env.GMAIL_USER && !process.env.GMAIL_APP_PASSWORD && 
+        !process.env.EMAIL_USER && !process.env.EMAIL_PASSWORD) {
+      console.error('Email configuration missing. Set GMAIL_USER and GMAIL_APP_PASSWORD or EMAIL_USER and EMAIL_PASSWORD.');
+      return { 
+        success: false, 
+        error: new Error('Email configuration missing. Please configure email credentials in the environment.') 
+      };
+    }
+    
     // Format dates if needed
     const formattedIssueDate = issueDate instanceof Date 
       ? issueDate.toLocaleDateString()
@@ -53,14 +82,20 @@ export async function sendInvoiceEmail(
             <th align="right">Price</th>
             <th align="right">Total</th>
           </tr>
-          ${items.map(item => `
-            <tr>
-              <td>${item.description}</td>
-              <td align="right">${item.quantity}</td>
-              <td align="right">$${item.price.toFixed(2)}</td>
-              <td align="right">$${(item.quantity * item.price).toFixed(2)}</td>
-            </tr>
-          `).join('')}
+          ${items.map(item => {
+            // Safe handling of values
+            const price = typeof item.price === 'number' ? item.price : 0;
+            const quantity = typeof item.quantity === 'number' ? item.quantity : 0;
+            
+            return `
+              <tr>
+                <td>${item.description || 'Item'}</td>
+                <td align="right">${quantity}</td>
+                <td align="right">$${price.toFixed(2)}</td>
+                <td align="right">$${(quantity * price).toFixed(2)}</td>
+              </tr>
+            `;
+          }).join('')}
         </table>
       `;
     }
@@ -79,6 +114,15 @@ export async function sendInvoiceEmail(
         </div>
       </div>
     `;
+    
+    // Validate email address
+    if (!to || !to.includes('@')) {
+      console.error('Invalid email address:', to);
+      return { 
+        success: false, 
+        error: new Error('Invalid recipient email address') 
+      };
+    }
     
     // Send the email
     const info = await transporter.sendMail({
