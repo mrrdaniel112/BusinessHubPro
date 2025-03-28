@@ -208,10 +208,19 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
   
   // Update amount when items change
   useEffect(() => {
-    const total = calculateTotal();
+    // Force the recalculation of total after items are updated
+    const subtotal = calculateSubtotal();
+    const tax = calculateTax();
+    const total = subtotal + tax;
+    
+    // Format with 2 decimal places
+    const formattedTotal = total.toFixed(2);
+    
+    console.log("Calculated total:", { subtotal, tax, total, formattedTotal });
+    
     setFormState(prev => ({
       ...prev,
-      amount: total.toFixed(2),
+      amount: formattedTotal,
       items: JSON.stringify(items)
     }));
   }, [items, includeTax, taxRate]);

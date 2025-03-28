@@ -88,12 +88,46 @@ export default function Invoices() {
     }
   });
   
+  const updateInvoiceStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: number, status: string }) => {
+      try {
+        const res = await apiRequest('PATCH', `/api/invoices/${id}`, { status });
+        return await res.json();
+      } catch (error) {
+        console.error("Error updating invoice status:", error);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
+      toast({
+        title: "Status Updated",
+        description: "Invoice status has been updated successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Update Failed",
+        description: "Could not update the invoice status. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
   const sendRemindersMutation = useMutation({
-    mutationFn: async () => {
-      // In a real app, this would send reminders via email
-      // For demo, we'll just mark it as completed
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      return true;
+    mutationFn: async (invoiceIds: number[]) => {
+      // In a real app, this would send reminders via email to specific invoices
+      // For this implementation, we'll update unpaid invoices to "sent" status
+      try {
+        const promises = invoiceIds.map(id => 
+          updateInvoiceStatusMutation.mutateAsync({ id, status: 'sent' })
+        );
+        await Promise.all(promises);
+        return true;
+      } catch (error) {
+        console.error("Error sending reminders:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
       toast({
@@ -287,7 +321,19 @@ export default function Invoices() {
           </Button>
           <Button 
             variant="outline" 
-            onClick={() => sendRemindersMutation.mutate()}
+            onClick={() => {
+              // Get all draft invoices to send reminders
+              const draftInvoices = invoices.filter(inv => inv.status === 'draft');
+              if (draftInvoices.length > 0) {
+                const invoiceIds = draftInvoices.map(inv => inv.id);
+                sendRemindersMutation.mutate(invoiceIds);
+              } else {
+                toast({
+                  title: "No Draft Invoices",
+                  description: "There are no draft invoices to send reminders for.",
+                });
+              }
+            }}
             disabled={sendRemindersMutation.isPending}
           >
             {sendRemindersMutation.isPending ? (
@@ -367,7 +413,49 @@ export default function Invoices() {
                           {formatCurrency(invoice.amount)}
                         </td>
                         <td className="py-3">
-                          {getStatusBadge(invoice.status)}
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-auto p-0">
+                                {getStatusBadge(invoice.status)}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-56 p-2">
+                              <div className="grid gap-2">
+                                <Button 
+                                  variant="ghost" 
+                                  className="justify-start font-normal h-auto py-1.5"
+                                  onClick={() => updateInvoiceStatusMutation.mutate({ id: invoice.id, status: 'draft' })}
+                                >
+                                  <Badge variant="outline" className="mr-2">Draft</Badge>
+                                  <span>Mark as Draft</span>
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  className="justify-start font-normal h-auto py-1.5"
+                                  onClick={() => updateInvoiceStatusMutation.mutate({ id: invoice.id, status: 'sent' })}
+                                >
+                                  <Badge variant="secondary" className="mr-2">Sent</Badge>
+                                  <span>Mark as Sent</span>
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  className="justify-start font-normal h-auto py-1.5"
+                                  onClick={() => updateInvoiceStatusMutation.mutate({ id: invoice.id, status: 'paid' })}
+                                >
+                                  <Badge className="bg-green-100 text-green-800 hover:bg-green-100 mr-2">Paid</Badge>
+                                  <span>Mark as Paid</span>
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  className="justify-start font-normal h-auto py-1.5"
+                                  onClick={() => updateInvoiceStatusMutation.mutate({ id: invoice.id, status: 'overdue' })}
+                                >
+                                  <Badge variant="destructive" className="mr-2">Overdue</Badge>
+                                  <span>Mark as Overdue</span>
+                                </Button>
+                              </div>
+                            </PopoverContent>
+                          </Popover>
                         </td>
                         <td className="py-3 text-right">
                           <div className="flex justify-end space-x-1">
