@@ -34,11 +34,16 @@ const invoiceTemplates = {
   // Website Development template
   website: {
     items: [
-      { description: "Website design and planning", quantity: 1, price: 4500 },
-      { description: "Frontend development", quantity: 1, price: 6500 },
-      { description: "Backend integration", quantity: 1, price: 8500 },
-      { description: "Responsive design implementation", quantity: 1, price: 3500 },
-      { description: "Content management system setup", quantity: 1, price: 2500 }
+      { description: "Website design and strategic planning", quantity: 1, price: 7500 },
+      { description: "Advanced frontend development with animations", quantity: 1, price: 8500 },
+      { description: "Custom backend integration and APIs", quantity: 1, price: 9500 },
+      { description: "Responsive design across all devices", quantity: 1, price: 5500 },
+      { description: "Content management system customization", quantity: 1, price: 6500 },
+      { description: "E-commerce functionality integration", quantity: 1, price: 7500 },
+      { description: "SEO optimization and structured data", quantity: 1, price: 4500 },
+      { description: "Performance optimization and caching", quantity: 1, price: 5000 },
+      { description: "Security implementation and testing", quantity: 1, price: 6000 },
+      { description: "Analytics setup and user tracking", quantity: 1, price: 4500 }
     ],
     costBreakdown: [
       { category: "Design & Planning", percentage: 20, description: "Initial conceptualization, wireframing, and UI/UX design" },
@@ -53,10 +58,16 @@ const invoiceTemplates = {
   // Consulting template
   consulting: {
     items: [
-      { description: "Initial business analysis", quantity: 1, price: 5500 },
-      { description: "Strategy development sessions", quantity: 3, price: 3500 },
-      { description: "Implementation planning", quantity: 1, price: 5000 },
-      { description: "Documentation and reporting", quantity: 1, price: 3500 }
+      { description: "Comprehensive initial business analysis and assessment", quantity: 1, price: 7500 },
+      { description: "In-depth market research and competitor analysis", quantity: 1, price: 6500 },
+      { description: "Executive strategy development workshops", quantity: 3, price: 5500 },
+      { description: "Custom business growth roadmap creation", quantity: 1, price: 8000 },
+      { description: "Financial modeling and projection analysis", quantity: 1, price: 7000 },
+      { description: "Operational process optimization planning", quantity: 1, price: 6000 },
+      { description: "Risk assessment and mitigation strategies", quantity: 1, price: 5500 },
+      { description: "Detailed implementation planning and timelines", quantity: 1, price: 6500 },
+      { description: "Comprehensive documentation and reporting", quantity: 1, price: 4500 },
+      { description: "Follow-up review and adjustment sessions", quantity: 2, price: 3500 }
     ],
     costBreakdown: [
       { category: "Research & Analysis", percentage: 30, description: "Comprehensive market research and needs assessment" },
@@ -71,10 +82,16 @@ const invoiceTemplates = {
   // Marketing template
   marketing: {
     items: [
-      { description: "Marketing strategy development", quantity: 1, price: 7500 },
-      { description: "Content creation", quantity: 5, price: 1200 },
-      { description: "Social media campaign setup", quantity: 1, price: 4500 },
-      { description: "Analytics and reporting setup", quantity: 1, price: 3000 }
+      { description: "Comprehensive marketing strategy development and planning", quantity: 1, price: 8500 },
+      { description: "Target audience research and persona development", quantity: 1, price: 5500 },
+      { description: "Brand messaging and value proposition refinement", quantity: 1, price: 6000 },
+      { description: "Premium content creation and copywriting", quantity: 5, price: 3500 },
+      { description: "High-quality visual asset design and production", quantity: 1, price: 6500 },
+      { description: "Multi-platform social media campaign setup", quantity: 1, price: 5500 },
+      { description: "Search engine optimization and digital presence", quantity: 1, price: 5000 },
+      { description: "Email marketing campaign development", quantity: 1, price: 4500 },
+      { description: "Marketing automation workflow implementation", quantity: 1, price: 5000 },
+      { description: "Advanced analytics and performance tracking", quantity: 1, price: 4500 }
     ],
     costBreakdown: [
       { category: "Strategy & Planning", percentage: 35, description: "Comprehensive marketing strategy development aligned with business goals" },
@@ -89,11 +106,16 @@ const invoiceTemplates = {
   // Software Development template
   software: {
     items: [
-      { description: "Requirements gathering and analysis", quantity: 1, price: 3500 },
-      { description: "Software architecture and design", quantity: 1, price: 4500 },
-      { description: "Development and implementation", quantity: 1, price: 8000 },
-      { description: "Quality assurance and testing", quantity: 1, price: 3000 },
-      { description: "Deployment and knowledge transfer", quantity: 1, price: 2000 }
+      { description: "Comprehensive requirements gathering and analysis", quantity: 1, price: 5500 },
+      { description: "Advanced software architecture and system design", quantity: 1, price: 7500 },
+      { description: "Core development and feature implementation", quantity: 1, price: 9000 },
+      { description: "Database design and data migration services", quantity: 1, price: 6500 },
+      { description: "API development and third-party integrations", quantity: 1, price: 7000 },
+      { description: "Frontend user interface development", quantity: 1, price: 6000 },
+      { description: "Comprehensive quality assurance and testing", quantity: 1, price: 5500 },
+      { description: "Security implementation and vulnerability testing", quantity: 1, price: 6000 },
+      { description: "Production deployment and system configuration", quantity: 1, price: 4000 },
+      { description: "Documentation and knowledge transfer sessions", quantity: 1, price: 4500 }
     ],
     costBreakdown: [
       { category: "Analysis & Planning", percentage: 20, description: "Requirements gathering, specification development, architecture planning" },
@@ -108,9 +130,16 @@ const invoiceTemplates = {
   // Default template
   default: {
     items: [
-      { description: "Professional services", quantity: 1, price: 4500 },
-      { description: "Project management", quantity: 1, price: 2500 },
-      { description: "Implementation and delivery", quantity: 1, price: 3000 }
+      { description: "Professional services and expert consultation", quantity: 1, price: 8500 },
+      { description: "Strategic project management and oversight", quantity: 1, price: 5500 },
+      { description: "Implementation and delivery of core deliverables", quantity: 1, price: 6500 },
+      { description: "Technical architecture and system design", quantity: 1, price: 7500 },
+      { description: "Custom development and specialized programming", quantity: 1, price: 7000 },
+      { description: "Quality assurance and comprehensive testing", quantity: 1, price: 4500 },
+      { description: "User experience design and optimization", quantity: 1, price: 5000 },
+      { description: "Documentation and knowledge transfer", quantity: 1, price: 3500 },
+      { description: "Performance optimization and system tuning", quantity: 1, price: 4000 },
+      { description: "Post-implementation support and maintenance", quantity: 1, price: 4500 }
     ],
     costBreakdown: [
       { category: "Professional Services", percentage: 45, description: "Core service delivery and implementation" },
