@@ -189,13 +189,19 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
     }
   });
   
-  // Calculate totals
+  // Calculate totals with safe handling for invalid values
   const calculateSubtotal = () => {
-    return items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+    return items.reduce((sum, item) => {
+      const quantity = typeof item.quantity === 'number' ? item.quantity : 0;
+      const price = typeof item.price === 'number' ? item.price : 0;
+      return sum + (quantity * price);
+    }, 0);
   };
   
   const calculateTax = () => {
-    return includeTax ? (calculateSubtotal() * (taxRate / 100)) : 0;
+    const subtotal = calculateSubtotal();
+    const rate = typeof taxRate === 'number' ? taxRate : 0;
+    return includeTax ? (subtotal * (rate / 100)) : 0;
   };
   
   const calculateTotal = () => {
@@ -491,8 +497,8 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
                   <TableRow key={item.id}>
                     <TableCell>{item.description}</TableCell>
                     <TableCell className="text-right">{item.quantity}</TableCell>
-                    <TableCell className="text-right">${item.price.toFixed(2)}</TableCell>
-                    <TableCell className="text-right">${(item.quantity * item.price).toFixed(2)}</TableCell>
+                    <TableCell className="text-right">${typeof item.price === 'number' ? item.price.toFixed(2) : '0.00'}</TableCell>
+                    <TableCell className="text-right">${typeof item.price === 'number' && typeof item.quantity === 'number' ? (item.quantity * item.price).toFixed(2) : '0.00'}</TableCell>
                     <TableCell className="text-right">
                       <Button 
                         variant="ghost" 
@@ -532,7 +538,7 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
                     />
                   </TableCell>
                   <TableCell className="text-right">
-                    ${(newItem.quantity * newItem.price).toFixed(2)}
+                    ${typeof newItem.quantity === 'number' && typeof newItem.price === 'number' ? (newItem.quantity * newItem.price).toFixed(2) : '0.00'}
                   </TableCell>
                   <TableCell className="text-right">
                     <Button 
