@@ -84,35 +84,26 @@ export class MemStorage implements IStorage {
     this.invoiceCurrentId = 1;
     this.aiInsightCurrentId = 1;
     
-    // Add demo user
-    const demoUser: User = {
-      id: this.userCurrentId++,
-      username: "demo",
-      password: "password",
-      fullName: "John Smith",
-      email: "john.smith@example.com"
-    };
-    this.users.set(demoUser.id, demoUser);
-    
-    // Add demo data
-    this.seedDemoData(demoUser.id);
+    // No demo user or pre-seeded data - each user will get their own data when created
   }
 
   private seedDemoData(userId: number) {
-    // Add some transactions
+    const currentUserName = `User-${userId}`;
+    
+    // Create sample transactions based on user ID to ensure different data for each user
     const transactions: InsertTransaction[] = [
       {
         userId,
         type: "income",
-        amount: "5400",
-        description: "Client Payment - ABC Corp",
+        amount: `${4000 + (userId * 100)}`,
+        description: `Client Payment - ${currentUserName} Corp`,
         category: "Sales",
         date: new Date(2023, 4, 4, 10, 23)
       },
       {
         userId,
         type: "expense",
-        amount: "245.50",
+        amount: `${210 + (userId * 5)}.50`,
         description: "Office Supplies",
         category: "Office",
         date: new Date(2023, 4, 3, 15, 45)
@@ -128,8 +119,8 @@ export class MemStorage implements IStorage {
       {
         userId,
         type: "income",
-        amount: "3200",
-        description: "Client Payment - XYZ Ltd",
+        amount: `${2500 + (userId * 150)}`,
+        description: `Client Payment - ${currentUserName} Ltd`,
         category: "Sales",
         date: new Date(2023, 3, 29, 14, 30)
       }
@@ -138,7 +129,8 @@ export class MemStorage implements IStorage {
     transactions.forEach(t => {
       const transaction: Transaction = { 
         ...t, 
-        id: this.transactionCurrentId++ 
+        id: this.transactionCurrentId++,
+        date: t.date || new Date() // Ensure date is not undefined
       };
       this.transactions.set(transaction.id, transaction);
     });
@@ -156,7 +148,7 @@ export class MemStorage implements IStorage {
       },
       {
         userId,
-        name: "Office Chair",
+        name: `${currentUserName}'s Office Chair`,
         description: "Ergonomic office chair",
         quantity: 10,
         price: "349.99",
@@ -176,8 +168,14 @@ export class MemStorage implements IStorage {
     
     inventory.forEach(i => {
       const item: InventoryItem = { 
-        ...i, 
         id: this.inventoryItemCurrentId++,
+        userId: i.userId,
+        name: i.name,
+        description: i.description || null,
+        category: i.category || null,
+        quantity: i.quantity,
+        price: i.price,
+        lowStockThreshold: i.lowStockThreshold || null,
         createdAt: new Date()
       };
       this.inventoryItems.set(item.id, item);
@@ -187,40 +185,40 @@ export class MemStorage implements IStorage {
     const invoices: InsertInvoice[] = [
       {
         userId,
-        invoiceNumber: "INV-2023-054",
-        clientName: "ABC Corp",
-        amount: "5400.00",
+        invoiceNumber: `INV-${userId}-001`,
+        clientName: `${currentUserName} Corp`,
+        amount: `${4000 + (userId * 100)}.00`,
         issueDate: new Date(2023, 4, 1),
         dueDate: new Date(2023, 4, 15),
         status: "paid",
         items: JSON.stringify([
-          { description: "Consulting Services", amount: 5400 }
+          { description: "Consulting Services", amount: 4000 + (userId * 100) }
         ]),
         notes: "Payment received on time"
       },
       {
         userId,
-        invoiceNumber: "INV-2023-053",
-        clientName: "XYZ Ltd",
-        amount: "3200.00",
+        invoiceNumber: `INV-${userId}-002`,
+        clientName: `${currentUserName} Ltd`,
+        amount: `${2500 + (userId * 150)}.00`,
         issueDate: new Date(2023, 4, 1),
         dueDate: new Date(2023, 4, 15),
         status: "pending",
         items: JSON.stringify([
-          { description: "Web Development", amount: 3200 }
+          { description: "Web Development", amount: 2500 + (userId * 150) }
         ]),
         notes: "Follow up on payment method"
       },
       {
         userId,
-        invoiceNumber: "INV-2023-052",
-        clientName: "123 Industries",
-        amount: "2750.00",
+        invoiceNumber: `INV-${userId}-003`,
+        clientName: `${currentUserName} Industries`,
+        amount: `${2200 + (userId * 50)}.00`,
         issueDate: new Date(2023, 3, 15),
         dueDate: new Date(2023, 3, 30),
         status: "overdue",
         items: JSON.stringify([
-          { description: "Design Services", amount: 2750 }
+          { description: "Design Services", amount: 2200 + (userId * 50) }
         ]),
         notes: "Need to call about late payment"
       }
@@ -230,7 +228,8 @@ export class MemStorage implements IStorage {
       const invoice: Invoice = { 
         ...i, 
         id: this.invoiceCurrentId++,
-        createdAt: new Date()
+        createdAt: new Date(),
+        notes: i.notes || null
       };
       this.invoices.set(invoice.id, invoice);
     });
@@ -239,7 +238,7 @@ export class MemStorage implements IStorage {
     const contracts: InsertContract[] = [
       {
         userId,
-        clientName: "ABC Corp",
+        clientName: `${currentUserName} Corp`,
         title: "Consulting Agreement",
         content: "This is a consulting agreement contract...",
         status: "signed",
@@ -247,18 +246,24 @@ export class MemStorage implements IStorage {
       },
       {
         userId,
-        clientName: "XYZ Ltd",
+        clientName: `${currentUserName} Ltd`,
         title: "Web Development Contract",
         content: "This is a web development contract...",
-        status: "sent"
+        status: "sent",
+        expiryDate: null
       }
     ];
     
     contracts.forEach(c => {
       const contract: Contract = { 
-        ...c, 
         id: this.contractCurrentId++,
-        createdAt: new Date()
+        status: c.status,
+        userId: c.userId,
+        createdAt: new Date(),
+        clientName: c.clientName,
+        title: c.title,
+        content: c.content,
+        expiryDate: c.expiryDate || null
       };
       this.contracts.set(contract.id, contract);
     });
@@ -269,13 +274,13 @@ export class MemStorage implements IStorage {
         userId,
         type: "cash_flow",
         title: "Cash Flow Optimization",
-        content: "Consider sending payment reminders for 2 overdue invoices totaling $3,450 to improve short-term cash flow."
+        content: `Consider sending payment reminders for overdue invoices from ${currentUserName} Industries to improve short-term cash flow.`
       },
       {
         userId,
         type: "revenue",
         title: "Revenue Opportunity",
-        content: "Client ABC Corp's spending is up 15% this quarter. Consider offering a premium service package."
+        content: `Client ${currentUserName} Corp's spending is up 15% this quarter. Consider offering a premium service package.`
       },
       {
         userId,
@@ -311,6 +316,10 @@ export class MemStorage implements IStorage {
     const id = this.userCurrentId++;
     const user: User = { ...insertUser, id };
     this.users.set(id, user);
+    
+    // Generate unique sample data for each new user
+    this.seedDemoData(id);
+    
     return user;
   }
 
@@ -357,7 +366,17 @@ export class MemStorage implements IStorage {
 
   async createInventoryItem(insertItem: InsertInventoryItem): Promise<InventoryItem> {
     const id = this.inventoryItemCurrentId++;
-    const item: InventoryItem = { ...insertItem, id, createdAt: new Date() };
+    const item: InventoryItem = { 
+      id,
+      userId: insertItem.userId,
+      name: insertItem.name,
+      description: insertItem.description || null,
+      category: insertItem.category || null,
+      quantity: insertItem.quantity,
+      price: insertItem.price,
+      lowStockThreshold: insertItem.lowStockThreshold || null,
+      createdAt: new Date()
+    };
     this.inventoryItems.set(id, item);
     return item;
   }
@@ -384,7 +403,16 @@ export class MemStorage implements IStorage {
 
   async createContract(insertContract: InsertContract): Promise<Contract> {
     const id = this.contractCurrentId++;
-    const contract: Contract = { ...insertContract, id, createdAt: new Date() };
+    const contract: Contract = { 
+      id,
+      userId: insertContract.userId,
+      clientName: insertContract.clientName,
+      title: insertContract.title,
+      content: insertContract.content,
+      status: insertContract.status,
+      expiryDate: insertContract.expiryDate || null,
+      createdAt: new Date()
+    };
     this.contracts.set(id, contract);
     return contract;
   }
@@ -393,7 +421,30 @@ export class MemStorage implements IStorage {
     const existingContract = this.contracts.get(id);
     if (!existingContract) return undefined;
     
-    const updatedContract = { ...existingContract, ...contractUpdate };
+    // Process update fields with proper null handling
+    const processedUpdate: Partial<Contract> = {};
+    
+    if (contractUpdate.status !== undefined) {
+      processedUpdate.status = contractUpdate.status;
+    }
+    
+    if (contractUpdate.clientName !== undefined) {
+      processedUpdate.clientName = contractUpdate.clientName;
+    }
+    
+    if (contractUpdate.title !== undefined) {
+      processedUpdate.title = contractUpdate.title;
+    }
+    
+    if (contractUpdate.content !== undefined) {
+      processedUpdate.content = contractUpdate.content;
+    }
+    
+    if (contractUpdate.expiryDate !== undefined) {
+      processedUpdate.expiryDate = contractUpdate.expiryDate || null;
+    }
+    
+    const updatedContract = { ...existingContract, ...processedUpdate };
     this.contracts.set(id, updatedContract);
     return updatedContract;
   }
@@ -411,7 +462,17 @@ export class MemStorage implements IStorage {
 
   async createReceipt(insertReceipt: InsertReceipt): Promise<Receipt> {
     const id = this.receiptCurrentId++;
-    const receipt: Receipt = { ...insertReceipt, id, createdAt: new Date() };
+    const receipt: Receipt = { 
+      id,
+      userId: insertReceipt.userId,
+      vendor: insertReceipt.vendor, 
+      amount: insertReceipt.amount,
+      date: insertReceipt.date,
+      category: insertReceipt.category,
+      notes: insertReceipt.notes || null,
+      imageData: insertReceipt.imageData || null,
+      createdAt: new Date()
+    };
     this.receipts.set(id, receipt);
     return receipt;
   }
