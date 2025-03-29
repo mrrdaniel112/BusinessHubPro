@@ -1,14 +1,53 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Receipt, Transaction } from "@shared/schema";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 
 export default function Expenses() {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("expenses");
+  const [addExpenseOpen, setAddExpenseOpen] = useState(false);
+  const [scanReceiptOpen, setScanReceiptOpen] = useState(false);
+
+  // Form states
+  const [expenseForm, setExpenseForm] = useState({
+    description: "",
+    amount: "",
+    category: "Office",
+    date: new Date().toISOString().split('T')[0]
+  });
+
+  const [receiptForm, setReceiptForm] = useState({
+    vendor: "",
+    amount: "",
+    category: "Office",
+    date: new Date().toISOString().split('T')[0],
+    notes: "",
+    imageData: ""
+  });
 
   const { data: transactions = [], isLoading: transactionsLoading } = useQuery<Transaction[]>({
     queryKey: ['/api/transactions'],
@@ -16,6 +55,68 @@ export default function Expenses() {
 
   const { data: receipts = [], isLoading: receiptsLoading } = useQuery<Receipt[]>({
     queryKey: ['/api/receipts'],
+  });
+  
+  // Mutations for adding expense and receipt
+  const expenseMutation = useMutation({
+    mutationFn: async (expense: any) => {
+      const res = await apiRequest('POST', '/api/transactions', {
+        ...expense,
+        type: 'expense'
+      });
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+      toast({
+        title: "Success",
+        description: "Expense added successfully"
+      });
+      setAddExpenseOpen(false);
+      setExpenseForm({
+        description: "",
+        amount: "",
+        category: "Office",
+        date: new Date().toISOString().split('T')[0]
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to add expense. Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const receiptMutation = useMutation({
+    mutationFn: async (receipt: any) => {
+      const res = await apiRequest('POST', '/api/receipts', receipt);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/receipts'] });
+      toast({
+        title: "Success",
+        description: "Receipt added successfully"
+      });
+      setScanReceiptOpen(false);
+      setReceiptForm({
+        vendor: "",
+        amount: "",
+        category: "Office",
+        date: new Date().toISOString().split('T')[0],
+        notes: "",
+        imageData: ""
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to add receipt. Please try again.",
+        variant: "destructive"
+      });
+    }
   });
 
   // Filter only expense transactions
@@ -86,15 +187,253 @@ export default function Expenses() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0">
           <h1 className="text-2xl font-semibold text-gray-900">Expense Management</h1>
           <div className="flex space-x-2">
-            <Button>
+            <Button onClick={() => setAddExpenseOpen(true)}>
               <i className="ri-add-line mr-1"></i> Add Expense
             </Button>
-            <Button variant="outline">
+            <Button variant="outline" onClick={() => setScanReceiptOpen(true)}>
               <i className="ri-camera-line mr-1"></i> Scan Receipt
             </Button>
           </div>
         </div>
       </div>
+      
+      {/* Add Expense Dialog */}
+      <Dialog open={addExpenseOpen} onOpenChange={setAddExpenseOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Expense</DialogTitle>
+            <DialogDescription>
+              Record a new expense to track your business costs
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="description" className="text-right">
+                Description
+              </Label>
+              <Input
+                id="description"
+                value={expenseForm.description}
+                onChange={(e) => setExpenseForm({ ...expenseForm, description: e.target.value })}
+                className="col-span-3"
+              />
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="amount" className="text-right">
+                Amount ($)
+              </Label>
+              <Input
+                id="amount"
+                type="number"
+                value={expenseForm.amount}
+                onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })}
+                className="col-span-3"
+              />
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="category" className="text-right">
+                Category
+              </Label>
+              <Select 
+                value={expenseForm.category}
+                onValueChange={(value) => setExpenseForm({ ...expenseForm, category: value })}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Office">Office Supplies</SelectItem>
+                  <SelectItem value="Software">Software</SelectItem>
+                  <SelectItem value="Travel">Travel</SelectItem>
+                  <SelectItem value="Meals">Meals & Entertainment</SelectItem>
+                  <SelectItem value="Marketing">Marketing</SelectItem>
+                  <SelectItem value="Utilities">Utilities</SelectItem>
+                  <SelectItem value="Rent">Rent</SelectItem>
+                  <SelectItem value="Salary">Salary</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="date" className="text-right">
+                Date
+              </Label>
+              <Input
+                id="date"
+                type="date"
+                value={expenseForm.date}
+                onChange={(e) => setExpenseForm({ ...expenseForm, date: e.target.value })}
+                className="col-span-3"
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddExpenseOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => expenseMutation.mutate(expenseForm)}
+              disabled={expenseMutation.isPending}
+            >
+              {expenseMutation.isPending ? (
+                <>
+                  <i className="ri-loader-4-line animate-spin mr-1"></i>
+                  Saving...
+                </>
+              ) : (
+                "Add Expense"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Scan Receipt Dialog */}
+      <Dialog open={scanReceiptOpen} onOpenChange={setScanReceiptOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Scan Receipt</DialogTitle>
+            <DialogDescription>
+              Add a receipt by uploading an image or entering details manually
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="vendor" className="text-right">
+                Vendor
+              </Label>
+              <Input
+                id="vendor"
+                value={receiptForm.vendor}
+                onChange={(e) => setReceiptForm({ ...receiptForm, vendor: e.target.value })}
+                className="col-span-3"
+              />
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="receiptAmount" className="text-right">
+                Amount ($)
+              </Label>
+              <Input
+                id="receiptAmount"
+                type="number"
+                value={receiptForm.amount}
+                onChange={(e) => setReceiptForm({ ...receiptForm, amount: e.target.value })}
+                className="col-span-3"
+              />
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="receiptCategory" className="text-right">
+                Category
+              </Label>
+              <Select 
+                value={receiptForm.category}
+                onValueChange={(value) => setReceiptForm({ ...receiptForm, category: value })}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Office">Office Supplies</SelectItem>
+                  <SelectItem value="Software">Software</SelectItem>
+                  <SelectItem value="Travel">Travel</SelectItem>
+                  <SelectItem value="Meals">Meals & Entertainment</SelectItem>
+                  <SelectItem value="Marketing">Marketing</SelectItem>
+                  <SelectItem value="Utilities">Utilities</SelectItem>
+                  <SelectItem value="Rent">Rent</SelectItem>
+                  <SelectItem value="Salary">Salary</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="receiptDate" className="text-right">
+                Date
+              </Label>
+              <Input
+                id="receiptDate"
+                type="date"
+                value={receiptForm.date}
+                onChange={(e) => setReceiptForm({ ...receiptForm, date: e.target.value })}
+                className="col-span-3"
+              />
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="notes" className="text-right">
+                Notes
+              </Label>
+              <Textarea
+                id="notes"
+                value={receiptForm.notes}
+                onChange={(e) => setReceiptForm({ ...receiptForm, notes: e.target.value })}
+                className="col-span-3"
+                placeholder="Additional details"
+              />
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="receiptImage" className="text-right">
+                Receipt Image
+              </Label>
+              <div className="col-span-3">
+                <Input
+                  id="receiptImage"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        const base64String = reader.result as string;
+                        setReceiptForm({ ...receiptForm, imageData: base64String });
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                />
+                {receiptForm.imageData && (
+                  <div className="mt-2 border rounded-md overflow-hidden">
+                    <img 
+                      src={receiptForm.imageData} 
+                      alt="Receipt preview" 
+                      className="w-full h-32 object-contain"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setScanReceiptOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => receiptMutation.mutate(receiptForm)}
+              disabled={receiptMutation.isPending}
+            >
+              {receiptMutation.isPending ? (
+                <>
+                  <i className="ri-loader-4-line animate-spin mr-1"></i>
+                  Saving...
+                </>
+              ) : (
+                "Save Receipt"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Expense stats */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
@@ -262,7 +601,11 @@ export default function Expenses() {
                   <div className="text-center py-8">
                     <i className="ri-receipt-line text-4xl text-gray-300"></i>
                     <p className="mt-2 text-gray-500">No receipts found</p>
-                    <Button variant="outline" className="mt-4">
+                    <Button 
+                      variant="outline" 
+                      className="mt-4"
+                      onClick={() => setScanReceiptOpen(true)}
+                    >
                       <i className="ri-camera-line mr-1"></i> Scan a Receipt
                     </Button>
                   </div>
