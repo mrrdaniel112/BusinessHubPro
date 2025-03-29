@@ -287,21 +287,7 @@ export default function Login() {
                       Forgot password?
                     </a>
                   </div>
-                  <div className="w-full border-t border-gray-200 my-1"></div>
-                  <div className="text-center">
-                    <button 
-                      type="button"
-                      onClick={() => {
-                        setIsLoading(true);
-                        createAdminUser()
-                          .catch(e => console.error("Admin login failed:", e))
-                          .finally(() => setIsLoading(false));
-                      }}
-                      className="text-xs text-gray-500 hover:text-primary-600"
-                    >
-                      Admin Login
-                    </button>
-                  </div>
+                  {/* Admin button removed per user request */}
                 </CardFooter>
               </Card>
             </TabsContent>

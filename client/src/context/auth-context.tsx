@@ -72,7 +72,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Demo credentials check - in production this would be a server request
       const validCredentials = [
         { email: "user@example.com", password: "password123" },
-        { email: "demo@businessplatform.com", password: "demo123" }
+        { email: "demo@businessplatform.com", password: "demo123" },
+        // Special bypass account with active subscription (no trial)
+        { email: "premium@businessplatform.com", password: "premium2024" }
       ];
       
       const isValidUser = validCredentials.some(
@@ -83,16 +85,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error("Invalid email or password");
       }
       
+      // Check if this is the premium bypass account
+      const isPremiumUser = email === "premium@businessplatform.com";
+      
       // Login successful - create user object
       await new Promise(resolve => setTimeout(resolve, 800)); // Small delay for UX
       
-      const mockUser: User = {
-        id: 1,
-        name: email.split('@')[0],
-        email,
-        subscriptionStatus: 'trial',
-        trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days from now
-      };
+      let mockUser: User;
+      
+      if (isPremiumUser) {
+        // Create premium user with active subscription (no trial)
+        mockUser = {
+          id: 2,
+          name: "Premium User",
+          email,
+          subscriptionStatus: 'active', // Already paid
+          trialEndsAt: null, // No trial period
+        };
+      } else {
+        // Create regular user with trial subscription
+        mockUser = {
+          id: 1,
+          name: email.split('@')[0],
+          email,
+          subscriptionStatus: 'trial',
+          trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days from now
+        };
+      }
       
       setUser(mockUser);
       localStorage.setItem("user", JSON.stringify(mockUser));
