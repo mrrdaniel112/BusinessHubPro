@@ -87,7 +87,7 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
     id: Math.random().toString(36).substring(2, 9),
     description: "",
     quantity: 1,
-    price: 15000 // Set high default price of $15,000
+    price: 1500 // Set default price to $1,500 (more reasonable default)
   });
   const [notesType, setNotesType] = useState('manual'); // 'manual' or 'ai'
   const [projectDescription, setProjectDescription] = useState("");
@@ -200,18 +200,23 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
     return items.reduce((sum, item) => {
       const quantity = typeof item.quantity === 'number' ? item.quantity : 0;
       const price = typeof item.price === 'number' ? item.price : 0;
-      return sum + (quantity * price);
+      
+      // Ensure we're using precise calculation for each line item
+      const lineItemTotal = parseFloat((quantity * price).toFixed(2));
+      return sum + lineItemTotal;
     }, 0);
   };
   
   const calculateTax = () => {
     const subtotal = calculateSubtotal();
     const rate = typeof taxRate === 'number' ? taxRate : 0;
-    return includeTax ? (subtotal * (rate / 100)) : 0;
+    // Use toFixed to ensure proper decimal calculation and convert back to number
+    return includeTax ? parseFloat((subtotal * (rate / 100)).toFixed(2)) : 0;
   };
   
   const calculateTotal = () => {
-    return calculateSubtotal() + calculateTax();
+    // Use toFixed to ensure proper decimal precision for the final total
+    return parseFloat((calculateSubtotal() + calculateTax()).toFixed(2));
   };
   
   // Update amount when items change
@@ -219,12 +224,19 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
     // Force the recalculation of total after items are updated
     const subtotal = calculateSubtotal();
     const tax = calculateTax();
-    const total = subtotal + tax;
+    
+    // Use the calculateTotal function to ensure consistent calculations
+    const total = calculateTotal();
     
     // Format with 2 decimal places
     const formattedTotal = total.toFixed(2);
     
-    console.log("Calculated total:", { subtotal, tax, total, formattedTotal });
+    console.log("Calculated total:", { 
+      subtotal: subtotal.toFixed(2), 
+      tax: tax.toFixed(2), 
+      total: formattedTotal,
+      items: items.length
+    });
     
     setFormState(prev => ({
       ...prev,
@@ -638,23 +650,30 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {items.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell>{item.description}</TableCell>
-                    <TableCell className="text-right">{item.quantity}</TableCell>
-                    <TableCell className="text-right">${typeof item.price === 'number' ? item.price.toFixed(2) : '0.00'}</TableCell>
-                    <TableCell className="text-right">${typeof item.price === 'number' && typeof item.quantity === 'number' ? (item.quantity * item.price).toFixed(2) : '0.00'}</TableCell>
-                    <TableCell className="text-right">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => removeItem(item.id)}
-                      >
-                        <i className="ri-delete-bin-line text-red-500"></i>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {items.map((item) => {
+                  // Calculate line totals with precision
+                  const quantity = typeof item.quantity === 'number' ? item.quantity : 0;
+                  const price = typeof item.price === 'number' ? item.price : 0;
+                  const lineTotal = parseFloat((quantity * price).toFixed(2));
+                  
+                  return (
+                    <TableRow key={item.id}>
+                      <TableCell>{item.description}</TableCell>
+                      <TableCell className="text-right">{quantity}</TableCell>
+                      <TableCell className="text-right">${price.toFixed(2)}</TableCell>
+                      <TableCell className="text-right">${lineTotal.toFixed(2)}</TableCell>
+                      <TableCell className="text-right">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => removeItem(item.id)}
+                        >
+                          <i className="ri-delete-bin-line text-red-500"></i>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
                 <TableRow>
                   <TableCell>
                     <Input
@@ -683,7 +702,11 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
                     />
                   </TableCell>
                   <TableCell className="text-right">
-                    ${typeof newItem.quantity === 'number' && typeof newItem.price === 'number' ? (newItem.quantity * newItem.price).toFixed(2) : '0.00'}
+                    ${(() => {
+                      const quantity = typeof newItem.quantity === 'number' ? newItem.quantity : 0;
+                      const price = typeof newItem.price === 'number' ? newItem.price : 0;
+                      return parseFloat((quantity * price).toFixed(2)).toFixed(2);
+                    })()}
                   </TableCell>
                   <TableCell className="text-right">
                     <Button 
