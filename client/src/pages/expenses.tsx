@@ -186,13 +186,41 @@ export default function Expenses() {
       <div className="py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0">
           <h1 className="text-2xl font-semibold text-gray-900">Expense Management</h1>
-          <div className="flex space-x-2">
+          <div className="flex flex-wrap gap-2">
             <Button onClick={() => setAddExpenseOpen(true)}>
               <i className="ri-add-line mr-1"></i> Add Expense
             </Button>
             <Button variant="outline" onClick={() => setScanReceiptOpen(true)}>
               <i className="ri-camera-line mr-1"></i> Scan Receipt
             </Button>
+            <label htmlFor="receiptFileUpload" className="cursor-pointer">
+              <Button variant="secondary" type="button" className="flex items-center">
+                <i className="ri-upload-2-line mr-1"></i> Upload Receipt
+              </Button>
+              <input 
+                id="receiptFileUpload" 
+                type="file" 
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                      const base64String = reader.result as string;
+                      setReceiptForm({
+                        ...receiptForm,
+                        imageData: base64String,
+                        vendor: file.name.split('.')[0] || "Unknown Vendor",
+                        date: new Date().toISOString().split('T')[0]
+                      });
+                      setScanReceiptOpen(true);
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+              />
+            </label>
           </div>
         </div>
       </div>
@@ -601,13 +629,42 @@ export default function Expenses() {
                   <div className="text-center py-8">
                     <i className="ri-receipt-line text-4xl text-gray-300"></i>
                     <p className="mt-2 text-gray-500">No receipts found</p>
-                    <Button 
-                      variant="outline" 
-                      className="mt-4"
-                      onClick={() => setScanReceiptOpen(true)}
-                    >
-                      <i className="ri-camera-line mr-1"></i> Scan a Receipt
-                    </Button>
+                    <div className="flex flex-wrap justify-center gap-2 mt-4">
+                      <Button 
+                        variant="outline"
+                        onClick={() => setScanReceiptOpen(true)}
+                      >
+                        <i className="ri-camera-line mr-1"></i> Scan a Receipt
+                      </Button>
+                      <label htmlFor="emptyStateFileUpload" className="cursor-pointer">
+                        <Button variant="secondary" type="button">
+                          <i className="ri-upload-2-line mr-1"></i> Upload Receipt
+                        </Button>
+                        <input 
+                          id="emptyStateFileUpload" 
+                          type="file" 
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                const base64String = reader.result as string;
+                                setReceiptForm({
+                                  ...receiptForm,
+                                  imageData: base64String,
+                                  vendor: file.name.split('.')[0] || "Unknown Vendor",
+                                  date: new Date().toISOString().split('T')[0]
+                                });
+                                setScanReceiptOpen(true);
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                        />
+                      </label>
+                    </div>
                   </div>
                 )}
               </TabsContent>
