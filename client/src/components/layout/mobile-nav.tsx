@@ -19,15 +19,15 @@ const MobileNavItem = ({ href, icon, label, active, onClick }: {
   <Link href={href}>
     <div
       className={cn(
-        "flex items-center px-2 py-2 text-base font-medium rounded-md cursor-pointer",
+        "flex items-center px-3 py-3 text-base font-medium rounded-md cursor-pointer touch-target",
         active
           ? "text-white bg-primary-600"
           : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
       )}
       onClick={onClick}
     >
-      <i className={cn(`ri-${icon} mr-3 text-lg`, active ? "" : "text-gray-400")}></i>
-      {label}
+      <i className={cn(`ri-${icon} mr-3 text-xl`, active ? "" : "text-gray-400")}></i>
+      <span className="mobile-text-adjust">{label}</span>
     </div>
   </Link>
 );
@@ -39,22 +39,22 @@ export default function MobileNav({ opened, onClose, location }: MobileNavProps)
 
   return (
     <Dialog open={opened} onOpenChange={() => onClose()}>
-      <DialogContent className="sm:max-w-[425px] p-0 max-h-[100dvh] inset-0 overflow-hidden">
+      <DialogContent className="sm:max-w-[425px] p-0 max-h-[100dvh] inset-0 overflow-hidden pt-safe">
         <div className="flex flex-col h-full bg-white">
           <div className="flex items-center justify-between px-4 pt-5 pb-4 border-b">
             <div className="flex items-center flex-shrink-0">
-              <span className="text-xl font-semibold text-primary-600">Business Platform</span>
+              <span className="text-xl font-semibold text-primary-600 mobile-text-adjust">Business Platform</span>
             </div>
             <button
               type="button"
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500 touch-target"
               onClick={onClose}
               aria-label="Close menu"
             >
               <i className="ri-close-line text-xl"></i>
             </button>
           </div>
-          <div className="flex-1 overflow-y-auto px-2 py-4 space-y-2 pb-safe">
+          <div className="flex-1 overflow-y-auto px-2 py-4 space-y-1 pb-safe">
             <MobileNavItem
               href="/"
               icon="dashboard-line"
