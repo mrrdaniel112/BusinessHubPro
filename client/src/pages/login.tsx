@@ -57,7 +57,7 @@ export default function Login() {
     },
   });
 
-  const { login, signup, isLoading: authLoading } = useAuth();
+  const { login, signup, createAdminUser, isLoading: authLoading } = useAuth();
   
   const onLoginSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
@@ -269,11 +269,26 @@ export default function Login() {
                     </form>
                   </Form>
                 </CardContent>
-                <CardFooter className="flex justify-center">
+                <CardFooter className="flex flex-col space-y-2">
                   <div className="text-center text-sm text-gray-500">
                     <a href="#" className="text-primary-600 hover:underline">
                       Forgot password?
                     </a>
+                  </div>
+                  <div className="w-full border-t border-gray-200 my-1"></div>
+                  <div className="text-center">
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        setIsLoading(true);
+                        createAdminUser()
+                          .catch(e => console.error("Admin login failed:", e))
+                          .finally(() => setIsLoading(false));
+                      }}
+                      className="text-xs text-gray-500 hover:text-primary-600"
+                    >
+                      Admin Login
+                    </button>
                   </div>
                 </CardFooter>
               </Card>

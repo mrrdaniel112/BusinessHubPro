@@ -146,6 +146,15 @@ export default function Sidebar() {
               active={isActive("/business-assistant")}
             />
             
+            {user?.role === 'admin' && (
+              <NavItem
+                href="/admin"
+                icon="shield-line"
+                label="Admin Dashboard"
+                active={isActive("/admin")}
+              />
+            )}
+            
             <div className="pt-4 mt-4 border-t border-gray-200">
               <NavItem
                 href="#"

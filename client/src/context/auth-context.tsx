@@ -117,7 +117,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const adminUser: User = {
         id: 999,
         name: "Admin",
-        email: "admin@businessplatform.com",
+        email: "d9174207593@gmail.com", // Specified admin email
         role: "admin",
         subscriptionStatus: "active", // Admins always have active subscription
         trialEndsAt: null, // No trial period for admin

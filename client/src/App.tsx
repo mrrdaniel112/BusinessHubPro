@@ -11,6 +11,7 @@ import Expenses from "@/pages/expenses";
 import Invoices from "@/pages/invoices";
 import AiInsights from "@/pages/ai-insights";
 import BusinessAssistant from "@/pages/business-assistant";
+import AdminDashboard from "@/pages/admin-dashboard";
 import Login from "@/pages/login";
 import MainLayout from "@/components/layout/main-layout";
 import { AuthProvider } from "@/context/auth-context";
@@ -89,6 +90,14 @@ function Router() {
         {() => (
           <ProtectedRouteWithLayout>
             <BusinessAssistant />
+          </ProtectedRouteWithLayout>
+        )}
+      </Route>
+      
+      <Route path="/admin">
+        {() => (
+          <ProtectedRouteWithLayout>
+            <AdminDashboard />
           </ProtectedRouteWithLayout>
         )}
       </Route>
