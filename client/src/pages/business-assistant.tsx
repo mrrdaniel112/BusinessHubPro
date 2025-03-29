@@ -38,9 +38,9 @@ export default function BusinessAssistant() {
         {/* Left side - Suggested questions */}
         <div className="lg:col-span-1 space-y-4">
           <div className="bg-white p-5 rounded-lg border shadow-sm">
-            <h3 className="font-medium text-lg mb-3">Example Questions</h3>
+            <h3 className="font-medium text-lg mb-3 text-primary-600">Example Questions</h3>
             <div className="space-y-2">
-              {EXAMPLE_QUESTIONS.slice(0, questionsToShow).map((question, index) => (
+              {EXAMPLE_QUESTIONS.map((question, index) => (
                 <SuggestedQuestion key={index} question={question} />
               ))}
             </div>
@@ -86,11 +86,11 @@ function SuggestedQuestion({ question }: { question: string }) {
   return (
     <Button
       variant="outline"
-      className="w-full justify-start text-left font-normal p-3 h-auto"
+      className="w-full justify-start text-left font-normal p-3 h-auto hover:bg-primary-50 hover:border-primary-200"
       onClick={sendQuestion}
     >
       <i className="ri-question-line mr-2 text-primary-500"></i>
-      <span className={cn("line-clamp-2 text-sm")}>
+      <span className={cn("text-sm", isMobile ? "line-clamp-2" : "")}>
         {isMobile ? truncatedQuestion : question}
       </span>
     </Button>

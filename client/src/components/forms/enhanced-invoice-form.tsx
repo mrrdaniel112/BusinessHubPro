@@ -148,7 +148,7 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
         id: Math.random().toString(36).substring(2, 9),
         description: "",
         quantity: 1,
-        price: 15000 // Set high default price of $15,000
+        price: 1500 // Set default price to $1,500 (more reasonable default)
       });
     }
   }, [open, isEditing, invoiceToEdit]);
@@ -253,7 +253,7 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
         id: Math.random().toString(36).substring(2, 9),
         description: "",
         quantity: 1,
-        price: 15000 // Set high default price of $15,000
+        price: 1500 // Set default price to $1,500 (more reasonable default)
       });
     } else {
       toast({

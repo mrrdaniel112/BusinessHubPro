@@ -48,9 +48,14 @@ export function PuterChat({ initialPrompt }: PuterChatProps = {}) {
     try {
       const response = await window.puter.ai.chat(messageText);
       
+      // Ensure response is a string
+      const responseContent = typeof response === 'string' 
+        ? response 
+        : JSON.stringify(response);
+      
       const assistantMessage: ChatMessage = {
         role: "assistant",
-        content: response,
+        content: responseContent,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
