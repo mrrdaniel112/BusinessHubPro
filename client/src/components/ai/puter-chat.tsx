@@ -10,7 +10,7 @@ declare global {
   interface Window {
     puter: {
       ai: {
-        chat: (prompt: string) => Promise<string>;
+        chat: (prompt: string, optionsOrSecondArg?: any) => Promise<string>;
       };
       print: (text: string) => void;
     };

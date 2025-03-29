@@ -5,6 +5,8 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { Invoice } from "@shared/schema";
+import { ParseInvoiceItemsDialog } from "./parse-invoice-items-dialog";
+import { ParsedInvoiceItem } from "../ai/puter-invoice-parser";
 
 import {
   Dialog,
@@ -95,6 +97,7 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
     sendEmail: false,
     emailAddress: ""
   });
+  const [isParseDialogOpen, setIsParseDialogOpen] = useState(false); // State for parse dialog
   
   const isEditing = !!invoiceToEdit;
   
@@ -420,6 +423,25 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
       };
     });
   };
+  
+  // Handle items parsed from Puter AI
+  const handleParsedItems = (parsedItems: ParsedInvoiceItem[]) => {
+    // Convert ParsedInvoiceItem[] to InvoiceItem[]
+    const newItems = parsedItems.map(item => ({
+      id: item.id,
+      description: item.description,
+      quantity: item.quantity,
+      price: item.price
+    }));
+    
+    // Add the parsed items to the existing items
+    setItems([...items, ...newItems]);
+    
+    toast({
+      title: "Items Added",
+      description: `Successfully added ${parsedItems.length} items to your invoice`,
+    });
+  };
 
   // Generate invoice details with AI or fallback to text parsing
   const generateAIInvoiceDetails = async () => {
@@ -703,7 +725,22 @@ Logo redesign"
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-medium">Invoice Items</h3>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setIsParseDialogOpen(true)}
+              >
+                <i className="ri-magic-line mr-2"></i>
+                Parse Items from Text
+              </Button>
             </div>
+            
+            {/* Parse Items Dialog */}
+            <ParseInvoiceItemsDialog
+              open={isParseDialogOpen}
+              onOpenChange={setIsParseDialogOpen}
+              onItemsParsed={handleParsedItems}
+            />
             
             <Table>
               <TableHeader>
