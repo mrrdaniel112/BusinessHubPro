@@ -69,9 +69,11 @@ export default function AiInsights({ insights, isLoading = false }: AiInsightsPr
           )}
         </div>
         <div className="mt-6">
-          <Button variant="outline" className="text-primary-700 bg-white hover:bg-gray-100">
-            View All AI Insights
-          </Button>
+          <a href="/ai-insights">
+            <Button variant="outline" className="text-primary-700 bg-white hover:bg-gray-100">
+              View All AI Insights
+            </Button>
+          </a>
         </div>
       </div>
     </div>
