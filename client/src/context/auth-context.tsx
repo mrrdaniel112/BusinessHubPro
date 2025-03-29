@@ -5,6 +5,7 @@ interface User {
   id: number;
   name: string;
   email: string;
+  role?: 'user' | 'admin';
   subscriptionStatus: 'trial' | 'active' | 'expired' | null;
   trialEndsAt: Date | null;
 }
@@ -16,6 +17,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   signup: (user: any) => Promise<void>;
   logout: () => void;
+  createAdminUser: () => Promise<User>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -25,6 +27,7 @@ const AuthContext = createContext<AuthContextType>({
   login: async () => {},
   signup: async () => {},
   logout: () => {},
+  createAdminUser: async () => { throw new Error('Not implemented'); },
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -106,6 +109,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem("user");
     setLocation("/login");
   };
+  
+  const createAdminUser = async (): Promise<User> => {
+    setIsLoading(true);
+    try {
+      // Create admin user with enhanced permissions
+      const adminUser: User = {
+        id: 999,
+        name: "Admin",
+        email: "admin@businessplatform.com",
+        role: "admin",
+        subscriptionStatus: "active", // Admins always have active subscription
+        trialEndsAt: null, // No trial period for admin
+      };
+      
+      setUser(adminUser);
+      localStorage.setItem("user", JSON.stringify(adminUser));
+      setLocation("/");
+      return adminUser;
+    } catch (error) {
+      console.error("Admin creation error:", error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <AuthContext.Provider
@@ -115,7 +143,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading,
         login,
         signup,
-        logout
+        logout,
+        createAdminUser
       }}
     >
       {children}
