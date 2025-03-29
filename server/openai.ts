@@ -192,41 +192,61 @@ export async function generateInvoiceDetails(
       throw new Error('OpenAI API key not configured');
     }
     
-    // Use OpenAI to generate custom invoice content
+    // Use OpenAI to generate custom invoice content with improved prompt
     const prompt = `
-      Based on the following project description, generate a highly detailed and professional invoice that tells a compelling story about the project while providing an intelligent breakdown of costs. BE VERY SPECIFIC and directly address the exact details provided.
+      Create a highly detailed and accurate invoice for the specific project described below. The invoice should tell a compelling story about the project and provide an intelligent, realistic breakdown of costs. The output must be extremely specific to the project details provided.
 
       Project Description: ${projectDescription}
       Client Name: ${clientName}
 
-      Please generate:
-      1. Between 3-6 line items with DETAILED descriptions that precisely match the project described. Each description should be very specific (not generic) and use at least 6-10 words.
-      2. Set realistic prices based on industry standards - each line item should have a specific price that reflects the complexity and scope of work.
-      3. A professional invoice note that includes payment terms (30 days), a thank you message to ${clientName} specifically, and relevant completion details.
-      4. A compelling project story (150-200 words) that narrates the exact journey of THIS specific project from start to finish. Include specific challenges faced and how they were overcome, specific deliverables created, and clear value provided to ${clientName}.
-      5. A detailed cost breakdown that divides the total cost into 4-5 meaningful categories with accurate percentages and specific descriptions of what each category includes.
+      Your task is to generate:
 
-      IMPORTANT: Be extremely specific to the project described. Do NOT use generic language or templates. Read the project description carefully and ensure every aspect of your response directly relates to the specific work mentioned.
+      1. 4-8 detailed line items that precisely match the project work. Each line item must:
+         - Have a highly specific description (minimum 8-12 words) that clearly relates to the exact work mentioned
+         - Include realistic quantities (usually 1 for services, but can be higher for physical items or multi-part deliverables)
+         - Have accurate market-rate pricing in USD that reflects the complexity and scope of each specific item
+         - NOT use generic template language - every line item must directly relate to something mentioned in the project description
 
-      Format your response as JSON in this structure:
+      2. A professional invoice note that:
+         - Addresses ${clientName} by name
+         - Includes standard payment terms (Net 30)
+         - Mentions specific project completion details or next steps
+         - Expresses genuine appreciation for the business relationship
+
+      3. A compelling project story (150-250 words) that:
+         - Describes the exact journey of THIS specific project from consultation through completion
+         - Mentions specific challenges encountered and how they were skillfully overcome
+         - Highlights the unique value delivered to ${clientName}
+         - Includes specific project milestones or achievements
+         - Uses storytelling techniques to create a narrative arc
+
+      4. A detailed cost breakdown that:
+         - Divides the total project cost into 4-5 logical categories
+         - Assigns accurate percentages to each category (must sum to 100%)
+         - Provides specific descriptions of what each category includes for THIS project
+         - Uses industry-standard terminology appropriate for the project type
+
+      Remember, the goal is to create an invoice that is so customized and specific that it appears to have been manually created by an expert specifically for ${clientName}'s project. Every element should directly relate to the project described.
+
+      Format your response as JSON with this exact structure:
       {
         "items": [
           {
-            "description": "Very detailed and specific item description that clearly relates to the project",
+            "description": "Very detailed and specific item description related to the project",
             "quantity": number,
-            "price": number (realistic USD amount)
+            "price": number
           },
-          ...
+          ...more items...
         ],
-        "notes": "Professional invoice note specifically addressing ${clientName} with payment terms and other information",
-        "projectStory": "Detailed narrative description of THIS specific project journey...",
+        "notes": "Professional invoice note addressing ${clientName} with payment terms",
+        "projectStory": "Detailed narrative of the project journey...",
         "costBreakdown": [
           {
-            "category": "Specific category name relevant to this project",
-            "percentage": number (must add up to 100),
-            "description": "Detailed explanation of exactly what this category includes for THIS project"
+            "category": "Category name relevant to this project",
+            "percentage": number,
+            "description": "Detailed explanation of what this category includes"
           },
-          ...
+          ...more categories...
         ]
       }
     `;
@@ -236,7 +256,7 @@ export async function generateInvoiceDetails(
       messages: [
         {
           role: "system",
-          content: "You are an AI expert in business finance and professional invoicing with decades of experience. Your specialty is creating highly customized, accurate, and detailed invoices that precisely match the specific project described. Generate realistic, detailed invoice items and notes based on project descriptions. NEVER use generic descriptions or placeholder text. Each output MUST directly relate to the specific details mentioned in the project description. Your invoices should be professional, detailed, and personalized to the exact client and project."
+          content: "You are a highly experienced estimator and project manager with 25+ years in the industry. You excel at creating detailed, accurate, and customized invoices that precisely reflect the specific work done. You have deep expertise in cost estimation, narrative writing, and professional financial documentation. Your invoices are known for their clarity, accuracy, and attention to detail. You NEVER use generic descriptions or placeholder text - every element of your invoices directly relates to the specific project described."
         },
         {
           role: "user",
@@ -244,16 +264,37 @@ export async function generateInvoiceDetails(
         }
       ],
       response_format: { type: "json_object" },
-      temperature: 0.7, // Slightly creative but still focused
+      temperature: 0.5, // More focused on accuracy
+      max_tokens: 2500, // Allow for longer, more detailed responses
     });
 
-    const result = JSON.parse(response.choices[0].message.content || "{}");
-    return {
-      items: Array.isArray(result.items) ? result.items : [],
-      notes: result.notes || "Thank you for your business. Payment is due within 30 days of receipt.",
-      projectStory: result.projectStory || undefined,
-      costBreakdown: Array.isArray(result.costBreakdown) ? result.costBreakdown : undefined
-    };
+    // Parse and validate the result carefully
+    let result;
+    try {
+      result = JSON.parse(response.choices[0].message.content || "{}");
+      
+      // Validate and sanitize the response
+      if (!result.items || !Array.isArray(result.items) || result.items.length === 0) {
+        throw new Error("Invalid or missing items array in AI response");
+      }
+      
+      // Process each item to ensure proper formatting and reasonable values
+      const processedItems = result.items.map((item: any) => ({
+        description: String(item.description || "Professional service"),
+        quantity: Number(item.quantity) > 0 ? Number(item.quantity) : 1,
+        price: Number(item.price) > 0 ? Number(item.price) : 1500
+      }));
+      
+      return {
+        items: processedItems,
+        notes: result.notes || `Thank you, ${clientName}, for your business. Payment is due within 30 days of receipt.`,
+        projectStory: result.projectStory || undefined,
+        costBreakdown: Array.isArray(result.costBreakdown) ? result.costBreakdown : undefined
+      };
+    } catch (parseError) {
+      console.error("Error parsing AI response:", parseError);
+      throw new Error("Failed to parse AI response");
+    }
   } catch (error) {
     console.error("Error generating invoice details:", error);
     

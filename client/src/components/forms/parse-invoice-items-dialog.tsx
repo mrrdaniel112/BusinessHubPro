@@ -86,64 +86,107 @@ export function ParseInvoiceItemsDialog({
     }
 
     setIsParsing(true);
-    setResponseMessages([]);
+    setResponseMessages(["Analyzing your project requirements..."]);
     
     try {
       // First try to use our global window.puter object if it exists
       // This provides a streaming experience for the user
       if (typeof window !== 'undefined' && window.puter?.ai?.chat) {
-        setResponseMessages(["Generating invoice items from your description..."]);
-        
-        // Use Puter's streaming chat
+        // Enhanced prompt for better results
         const prompt = `
-        You are a professional invoice generator. I need you to create accurate, realistic line items for an invoice based on this job description:
+        You are a financial expert with decades of experience creating detailed, accurate invoices for professional services. 
+        
+        I need you to create realistic, market-rate line items for an invoice based on this job description:
         
         "${jobDescription}"
         
-        Generate 3-8 detailed line items with the following format for EACH line item:
-        - Description: [detailed service description]
-        - Quantity: [numerical quantity]
-        - Price: [numerical dollar amount]
+        IMPORTANT GUIDELINES:
+        1. Break down the project into 4-8 specific, detailed line items that would be needed to complete it
+        2. Each line item must have:
+           - A highly detailed description (at least 8-10 words) that clearly specifies the exact deliverable
+           - An appropriate quantity (usually 1 for services, more for physical items or time-based work)
+           - A professional, market-competitive price in USD that reflects the real value of that item
+        3. Be extremely specific to the exact project described - avoid generic descriptions
+        4. Use industry-standard terminology and realistic pricing for each component
+        5. Ensure the complete invoice covers ALL aspects of the project as described
         
-        For each item:
-        1. Create a detailed, specific description
-        2. Provide a reasonable quantity (usually 1 for services, more for physical items)
-        3. Assign a realistic price in USD ($ format not needed)
-        
-        Return ONLY the line items in the exact format below, with one item per line:
+        Return ONLY the line items in EXACTLY this format (one item per line):
         Description | Quantity | Price
         
         For example:
-        Website design and development | 1 | 3500
-        Custom logo creation | 1 | 800
-        Content writing (5 pages) | 5 | 200
+        Custom responsive website design with mobile-first architecture and brand integration | 1 | 3500
+        Professional logo design with brand style guide and multiple format deliverables | 1 | 850
+        Technical SEO implementation with schema markup and performance optimization | 1 | 1200
+        
+        DO NOT include any other text, explanations, or headings in your response.
         `;
         
-        // Stream the response
+        // Stream the response with improved UI feedback
         let fullResponse = "";
+        let processingMessages = [
+          "Analyzing project requirements...",
+          "Breaking down deliverables...",
+          "Estimating professional market rates...",
+          "Generating detailed line items...",
+          "Finalizing invoice components..."
+        ];
+        
+        // Show processing messages to improve user experience
+        let messageIndex = 0;
+        const messageInterval = setInterval(() => {
+          if (messageIndex < processingMessages.length) {
+            setResponseMessages(prev => [...prev, processingMessages[messageIndex]]);
+            messageIndex++;
+          } else {
+            clearInterval(messageInterval);
+          }
+        }, 800);
+        
+        // Use Puter's streaming chat with improved response handling
         await window.puter.ai.chat(prompt, {
           onPartialResponse: (partialResponse: string) => {
-            // Show streaming responses
+            // Show streaming responses once we start getting real content
             fullResponse += partialResponse;
-            setResponseMessages([fullResponse]);
+            if (fullResponse.includes("|")) {
+              // Clear the interval once we get actual content
+              clearInterval(messageInterval);
+              setResponseMessages([fullResponse]);
+            }
           }
         });
         
-        // Parse the streamed response
+        // Clear interval in case it's still running
+        clearInterval(messageInterval);
+        
+        // Parse the streamed response with improved validation
         const parsedItems = parseStreamedResponse(fullResponse);
         if (parsedItems.length > 0) {
+          // Success path - items generated successfully
           onItemsParsed(parsedItems);
           onOpenChange(false);
           
           toast({
             title: "Invoice Generation Complete",
-            description: `Successfully generated ${parsedItems.length} invoice items`,
+            description: `Successfully generated ${parsedItems.length} professional invoice items`,
           });
         } else {
-          throw new Error("Could not parse AI response");
+          // Try alternate parsing as a fallback before giving up
+          const fallbackItems = await parseInvoiceLines(fullResponse);
+          if (fallbackItems.length > 0) {
+            onItemsParsed(fallbackItems);
+            onOpenChange(false);
+            
+            toast({
+              title: "Invoice Generation Complete",
+              description: `Successfully generated ${fallbackItems.length} invoice items from your description`,
+            });
+          } else {
+            throw new Error("Could not parse AI response");
+          }
         }
       } else {
         // Fallback to parseInvoiceLines which uses simpler parsing
+        setResponseMessages(prev => [...prev, "Puter AI not available, using standard parser..."]);
         const items = await parseInvoiceLines(jobDescription);
         
         if (items.length > 0) {
@@ -157,7 +200,7 @@ export function ParseInvoiceItemsDialog({
         } else {
           toast({
             title: "No Items Generated",
-            description: "Could not generate invoice items from your description",
+            description: "Could not generate invoice items from your description. Please try being more specific about the project details.",
             variant: "destructive"
           });
         }
@@ -166,7 +209,7 @@ export function ParseInvoiceItemsDialog({
       console.error("Error generating invoice items:", error);
       toast({
         title: "Generation Error",
-        description: "An error occurred while generating the invoice items. Please try again.",
+        description: "An error occurred while generating the invoice items. Please try again with a more detailed description.",
         variant: "destructive"
       });
     } finally {
@@ -175,55 +218,111 @@ export function ParseInvoiceItemsDialog({
   };
 
   const parseStreamedResponse = (text: string): ParsedInvoiceItem[] => {
-    const lines = text.split('\n').filter(line => line.trim() !== '');
+    // Clean and prepare the text - remove extra spaces, normalize line breaks
+    const cleanText = text.trim()
+      .replace(/\r\n/g, '\n')  // Normalize line breaks
+      .replace(/\n{3,}/g, '\n\n'); // Remove excessive empty lines
+    
+    const lines = cleanText.split('\n').filter(line => line.trim() !== '');
     const items: ParsedInvoiceItem[] = [];
+    
+    // Debug log to help understand what we're parsing
+    console.log("Parsing AI response into invoice items:", lines);
     
     for (const line of lines) {
       // Skip header or non-data lines
       if (line.includes("Description | Quantity | Price") || 
           line.includes("---") || 
-          line.includes("For example")) {
+          line.includes("For example") ||
+          line.includes("IMPORTANT") ||
+          line.includes("Guidelines") ||
+          line.includes("Return ONLY")) {
         continue;
       }
       
-      // Try to parse using pipe delimiter first
+      // Try to parse using pipe delimiter first (most reliable format)
       const pipeMatch = line.split('|').map(s => s.trim());
       if (pipeMatch && pipeMatch.length >= 3) {
         const [description, quantityStr, priceStr] = pipeMatch;
-        const quantity = parseInt(quantityStr, 10) || 1;
-        const price = parseFloat(priceStr.replace(/\$|,/g, '')) || 0;
         
-        if (description && !isNaN(quantity) && !isNaN(price)) {
+        // More robust quantity parsing with fallback
+        let quantity = 1;
+        if (quantityStr) {
+          const parsedQuantity = parseInt(quantityStr.replace(/[^\d.]/g, ''), 10);
+          quantity = !isNaN(parsedQuantity) && parsedQuantity > 0 ? parsedQuantity : 1;
+        }
+        
+        // More robust price parsing
+        let price = 0;
+        if (priceStr) {
+          // Remove any non-numeric characters except decimal points and commas
+          const cleanPriceStr = priceStr.replace(/[^\d.,]/g, '').replace(/,/g, '');
+          const parsedPrice = parseFloat(cleanPriceStr);
+          price = !isNaN(parsedPrice) ? parsedPrice : 1500;
+        } else {
+          price = 1500; // Default price
+        }
+        
+        // Enhanced validation to ensure we have a proper line item
+        if (description && description.length > 2 && quantity > 0 && price > 0) {
           items.push({
             id: Math.random().toString(36).substring(2, 9),
             description,
             quantity,
             price
           });
+          continue;
         }
-        continue;
       }
       
-      // If pipe delimiter fails, try generic pattern matching
-      const genericMatch = line.match(/(.+?)(?:\s-\s|\s–\s|\s:\s)?\s*(\d+)\s*(?:x|\*)?\s*[$]?(\d+(?:,\d+)*(?:\.\d+)?)/i);
-      if (genericMatch) {
-        const [, description, quantityStr, priceStr] = genericMatch;
-        const quantity = parseInt(quantityStr, 10) || 1;
-        const price = parseFloat(priceStr.replace(/,/g, '')) || 0;
+      // Second attempt: try to match common formats with regex patterns
+      // Format: "Description - $Price" or "Description: $Price" or similar variations
+      const pricePattern = line.match(/(.+?)(?:\s-\s|\s–\s|\s:\s)?\s*\$?(\d+(?:,\d+)*(?:\.\d+)?)/i);
+      if (pricePattern) {
+        const [, description, priceStr] = pricePattern;
+        const cleanDesc = description.trim();
+        const price = parseFloat(priceStr.replace(/,/g, ''));
         
-        if (description && !isNaN(quantity) && !isNaN(price)) {
+        if (cleanDesc && !isNaN(price) && price > 0) {
+          // Now look for quantity in the description
+          const quantityMatch = cleanDesc.match(/(\d+)\s*(?:x|hours|days|units|items)/i);
+          const quantity = quantityMatch ? parseInt(quantityMatch[1], 10) : 1;
+          
+          items.push({
+            id: Math.random().toString(36).substring(2, 9),
+            description: cleanDesc,
+            quantity,
+            price
+          });
+          continue;
+        }
+      }
+      
+      // Third attempt: Try any remaining numeric patterns that might indicate price and quantity
+      const numericPattern = line.match(/(.+?)(?:[\s-:]+)(\d+)(?:[\s-:]+)(\d+(?:,\d+)*(?:\.\d+)?)/i);
+      if (numericPattern) {
+        const [, description, firstNum, secondNum] = numericPattern;
+        // Assume the larger number is the price and the smaller is the quantity
+        const num1 = parseInt(firstNum, 10);
+        const num2 = parseFloat(secondNum.replace(/,/g, ''));
+        
+        const quantity = num1 < num2 ? num1 : 1;
+        const price = num2 > num1 ? num2 : num1;
+        
+        if (description && description.trim().length > 0) {
           items.push({
             id: Math.random().toString(36).substring(2, 9),
             description: description.trim(),
             quantity,
             price
           });
+          continue;
         }
-        continue;
       }
       
-      // Last attempt - just use the whole line as a description
-      if (line.trim().length > 0) {
+      // Last attempt - if the line is substantial, use it as a description with default values
+      // Only do this if we couldn't extract structured data but the line seems to be a legitimate item
+      if (line.trim().length > 15 && !line.includes("example") && !line.includes("format")) {
         items.push({
           id: Math.random().toString(36).substring(2, 9),
           description: line.trim(),
@@ -232,6 +331,9 @@ export function ParseInvoiceItemsDialog({
         });
       }
     }
+    
+    // Log what we parsed
+    console.log(`Parsed ${items.length} invoice items from AI response`);
     
     return items;
   };
