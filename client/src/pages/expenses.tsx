@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import React from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -31,6 +32,8 @@ export default function Expenses() {
   const [activeTab, setActiveTab] = useState("expenses");
   const [addExpenseOpen, setAddExpenseOpen] = useState(false);
   const [scanReceiptOpen, setScanReceiptOpen] = useState(false);
+  const [cameraActive, setCameraActive] = useState(false);
+  const videoRef = React.useRef<HTMLVideoElement>(null);
 
   // Form states
   const [expenseForm, setExpenseForm] = useState({
@@ -48,6 +51,78 @@ export default function Expenses() {
     notes: "",
     imageData: ""
   });
+  
+  // Camera access
+  useEffect(() => {
+    if (cameraActive && videoRef.current) {
+      const startCamera = async () => {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: {
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+              facingMode: 'environment' // prefer back camera on mobile
+            }
+          });
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+          }
+        } catch (err) {
+          console.error("Error accessing camera:", err);
+          toast({
+            title: "Camera Error",
+            description: "Could not access your camera. Please check permissions.",
+            variant: "destructive"
+          });
+          setCameraActive(false);
+        }
+      };
+      
+      startCamera();
+      
+      // Clean up
+      return () => {
+        const stream = videoRef.current?.srcObject as MediaStream;
+        if (stream) {
+          const tracks = stream.getTracks();
+          tracks.forEach(track => track.stop());
+        }
+      };
+    }
+  }, [cameraActive, toast]);
+  
+  // Handle taking a photo with the camera
+  const capturePhoto = () => {
+    if (videoRef.current) {
+      const video = videoRef.current;
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const photoData = canvas.toDataURL('image/jpeg');
+        
+        setReceiptForm({
+          ...receiptForm,
+          imageData: photoData,
+          vendor: "Camera Capture",
+          date: new Date().toISOString().split('T')[0]
+        });
+        
+        // Stop camera after capturing
+        setCameraActive(false);
+      }
+    }
+  };
+  
+  // Start camera when clicking Scan Receipt
+  const handleScanReceipt = () => {
+    setScanReceiptOpen(true);
+    // Start with a short delay to make sure dialog is open first
+    setTimeout(() => setCameraActive(true), 500);
+  };
 
   const { data: transactions = [], isLoading: transactionsLoading } = useQuery<Transaction[]>({
     queryKey: ['/api/transactions'],
@@ -190,7 +265,7 @@ export default function Expenses() {
             <Button onClick={() => setAddExpenseOpen(true)}>
               <i className="ri-add-line mr-1"></i> Add Expense
             </Button>
-            <Button variant="outline" onClick={() => setScanReceiptOpen(true)}>
+            <Button variant="outline" onClick={handleScanReceipt}>
               <i className="ri-camera-line mr-1"></i> Scan Receipt
             </Button>
             <label htmlFor="receiptFileUpload" className="cursor-pointer">
@@ -413,30 +488,78 @@ export default function Expenses() {
                 Receipt Image
               </Label>
               <div className="col-span-3">
-                <Input
-                  id="receiptImage"
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      const reader = new FileReader();
-                      reader.onloadend = () => {
-                        const base64String = reader.result as string;
-                        setReceiptForm({ ...receiptForm, imageData: base64String });
-                      };
-                      reader.readAsDataURL(file);
-                    }
-                  }}
-                />
-                {receiptForm.imageData && (
-                  <div className="mt-2 border rounded-md overflow-hidden">
-                    <img 
-                      src={receiptForm.imageData} 
-                      alt="Receipt preview" 
-                      className="w-full h-32 object-contain"
-                    />
+                {cameraActive ? (
+                  <div className="space-y-3">
+                    <div className="relative border rounded-md overflow-hidden">
+                      <video 
+                        ref={videoRef}
+                        autoPlay
+                        playsInline
+                        className="w-full h-64 object-cover"
+                      />
+                      <Button 
+                        className="absolute bottom-2 left-1/2 transform -translate-x-1/2 rounded-full px-6"
+                        onClick={capturePhoto}
+                      >
+                        <i className="ri-camera-line mr-1"></i> Take Photo
+                      </Button>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={() => setCameraActive(false)}
+                    >
+                      <i className="ri-close-circle-line mr-1"></i> Cancel Camera
+                    </Button>
                   </div>
+                ) : (
+                  <>
+                    <div className="flex space-x-2 mb-2">
+                      <Button 
+                        variant="secondary" 
+                        type="button" 
+                        className="flex-1"
+                        onClick={() => setCameraActive(true)}
+                      >
+                        <i className="ri-camera-line mr-1"></i> Use Camera
+                      </Button>
+                      <div className="relative flex-1">
+                        <Button 
+                          variant="outline" 
+                          type="button" 
+                          className="w-full"
+                        >
+                          <i className="ri-upload-2-line mr-1"></i> Upload File
+                        </Button>
+                        <Input
+                          id="receiptImage"
+                          type="file"
+                          accept="image/*"
+                          className="absolute inset-0 opacity-0 cursor-pointer"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                const base64String = reader.result as string;
+                                setReceiptForm({ ...receiptForm, imageData: base64String });
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                        />
+                      </div>
+                    </div>
+                    {receiptForm.imageData && (
+                      <div className="mt-2 border rounded-md overflow-hidden">
+                        <img 
+                          src={receiptForm.imageData} 
+                          alt="Receipt preview" 
+                          className="w-full h-32 object-contain"
+                        />
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -632,7 +755,7 @@ export default function Expenses() {
                     <div className="flex flex-wrap justify-center gap-2 mt-4">
                       <Button 
                         variant="outline"
-                        onClick={() => setScanReceiptOpen(true)}
+                        onClick={handleScanReceipt}
                       >
                         <i className="ri-camera-line mr-1"></i> Scan a Receipt
                       </Button>
