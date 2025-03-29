@@ -1,7 +1,16 @@
 import OpenAI from "openai";
 
-// Configures OpenAI API based on valid OPENAI_API_KEY presence
+// Check if OpenRouter API key is available
 function isOpenAIConfigured(): boolean {
+  // First check OpenRouter API key
+  const openRouterKey = process.env.OPENROUTER_API_KEY;
+  if (openRouterKey !== undefined && 
+      openRouterKey !== null && 
+      openRouterKey.trim() !== '') {
+    return true;
+  }
+  
+  // Fall back to OpenAI API key if OpenRouter key is not available
   const apiKey = process.env.OPENAI_API_KEY;
   return apiKey !== undefined && 
          apiKey !== null && 
@@ -9,12 +18,24 @@ function isOpenAIConfigured(): boolean {
          apiKey !== 'disabled_key';
 }
 
-// OpenAI instance that uses environment variable when available
-const openai = new OpenAI({ 
-  apiKey: process.env.OPENAI_API_KEY || "disabled_key", 
+// Create OpenAI client using OpenRouter or falling back to direct OpenAI
+const openai = new OpenAI({
+  baseURL: process.env.OPENROUTER_API_KEY ? "https://openrouter.ai/api/v1" : undefined,
+  apiKey: process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY || "disabled_key",
   maxRetries: 1,
-  timeout: 8000,
+  timeout: 10000,
 });
+
+// Helper function to determine which model to use based on available API keys
+function getAIModel(): string {
+  // If using OpenRouter, use a compatible model
+  if (process.env.OPENROUTER_API_KEY) {
+    return "cognitivecomputations/dolphin3.0-mistral-24b:free"; // A free model on OpenRouter
+  }
+  
+  // Otherwise use OpenAI's standard model
+  return "gpt-4o"; // Default to GPT-4o if using OpenAI directly
+}
 
 // Handle AI errors gracefully with fallback responses
 const handleAiError = (error: any, errorSource: string) => {
@@ -211,7 +232,7 @@ export async function generateInvoiceDetails(
     `;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: getAIModel(),
       messages: [
         {
           role: "system",
@@ -300,7 +321,7 @@ export async function categorizeTransaction(description: string): Promise<string
     }
     
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: getAIModel(),
       messages: [
         {
           role: "system",
@@ -374,7 +395,7 @@ export async function generateBusinessInsights(
     `;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: getAIModel(),
       messages: [
         {
           role: "system",
@@ -437,7 +458,7 @@ export async function generateCashFlowForecast(
     `;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: getAIModel(),
       messages: [
         {
           role: "system",
@@ -496,7 +517,7 @@ export async function extractReceiptData(
     `;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: getAIModel(),
       messages: [
         {
           role: "system",
@@ -566,7 +587,7 @@ export async function generateInventoryRecommendations(
     `;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: getAIModel(),
       messages: [
         {
           role: "system",
@@ -649,7 +670,7 @@ export async function generateSupplyRecommendations(
     `;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: getAIModel(),
       messages: [
         {
           role: "system",
