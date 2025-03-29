@@ -10,6 +10,7 @@ import Contracts from "@/pages/contracts";
 import Expenses from "@/pages/expenses";
 import Invoices from "@/pages/invoices";
 import AiInsights from "@/pages/ai-insights";
+import BusinessAssistant from "@/pages/business-assistant";
 import MainLayout from "@/components/layout/main-layout";
 
 function Router() {
@@ -22,6 +23,7 @@ function Router() {
       <Route path="/expenses" component={Expenses} />
       <Route path="/invoices" component={Invoices} />
       <Route path="/ai-insights" component={AiInsights} />
+      <Route path="/business-assistant" component={BusinessAssistant} />
       <Route component={NotFound} />
     </Switch>
   );

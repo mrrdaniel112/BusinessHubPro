@@ -81,6 +81,12 @@ export default function Sidebar() {
               label="AI Insights"
               active={isActive("/ai-insights")}
             />
+            <NavItem
+              href="/business-assistant"
+              icon="robot-line"
+              label="Business Assistant"
+              active={isActive("/business-assistant")}
+            />
           </nav>
           <div className="px-2 mt-6">
             <div className="p-4 rounded-lg bg-primary-50">

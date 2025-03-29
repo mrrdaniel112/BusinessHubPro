@@ -104,6 +104,13 @@ export default function MobileNav({ opened, onClose, location }: MobileNavProps)
               active={isActive("/ai-insights")}
               onClick={onClose}
             />
+            <MobileNavItem
+              href="/business-assistant"
+              icon="robot-line"
+              label="Business Assistant"
+              active={isActive("/business-assistant")}
+              onClick={onClose}
+            />
           </div>
         </div>
       </DialogContent>
