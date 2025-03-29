@@ -68,12 +68,14 @@ export default function AiInsights({ insights, isLoading = false }: AiInsightsPr
             </div>
           )}
         </div>
-        <div className="mt-6">
-          <a href="/ai-insights">
-            <Button variant="outline" className="text-primary-700 bg-white hover:bg-gray-100">
-              View All AI Insights
-            </Button>
-          </a>
+        <div className="mt-6 flex justify-center">
+          <Button
+            variant="outline"
+            className="text-primary-700 bg-white hover:bg-gray-100"
+            onClick={() => window.location.href = "/ai-insights"}
+          >
+            View All AI Insights
+          </Button>
         </div>
       </div>
     </div>
