@@ -93,9 +93,12 @@
 
 /* Mobile optimization classes */
 /* Fix for iOS scrolling momentum issues */
-.overflow-y-auto, .overflow-auto {
+.overflow-y-auto, .overflow-auto, .touch-scroll-content {
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin; /* For Firefox */
+  height: 100%;
+  width: 100%;
+  overflow-y: auto;
 }
 
 /* Fix for mobile 100vh issue */
@@ -170,6 +173,15 @@
 
 /* iOS specific fixes */
 @supports (-webkit-touch-callout: none) {
+  /* Special touch-enabled scrolling container */
+  .touch-scroll-content {
+    overflow-y: scroll !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
+    height: 100% !important;
+    overscroll-behavior-y: contain;
+    padding-bottom: 50px; /* Extra padding to help with scrolling */
+  }
   /* iOS-specific styles */
   .ios-specific {
     /* iOS Safari padding fix */
@@ -188,6 +200,17 @@
   [role="dialog"] {
     transform: translateZ(0); /* Helps with iOS rendering issues */
     z-index: 100; /* Ensure dialogs appear above other content */
+    max-height: 95%; /* Ensure dialog doesn't extend beyond screen */
+    max-width: 95vw; /* Ensure dialog doesn't extend beyond screen width */
+  }
+  
+  /* Make iOS dialogs scroll properly */
+  [role="dialog"] > div {
+    touch-action: pan-y; /* Enable vertical scrolling */
+    overflow-y: auto; /* Enable scrolling when content overflows */
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling for iOS */
+    height: auto; /* Let content determine height */
+    max-height: 70vh; /* Maximum height to prevent overflow */
   }
   
   /* Fix for iOS input fields in dialogs */

@@ -348,91 +348,99 @@ export function ParseInvoiceItemsDialog({
     return items;
   };
 
+  // Helper to improve iOS touch handling
+  const preventTouchProblems = (e: React.TouchEvent) => {
+    // Prevent default behavior to avoid iOS Safari issues with scrolling
+    e.stopPropagation();
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] max-h-[80vh] w-[95vw] overflow-y-scroll" style={{WebkitOverflowScrolling: 'touch'}}>
-        <DialogHeader>
-          <DialogTitle>AI-Powered Invoice Items</DialogTitle>
-          <DialogDescription>
-            Generate invoice items using AI or parse them from structured text.
-          </DialogDescription>
-        </DialogHeader>
-        
-        <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full mt-2">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="job-description">
-              <i className="ri-magic-line mr-2"></i> 
-              Generate from Job Description
-            </TabsTrigger>
-            <TabsTrigger value="text-parser">
-              <i className="ri-text-wrap mr-2"></i>
-              Parse Formatted Text
-            </TabsTrigger>
-          </TabsList>
+      <DialogContent className="sm:max-w-[700px] w-[95vw]">
+        <div className="touch-scroll-content" onTouchMove={preventTouchProblems}>
+          <DialogHeader>
+            <DialogTitle>AI-Powered Invoice Items</DialogTitle>
+            <DialogDescription>
+              Generate invoice items using AI or parse them from structured text.
+            </DialogDescription>
+          </DialogHeader>
           
-          <TabsContent value="job-description" className="space-y-4 mt-4">
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">
-                Describe the job or project in detail, and AI will generate appropriate invoice items automatically.
-              </p>
-              <Textarea
-                placeholder="E.g., I need a professional website for my small business that includes 5 pages, a contact form, and a responsive design. I also need a logo design and some custom icons."
-                value={jobDescription}
-                onChange={(e) => setJobDescription(e.target.value)}
-                className="min-h-[150px]"
-              />
-              
-              {responseMessages.length > 0 && (
-                <div className="mt-4 p-3 bg-muted/50 rounded-md border">
-                  <h4 className="text-sm font-medium mb-1">AI Response:</h4>
-                  <div className="text-sm whitespace-pre-wrap">
-                    {responseMessages.map((msg, i) => (
-                      <p key={i}>{msg}</p>
-                    ))}
+          <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full mt-2">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="job-description">
+                <i className="ri-magic-line mr-2"></i> 
+                Generate from Job Description
+              </TabsTrigger>
+              <TabsTrigger value="text-parser">
+                <i className="ri-text-wrap mr-2"></i>
+                Parse Formatted Text
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="job-description" className="space-y-4 mt-4">
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  Describe the job or project in detail, and AI will generate appropriate invoice items automatically.
+                </p>
+                <Textarea
+                  placeholder="E.g., I need a professional website for my small business that includes 5 pages, a contact form, and a responsive design. I also need a logo design and some custom icons."
+                  value={jobDescription}
+                  onChange={(e) => setJobDescription(e.target.value)}
+                  className="min-h-[120px] md:min-h-[150px]"
+                />
+                
+                {responseMessages.length > 0 && (
+                  <div className="mt-4 p-3 bg-muted/50 rounded-md border">
+                    <h4 className="text-sm font-medium mb-1">AI Response:</h4>
+                    <div className="text-sm whitespace-pre-wrap max-h-[120px] overflow-y-auto touch-scroll-content">
+                      {responseMessages.map((msg, i) => (
+                        <p key={i}>{msg}</p>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="text-parser" className="space-y-4 mt-4">
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">
-                Enter text with one item per line. Format: "Description $Price" or "Quantity x Description $Price"
-              </p>
-              <Textarea
-                placeholder="Website design $2500
+                )}
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="text-parser" className="space-y-4 mt-4">
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  Enter text with one item per line. Format: "Description $Price" or "Quantity x Description $Price"
+                </p>
+                <Textarea
+                  placeholder="Website design $2500
 10x Custom icons $50
 Content creation - $1500"
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                className="min-h-[150px]"
-              />
-            </div>
-          </TabsContent>
-        </Tabs>
-        
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button 
-            onClick={currentTab === "text-parser" ? handleParse : handleJobDescriptionParse}
-            disabled={isParsing}
-          >
-            {isParsing ? (
-              <>
-                <i className="ri-loader-4-line animate-spin mr-2"></i>
-                Processing...
-              </>
-            ) : (
-              <>
-                <i className="ri-magic-line mr-2"></i>
-                {currentTab === "text-parser" ? "Parse Items" : "Generate Invoice Items"}
-              </>
-            )}
-          </Button>
-        </DialogFooter>
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  className="min-h-[120px] md:min-h-[150px]"
+                />
+              </div>
+            </TabsContent>
+          </Tabs>
+          
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={currentTab === "text-parser" ? handleParse : handleJobDescriptionParse}
+              disabled={isParsing}
+            >
+              {isParsing ? (
+                <>
+                  <i className="ri-loader-4-line animate-spin mr-2"></i>
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <i className="ri-magic-line mr-2"></i>
+                  {currentTab === "text-parser" ? "Parse Items" : "Generate Invoice Items"}
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );
