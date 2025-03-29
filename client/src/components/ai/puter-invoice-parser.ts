@@ -1,8 +1,3 @@
-/**
- * Utility function to parse invoice line items using Puter's AI
- */
-
-// Define the line item structure
 export interface ParsedInvoiceItem {
   id: string;
   description: string;
@@ -16,52 +11,79 @@ export interface ParsedInvoiceItem {
  * @returns Promise<ParsedInvoiceItem[]> Array of parsed line items
  */
 export async function parseLinesWithPuter(text: string): Promise<ParsedInvoiceItem[]> {
-  // Check if Puter AI is available
-  if (!window.puter || !window.puter.ai || typeof window.puter.ai.chat !== 'function') {
-    throw new Error("Puter AI is not available");
+  // Check if Puter API is available
+  if (typeof window === 'undefined' || !window.puter?.ai?.chat) {
+    console.log("Puter AI not available, using fallback parser");
+    return parseLinesFallback(text);
   }
   
-  // Prompt engineering to get structured data from Puter
-  const prompt = `
-Parse the following text into invoice line items. For each line, extract:
-1. The description (product or service)
-2. The quantity (default to 1 if not specified)
-3. The price (in dollars, default to 1500 if not specified)
-
-Format your response as a valid JSON array with objects that have description, quantity, and price properties.
-Example format: [{"description": "Web design", "quantity": 1, "price": 2500}, {"description": "Logo design", "quantity": 1, "price": 500}]
-
-Text to parse:
-${text}
-`;
-
   try {
-    // Simple approach without streaming for compatibility
-    const response = await window.puter.ai.chat(prompt);
+    console.log("Attempting to parse with Puter AI...");
     
-    // Response should be a string
-    const fullResponse = response;
+    const prompt = `
+    You are an expert at parsing invoice line items from text. 
     
-    // Extract JSON from the full response (in case there's extra text)
-    // Using a more compatible regex approach without the 's' flag
-    const jsonMatch = fullResponse.match(/\[\s*\{[\s\S]*\}\s*\]/);
-    if (!jsonMatch) {
-      throw new Error("Failed to extract JSON from response");
+    Parse the following text into detailed invoice line items:
+    "${text}"
+    
+    For each line item, extract:
+    1. Description
+    2. Quantity (default to 1 if not specified)
+    3. Price in USD (no $ symbol needed)
+    
+    Return the results as line items in this exact format, one per line:
+    Description | Quantity | Price
+    
+    For example:
+    Website design | 1 | 2500
+    Custom icons | 10 | 50
+    Content creation | 1 | 1500
+    `;
+    
+    // Call Puter AI to extract the information
+    let response = await window.puter.ai.chat(prompt);
+    
+    // Parse the AI response into structured line items
+    const lines = response.split('\n').filter(line => line.trim() !== '');
+    const items: ParsedInvoiceItem[] = [];
+    
+    for (const line of lines) {
+      // Skip header or instruction lines
+      if (line.includes("Description | Quantity | Price") || 
+          line.includes("---") || 
+          line.includes("example:")) {
+        continue;
+      }
+      
+      // Try to parse AI-formatted responses first (pipe-delimited)
+      const parts = line.split('|').map(s => s.trim());
+      if (parts.length >= 3) {
+        const description = parts[0];
+        const quantity = parseInt(parts[1], 10) || 1;
+        const price = parseFloat(parts[2].replace(/\$|,/g, '')) || 0;
+        
+        if (description && !isNaN(quantity) && !isNaN(price)) {
+          items.push({
+            id: Math.random().toString(36).substring(2, 9),
+            description,
+            quantity,
+            price
+          });
+        }
+      }
     }
     
-    // Parse the JSON
-    const parsedItems = JSON.parse(jsonMatch[0]);
+    console.log(`Puter AI parsed ${items.length} items`);
     
-    // Validate and transform the data
-    return parsedItems.map((item: any, index: number) => ({
-      id: Math.random().toString(36).substring(2, 9), // Generate random ID
-      description: item.description || `Item ${index + 1}`,
-      quantity: typeof item.quantity === 'number' ? item.quantity : 1,
-      price: typeof item.price === 'number' ? item.price : 1500
-    }));
+    if (items.length === 0) {
+      // If we couldn't parse anything from Puter's response, try our fallback
+      return parseLinesFallback(text);
+    }
+    
+    return items;
   } catch (error) {
-    console.error("Error parsing invoice lines with Puter:", error);
-    throw error;
+    console.error("Error parsing with Puter AI:", error);
+    return parseLinesFallback(text);
   }
 }
 
@@ -71,35 +93,60 @@ ${text}
  * @returns ParsedInvoiceItem[] Array of parsed line items
  */
 export function parseLinesFallback(text: string): ParsedInvoiceItem[] {
-  // Split text into lines and remove empty ones
+  console.log("Using fallback parser");
   const lines = text.split('\n').filter(line => line.trim() !== '');
+  const items: ParsedInvoiceItem[] = [];
   
-  return lines.map(line => {
+  for (const line of lines) {
     let description = line.trim();
     let quantity = 1;
     let price = 1500; // Default price
     
-    // Try to extract quantity if format is like "5x Widget" or "5 Widget"
-    const quantityMatch = description.match(/^(\d+)(?:x|\s+)/);
-    if (quantityMatch) {
-      quantity = parseInt(quantityMatch[1], 10);
-      description = description.replace(quantityMatch[0], '').trim();
+    // Try different parsing patterns
+    
+    // Pattern 1: "Quantity x Description $Price"
+    // Example: "10x Custom icons $50"
+    const pattern1 = /^(\d+)(?:x|\s+)(.+?)(?:\s-\s|\s–\s|\s:\s)?\s*\$?(\d+(?:,\d+)*(?:\.\d+)?)/i;
+    const match1 = description.match(pattern1);
+    
+    if (match1) {
+      quantity = parseInt(match1[1], 10);
+      description = match1[2].trim();
+      price = parseFloat(match1[3].replace(/,/g, ''));
+    } else {
+      // Pattern 2: "Description $Price"
+      // Example: "Website design $2500"
+      const pattern2 = /^(.+?)(?:\s-\s|\s–\s|\s:\s)?\s*\$?(\d+(?:,\d+)*(?:\.\d+)?)/i;
+      const match2 = description.match(pattern2);
+      
+      if (match2) {
+        description = match2[1].trim();
+        price = parseFloat(match2[2].replace(/,/g, ''));
+      } else {
+        // Pattern 3: "Description - $Price"
+        // Example: "Content creation - $1500"
+        const pattern3 = /^(.+?)\s*[-–:]\s*\$?(\d+(?:,\d+)*(?:\.\d+)?)/i;
+        const match3 = description.match(pattern3);
+        
+        if (match3) {
+          description = match3[1].trim();
+          price = parseFloat(match3[2].replace(/,/g, ''));
+        }
+      }
     }
     
-    // Try to extract price if format is like "Widget - $500" or "Widget $500"
-    const priceMatch = description.match(/[\s-]*\$\s*(\d+(?:,\d+)*(?:\.\d+)?)/);
-    if (priceMatch) {
-      price = parseFloat(priceMatch[1].replace(/,/g, ''));
-      description = description.replace(priceMatch[0], '').trim();
-    }
-    
-    return {
+    // Create the item regardless of whether we parsed everything
+    // This ensures we at least capture a line as a description even if we
+    // couldn't parse quantity/price
+    items.push({
       id: Math.random().toString(36).substring(2, 9),
       description,
       quantity,
       price
-    };
-  });
+    });
+  }
+  
+  return items;
 }
 
 /**
@@ -109,11 +156,10 @@ export function parseLinesFallback(text: string): ParsedInvoiceItem[] {
  */
 export async function parseInvoiceLines(text: string): Promise<ParsedInvoiceItem[]> {
   try {
-    // First try to use Puter AI
+    // Try Puter AI first
     return await parseLinesWithPuter(text);
   } catch (error) {
-    console.warn("Falling back to simple parsing due to error:", error);
-    // Fall back to simple parsing if Puter fails
+    console.error("Error parsing with Puter, using fallback:", error);
     return parseLinesFallback(text);
   }
 }
