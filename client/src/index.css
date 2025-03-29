@@ -176,6 +176,36 @@
     position: fixed;
     width: 100%;
   }
+  
+  /* Dialog style fixes for iOS */
+  [role="dialog"] {
+    transform: translateZ(0); /* Helps with iOS rendering issues */
+    z-index: 100; /* Ensure dialogs appear above other content */
+  }
+  
+  /* Fix for iOS input fields in dialogs */
+  [role="dialog"] input, 
+  [role="dialog"] textarea {
+    font-size: 16px !important; /* Prevent iOS zooming on focus */
+    transform: translateZ(0); /* iOS rendering fix */
+  }
+  
+  /* Fix for iOS select elements in forms */
+  select {
+    background-color: transparent;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-position: right 0.5rem center;
+    background-repeat: no-repeat;
+    background-size: 1rem;
+    padding-right: 2rem !important;
+  }
+  
+  /* Fix for iOS buttons in dialogs */
+  [role="dialog"] button {
+    cursor: pointer;
+    transform: translateZ(0); /* iOS rendering fix */
+    -webkit-tap-highlight-color: transparent;
+  }
 }
 
 /* Android Chrome specific fixes */

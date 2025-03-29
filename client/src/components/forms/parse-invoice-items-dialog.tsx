@@ -43,6 +43,11 @@ export function ParseInvoiceItemsDialog({
       });
       return;
     }
+    
+    // Close any potentially open keyboard on mobile
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
 
     setIsParsing(true);
     try {
@@ -83,6 +88,11 @@ export function ParseInvoiceItemsDialog({
         variant: "destructive"
       });
       return;
+    }
+
+    // Close any potentially open keyboard on mobile
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
     }
 
     setIsParsing(true);
@@ -340,7 +350,7 @@ export function ParseInvoiceItemsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[700px] max-h-[80vh] w-[95vw] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>AI-Powered Invoice Items</DialogTitle>
           <DialogDescription>
