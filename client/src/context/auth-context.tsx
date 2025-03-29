@@ -54,11 +54,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Mock login - would be a real API call in production
-      // In a real app, this would verify credentials with the server
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Basic validation - both fields must have values
+      if (!email || !password) {
+        throw new Error("Email and password are required");
+      }
       
-      // Create a mock user for demonstration
+      // Email validation
+      if (!email.includes('@') || email.length < 5) {
+        throw new Error("Please enter a valid email address");
+      }
+      
+      // Password validation
+      if (password.length < 6) {
+        throw new Error("Password must be at least 6 characters");
+      }
+      
+      // Demo credentials check - in production this would be a server request
+      const validCredentials = [
+        { email: "user@example.com", password: "password123" },
+        { email: "demo@businessplatform.com", password: "demo123" }
+      ];
+      
+      const isValidUser = validCredentials.some(
+        cred => cred.email === email && cred.password === password
+      );
+      
+      if (!isValidUser) {
+        throw new Error("Invalid email or password");
+      }
+      
+      // Login successful - create user object
+      await new Promise(resolve => setTimeout(resolve, 800)); // Small delay for UX
+      
       const mockUser: User = {
         id: 1,
         name: email.split('@')[0],

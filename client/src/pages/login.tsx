@@ -59,13 +59,19 @@ export default function Login() {
 
   const { login, signup, createAdminUser, isLoading: authLoading } = useAuth();
   
+  const [loginError, setLoginError] = useState<string | null>(null);
+  
   const onLoginSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
+    setLoginError(null); // Clear any previous errors
+    
     try {
       await login(data.email, data.password);
       // The auth context will redirect to / after successful login
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login error:", error);
+      // Display the error message to the user
+      setLoginError(error.message || "Login failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -262,6 +268,12 @@ export default function Login() {
                           </FormItem>
                         )}
                       />
+                      
+                      {loginError && (
+                        <div className="p-3 mb-3 text-sm bg-red-50 border border-red-200 text-red-600 rounded-md">
+                          {loginError}
+                        </div>
+                      )}
                       
                       <Button type="submit" className="w-full" disabled={isLoading}>
                         {isLoading ? "Logging in..." : "Login"}
