@@ -1,5 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
+import * as Icons from "lucide-react";
 
 type NavItemProps = {
   href: string;
@@ -8,21 +9,40 @@ type NavItemProps = {
   active: boolean;
 };
 
-const NavItem = ({ href, icon, label, active }: NavItemProps) => (
-  <Link href={href}>
-    <div
-      className={cn(
-        "flex items-center px-2 py-2 text-sm font-medium rounded-md group cursor-pointer",
-        active
-          ? "text-white bg-primary-600"
-          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-      )}
-    >
-      <i className={cn(`ri-${icon} mr-3 text-lg`, active ? "" : "text-gray-400")}></i>
-      {label}
-    </div>
-  </Link>
-);
+const getIcon = (iconName: string) => {
+  const IconMap: Record<string, React.ElementType> = {
+    "dashboard-line": Icons.Home,
+    "money-dollar-circle-line": Icons.DollarSign,
+    "store-2-line": Icons.Package,
+    "file-text-line": Icons.FileText,
+    "receipt-line": Icons.Receipt,
+    "bill-line": Icons.FileCheck,
+    "line-chart-line": Icons.BarChart,
+    "robot-line": Icons.Bot,
+  };
+  
+  const Icon = IconMap[iconName] || Icons.CircleDot;
+  return Icon;
+};
+
+const NavItem = ({ href, icon, label, active }: NavItemProps) => {
+  const Icon = getIcon(icon);
+  return (
+    <Link href={href}>
+      <div
+        className={cn(
+          "flex items-center px-2 py-2 text-sm font-medium rounded-md group cursor-pointer",
+          active
+            ? "text-white bg-primary-600"
+            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+        )}
+      >
+        <Icon className={cn("mr-3 h-5 w-5", active ? "text-white" : "text-gray-400")} />
+        {label}
+      </div>
+    </Link>
+  );
+};
 
 export default function Sidebar() {
   const [location] = useLocation();
