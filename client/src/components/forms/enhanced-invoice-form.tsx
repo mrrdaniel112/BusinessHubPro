@@ -548,7 +548,7 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[800px] max-h-[80vh] w-[95vw] overflow-y-auto">
+      <DialogContent className="sm:max-w-[800px] max-h-[80vh] w-[95vw] overflow-y-scroll" style={{WebkitOverflowScrolling: 'touch'}}>
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Edit' : 'Create'} Enhanced Invoice</DialogTitle>
           <DialogDescription>

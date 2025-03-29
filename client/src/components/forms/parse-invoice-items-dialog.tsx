@@ -350,7 +350,7 @@ export function ParseInvoiceItemsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] max-h-[80vh] w-[95vw] overflow-y-auto">
+      <DialogContent className="sm:max-w-[700px] max-h-[80vh] w-[95vw] overflow-y-scroll" style={{WebkitOverflowScrolling: 'touch'}}>
         <DialogHeader>
           <DialogTitle>AI-Powered Invoice Items</DialogTitle>
           <DialogDescription>

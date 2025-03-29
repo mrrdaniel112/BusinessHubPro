@@ -25,6 +25,13 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+  
+  /* Global dialog content scrolling fix */
+  div[role="dialog"] > div {
+    overflow-y: scroll !important;
+    -webkit-overflow-scrolling: touch !important;
+    max-height: 85vh;
+  }
 }
 
 @layer utilities {
@@ -190,6 +197,18 @@
     transform: translateZ(0); /* iOS rendering fix */
   }
   
+  /* Enhanced scrolling for iOS textareas */
+  textarea {
+    -webkit-overflow-scrolling: touch;
+    overflow-y: auto;
+  }
+  
+  /* Fix for iOS textarea scrolling */
+  .overflow-y-scroll,
+  .overflow-y-auto {
+    -webkit-overflow-scrolling: touch !important;
+  }
+  
   /* Fix for iOS select elements in forms */
   select {
     background-color: transparent;
@@ -205,6 +224,11 @@
     cursor: pointer;
     transform: translateZ(0); /* iOS rendering fix */
     -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Fix for iOS scrolling inside dialogs */
+  [role="dialog"] [data-radix-scroll-area-viewport] {
+    -webkit-overflow-scrolling: touch !important;
   }
 }
 
