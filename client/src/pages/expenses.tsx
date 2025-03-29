@@ -165,10 +165,15 @@ export default function Expenses() {
   // Mutations for adding expense and receipt
   const expenseMutation = useMutation({
     mutationFn: async (expense: any) => {
-      const res = await apiRequest('POST', '/api/transactions', {
+      // Format data for the API
+      const formattedExpense = {
         ...expense,
-        type: 'expense'
-      });
+        type: 'expense',
+        amount: expense.amount.toString(), // Ensure amount is a string
+        date: new Date(expense.date), // Convert string date to Date object
+      };
+      
+      const res = await apiRequest('POST', '/api/transactions', formattedExpense);
       return await res.json();
     },
     onSuccess: () => {
@@ -185,10 +190,20 @@ export default function Expenses() {
         date: new Date().toISOString().split('T')[0]
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      console.error("Expense save error:", error);
+      let errorMessage = "Failed to add expense. Please try again.";
+      
+      // Try to extract more specific error message
+      if (error.message && typeof error.message === 'string') {
+        errorMessage = error.message;
+      } else if (error.response && error.response.data && error.response.data.message) {
+        errorMessage = error.response.data.message;
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to add expense. Please try again.",
+        description: errorMessage,
         variant: "destructive"
       });
     }
@@ -196,7 +211,14 @@ export default function Expenses() {
 
   const receiptMutation = useMutation({
     mutationFn: async (receipt: any) => {
-      const res = await apiRequest('POST', '/api/receipts', receipt);
+      // Convert string date to Date object as required by the schema
+      const formattedReceipt = {
+        ...receipt,
+        amount: receipt.amount.toString(), // Ensure amount is a string
+        date: new Date(receipt.date), // Convert string date to Date object
+      };
+      
+      const res = await apiRequest('POST', '/api/receipts', formattedReceipt);
       return await res.json();
     },
     onSuccess: () => {
@@ -215,10 +237,20 @@ export default function Expenses() {
         imageData: ""
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      console.error("Receipt save error:", error);
+      let errorMessage = "Failed to add receipt. Please try again.";
+      
+      // Try to extract more specific error message
+      if (error.message && typeof error.message === 'string') {
+        errorMessage = error.message;
+      } else if (error.response && error.response.data && error.response.data.message) {
+        errorMessage = error.response.data.message;
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to add receipt. Please try again.",
+        description: errorMessage,
         variant: "destructive"
       });
     }
