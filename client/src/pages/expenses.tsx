@@ -96,19 +96,49 @@ export default function Expenses() {
     if (videoRef.current) {
       const video = videoRef.current;
       const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      
+      // Reduce image size for better performance
+      const MAX_WIDTH = 1280;  // Max width of the captured image
+      const MAX_HEIGHT = 720;  // Max height of the captured image
+      let width = video.videoWidth;
+      let height = video.videoHeight;
+      
+      // Calculate new dimensions while maintaining aspect ratio
+      if (width > height) {
+        if (width > MAX_WIDTH) {
+          height = Math.round(height * (MAX_WIDTH / width));
+          width = MAX_WIDTH;
+        }
+      } else {
+        if (height > MAX_HEIGHT) {
+          width = Math.round(width * (MAX_HEIGHT / height));
+          height = MAX_HEIGHT;
+        }
+      }
+      
+      // Set canvas dimensions to the new size
+      canvas.width = width;
+      canvas.height = height;
       
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const photoData = canvas.toDataURL('image/jpeg');
+        // Draw the video frame to the canvas with the new dimensions
+        ctx.drawImage(video, 0, 0, width, height);
+        
+        // Reduce quality for smaller file size
+        const photoData = canvas.toDataURL('image/jpeg', 0.7); // 70% quality
         
         setReceiptForm({
           ...receiptForm,
           imageData: photoData,
           vendor: "Camera Capture",
           date: new Date().toISOString().split('T')[0]
+        });
+        
+        // Show success message
+        toast({
+          title: "Photo Captured",
+          description: "Image saved successfully. You can now add details and save the receipt.",
         });
         
         // Stop camera after capturing
@@ -280,18 +310,59 @@ export default function Expenses() {
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) {
-                    const reader = new FileReader();
-                    reader.onloadend = () => {
-                      const base64String = reader.result as string;
+                    // Compress the image before loading it
+                    const compressImage = (file: File, maxSize: number): Promise<string> => {
+                      return new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                          const img = new Image();
+                          img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            let width = img.width;
+                            let height = img.height;
+                            
+                            // Calculate new dimensions while maintaining aspect ratio
+                            if (width > height) {
+                              if (width > maxSize) {
+                                height = Math.round(height * (maxSize / width));
+                                width = maxSize;
+                              }
+                            } else {
+                              if (height > maxSize) {
+                                width = Math.round(width * (maxSize / height));
+                                height = maxSize;
+                              }
+                            }
+                            
+                            canvas.width = width;
+                            canvas.height = height;
+                            const ctx = canvas.getContext('2d');
+                            ctx?.drawImage(img, 0, 0, width, height);
+                            
+                            // Get compressed image data
+                            const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                            resolve(dataUrl);
+                          };
+                          img.src = event.target?.result as string;
+                        };
+                        reader.readAsDataURL(file);
+                      });
+                    };
+                    
+                    // Compress image and update form
+                    compressImage(file, 1280).then(compressedImage => {
                       setReceiptForm({
                         ...receiptForm,
-                        imageData: base64String,
+                        imageData: compressedImage,
                         vendor: file.name.split('.')[0] || "Unknown Vendor",
                         date: new Date().toISOString().split('T')[0]
                       });
                       setScanReceiptOpen(true);
-                    };
-                    reader.readAsDataURL(file);
+                      toast({
+                        title: "Image Uploaded",
+                        description: "Receipt image has been processed and is ready to save."
+                      });
+                    });
                   }
                 }}
               />
@@ -539,12 +610,53 @@ export default function Expenses() {
                           onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              const reader = new FileReader();
-                              reader.onloadend = () => {
-                                const base64String = reader.result as string;
-                                setReceiptForm({ ...receiptForm, imageData: base64String });
+                              // Reuse the compression function from above
+                              const compressImage = (file: File, maxSize: number): Promise<string> => {
+                                return new Promise((resolve) => {
+                                  const reader = new FileReader();
+                                  reader.onload = (event) => {
+                                    const img = new Image();
+                                    img.onload = () => {
+                                      const canvas = document.createElement('canvas');
+                                      let width = img.width;
+                                      let height = img.height;
+                                      
+                                      // Calculate new dimensions while maintaining aspect ratio
+                                      if (width > height) {
+                                        if (width > maxSize) {
+                                          height = Math.round(height * (maxSize / width));
+                                          width = maxSize;
+                                        }
+                                      } else {
+                                        if (height > maxSize) {
+                                          width = Math.round(width * (maxSize / height));
+                                          height = maxSize;
+                                        }
+                                      }
+                                      
+                                      canvas.width = width;
+                                      canvas.height = height;
+                                      const ctx = canvas.getContext('2d');
+                                      ctx?.drawImage(img, 0, 0, width, height);
+                                      
+                                      // Get compressed image data
+                                      const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                                      resolve(dataUrl);
+                                    };
+                                    img.src = event.target?.result as string;
+                                  };
+                                  reader.readAsDataURL(file);
+                                });
                               };
-                              reader.readAsDataURL(file);
+                              
+                              // Compress and set image
+                              compressImage(file, 1280).then(compressedImage => {
+                                setReceiptForm({ ...receiptForm, imageData: compressedImage });
+                                toast({
+                                  title: "Image Uploaded",
+                                  description: "Receipt image has been processed successfully."
+                                });
+                              });
                             }
                           }}
                         />
@@ -771,18 +883,59 @@ export default function Expenses() {
                           onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              const reader = new FileReader();
-                              reader.onloadend = () => {
-                                const base64String = reader.result as string;
+                              // Reuse the compression function
+                              const compressImage = (file: File, maxSize: number): Promise<string> => {
+                                return new Promise((resolve) => {
+                                  const reader = new FileReader();
+                                  reader.onload = (event) => {
+                                    const img = new Image();
+                                    img.onload = () => {
+                                      const canvas = document.createElement('canvas');
+                                      let width = img.width;
+                                      let height = img.height;
+                                      
+                                      // Calculate new dimensions while maintaining aspect ratio
+                                      if (width > height) {
+                                        if (width > maxSize) {
+                                          height = Math.round(height * (maxSize / width));
+                                          width = maxSize;
+                                        }
+                                      } else {
+                                        if (height > maxSize) {
+                                          width = Math.round(width * (maxSize / height));
+                                          height = maxSize;
+                                        }
+                                      }
+                                      
+                                      canvas.width = width;
+                                      canvas.height = height;
+                                      const ctx = canvas.getContext('2d');
+                                      ctx?.drawImage(img, 0, 0, width, height);
+                                      
+                                      // Get compressed image data
+                                      const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                                      resolve(dataUrl);
+                                    };
+                                    img.src = event.target?.result as string;
+                                  };
+                                  reader.readAsDataURL(file);
+                                });
+                              };
+                              
+                              // Compress and set image
+                              compressImage(file, 1280).then(compressedImage => {
                                 setReceiptForm({
                                   ...receiptForm,
-                                  imageData: base64String,
+                                  imageData: compressedImage,
                                   vendor: file.name.split('.')[0] || "Unknown Vendor",
                                   date: new Date().toISOString().split('T')[0]
                                 });
                                 setScanReceiptOpen(true);
-                              };
-                              reader.readAsDataURL(file);
+                                toast({
+                                  title: "Image Uploaded",
+                                  description: "Receipt image has been processed and is ready to save."
+                                });
+                              });
                             }
                           }}
                         />
