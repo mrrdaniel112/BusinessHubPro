@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -11,20 +11,95 @@ import Expenses from "@/pages/expenses";
 import Invoices from "@/pages/invoices";
 import AiInsights from "@/pages/ai-insights";
 import BusinessAssistant from "@/pages/business-assistant";
+import Login from "@/pages/login";
 import MainLayout from "@/components/layout/main-layout";
+import { AuthProvider } from "@/context/auth-context";
+import { ProtectedRoute } from "@/components/auth/protected-route";
+
+function ProtectedRouteWithLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <ProtectedRoute>
+      <MainLayout>{children}</MainLayout>
+    </ProtectedRoute>
+  );
+}
 
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Dashboard} />
-      <Route path="/financials" component={Financials} />
-      <Route path="/inventory" component={Inventory} />
-      <Route path="/contracts" component={Contracts} />
-      <Route path="/expenses" component={Expenses} />
-      <Route path="/invoices" component={Invoices} />
-      <Route path="/ai-insights" component={AiInsights} />
-      <Route path="/business-assistant" component={BusinessAssistant} />
-      <Route component={NotFound} />
+      <Route path="/login" component={Login} />
+      
+      <Route path="/">
+        {() => (
+          <ProtectedRouteWithLayout>
+            <Dashboard />
+          </ProtectedRouteWithLayout>
+        )}
+      </Route>
+      
+      <Route path="/financials">
+        {() => (
+          <ProtectedRouteWithLayout>
+            <Financials />
+          </ProtectedRouteWithLayout>
+        )}
+      </Route>
+      
+      <Route path="/inventory">
+        {() => (
+          <ProtectedRouteWithLayout>
+            <Inventory />
+          </ProtectedRouteWithLayout>
+        )}
+      </Route>
+      
+      <Route path="/contracts">
+        {() => (
+          <ProtectedRouteWithLayout>
+            <Contracts />
+          </ProtectedRouteWithLayout>
+        )}
+      </Route>
+      
+      <Route path="/expenses">
+        {() => (
+          <ProtectedRouteWithLayout>
+            <Expenses />
+          </ProtectedRouteWithLayout>
+        )}
+      </Route>
+      
+      <Route path="/invoices">
+        {() => (
+          <ProtectedRouteWithLayout>
+            <Invoices />
+          </ProtectedRouteWithLayout>
+        )}
+      </Route>
+      
+      <Route path="/ai-insights">
+        {() => (
+          <ProtectedRouteWithLayout>
+            <AiInsights />
+          </ProtectedRouteWithLayout>
+        )}
+      </Route>
+      
+      <Route path="/business-assistant">
+        {() => (
+          <ProtectedRouteWithLayout>
+            <BusinessAssistant />
+          </ProtectedRouteWithLayout>
+        )}
+      </Route>
+      
+      <Route>
+        {() => (
+          <ProtectedRouteWithLayout>
+            <NotFound />
+          </ProtectedRouteWithLayout>
+        )}
+      </Route>
     </Switch>
   );
 }
@@ -32,10 +107,10 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <MainLayout>
+      <AuthProvider>
         <Router />
-      </MainLayout>
-      <Toaster />
+        <Toaster />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
