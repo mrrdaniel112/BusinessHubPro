@@ -271,6 +271,21 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
   
   // Invoice templates
   const invoiceTemplates = {
+    renovation: {
+      title: "Residential Renovation",
+      description: "Complete home renovation project",
+      items: [
+        { id: "ren1", description: "New bathroom installation and fixtures", quantity: 1, price: 15000 },
+        { id: "ren2", description: "Kitchen expansion and remodeling", quantity: 1, price: 18500 },
+        { id: "ren3", description: "Removal of load-bearing wall with structural support", quantity: 1, price: 8500 },
+        { id: "ren4", description: "Hardwood flooring installation", quantity: 1, price: 12000 },
+        { id: "ren5", description: "Electrical system upgrades", quantity: 1, price: 7500 },
+        { id: "ren6", description: "Energy-efficient window installation", quantity: 1, price: 8500 },
+        { id: "ren7", description: "Building permits and inspections", quantity: 1, price: 2000 },
+        { id: "ren8", description: "Project management and supervision", quantity: 1, price: 3000 }
+      ],
+      notes: "Thank you for your business! This invoice covers all renovation services as outlined in our agreement. All work performed in compliance with local building codes and completed on schedule. Payment is due within 30 days of receipt."
+    },
     default: {
       title: "Professional Services",
       description: "Default business services template",
