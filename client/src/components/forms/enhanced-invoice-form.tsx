@@ -388,7 +388,40 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
     });
   };
 
-  // Generate invoice details with AI
+  // Function to parse text into line items (like QuickBooks)
+  const parseTextToLineItems = (text: string): InvoiceItem[] => {
+    // Split the text by new lines and filter out empty lines
+    const lines = text.split('\n').filter(line => line.trim() !== '');
+    
+    return lines.map(line => {
+      let description = line.trim();
+      let quantity = 1;
+      let price = 1500; // Default price
+      
+      // Try to extract quantity if format is like "5x Widget" or "5 Widget"
+      const quantityMatch = description.match(/^(\d+)(?:x|\s+)/);
+      if (quantityMatch) {
+        quantity = parseInt(quantityMatch[1], 10);
+        description = description.replace(quantityMatch[0], '').trim();
+      }
+      
+      // Try to extract price if format is like "Widget - $500" or "Widget $500"
+      const priceMatch = description.match(/[\s-]*\$(\d+(?:,\d+)*(?:\.\d+)?)/);
+      if (priceMatch) {
+        price = parseFloat(priceMatch[1].replace(/,/g, ''));
+        description = description.replace(priceMatch[0], '').trim();
+      }
+      
+      return {
+        id: Math.random().toString(36).substring(2, 9),
+        description,
+        quantity,
+        price
+      };
+    });
+  };
+
+  // Generate invoice details with AI or fallback to text parsing
   const generateAIInvoiceDetails = async () => {
     if (!projectDescription) {
       toast({
@@ -402,6 +435,7 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
     setIsGeneratingAI(true);
     
     try {
+      // First try with AI
       const res = await apiRequest('POST', '/api/ai/generate-invoice', {
         projectDescription,
         clientName: formState.clientName
@@ -433,11 +467,24 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
       }
     } catch (error) {
       console.error("Error generating AI content:", error);
-      toast({
-        title: "AI Generation Failed",
-        description: "Could not generate invoice details. Please try again or enter manually.",
-        variant: "destructive"
-      });
+      
+      // Fallback to parsing text when AI fails
+      const parsedItems = parseTextToLineItems(projectDescription);
+      
+      if (parsedItems.length > 0) {
+        setItems(parsedItems);
+        
+        toast({
+          title: "Line Items Created",
+          description: `Created ${parsedItems.length} invoice items from your description`,
+        });
+      } else {
+        toast({
+          title: "Processing Failed",
+          description: "Could not generate invoice items. Please add them manually.",
+          variant: "destructive"
+        });
+      }
     } finally {
       setIsGeneratingAI(false);
     }
@@ -580,25 +627,29 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
             </Select>
           </div>
           
-          {/* AI-powered invoice generation */}
+          {/* Quick line item entry section */}
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="ai-generation">
               <AccordionTrigger>
                 <div className="flex items-center">
-                  <i className="ri-robot-line mr-2 text-primary-600"></i>
-                  AI-Powered Invoice Generation
+                  <i className="ri-text-wrap mr-2 text-primary-600"></i>
+                  Quick Line Item Entry
                 </div>
               </AccordionTrigger>
               <AccordionContent>
                 <div className="space-y-4">
                   <div>
-                    <FormLabel htmlFor="projectDescription">Describe your project</FormLabel>
+                    <FormLabel htmlFor="projectDescription">Enter line items (one per line)</FormLabel>
                     <Textarea
                       id="projectDescription"
-                      placeholder="Describe the project, services provided, or work completed. AI will generate line items and descriptions."
+                      placeholder="Enter one line item per line. Examples:
+Website design $2500
+10x Custom icons $50
+Content creation - $1500
+Logo redesign"
                       value={projectDescription}
                       onChange={(e) => setProjectDescription(e.target.value)}
-                      className="min-h-[100px]"
+                      className="min-h-[120px]"
                     />
                   </div>
                   <Button 
@@ -612,8 +663,8 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
                       </>
                     ) : (
                       <>
-                        <i className="ri-magic-line mr-2"></i>
-                        Generate Invoice Items & Description
+                        <i className="ri-list-check-3 mr-2"></i>
+                        Convert Text to Line Items
                       </>
                     )}
                   </Button>
