@@ -1,6 +1,12 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
-import { Dialog, DialogContent, DialogOverlay } from "@/components/ui/dialog";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogTitle,
+  DialogDescription
+} from "@/components/ui/dialog";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/auth-context";
 
