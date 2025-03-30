@@ -1,16 +1,7 @@
 import OpenAI from "openai";
 
-// Check if OpenRouter API key is available
+// Check if OpenAI API key is available
 function isOpenAIConfigured(): boolean {
-  // First check OpenRouter API key
-  const openRouterKey = process.env.OPENROUTER_API_KEY;
-  if (openRouterKey !== undefined && 
-      openRouterKey !== null && 
-      openRouterKey.trim() !== '') {
-    return true;
-  }
-  
-  // Fall back to OpenAI API key if OpenRouter key is not available
   const apiKey = process.env.OPENAI_API_KEY;
   return apiKey !== undefined && 
          apiKey !== null && 
@@ -18,24 +9,18 @@ function isOpenAIConfigured(): boolean {
          apiKey !== 'disabled_key';
 }
 
-// Create OpenAI client using OpenRouter or falling back to direct OpenAI
+// Create OpenAI client using direct OpenAI API with GPT-4o
 const openai = new OpenAI({
-  baseURL: process.env.OPENROUTER_API_KEY ? "https://openrouter.ai/api/v1" : undefined,
-  apiKey: process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY || "disabled_key",
-  maxRetries: 1,
-  timeout: 10000,
+  apiKey: process.env.OPENAI_API_KEY,
+  maxRetries: 2,
+  timeout: 30000, // Increased timeout for complex tasks
 });
 
-// Helper function to determine which model to use based on available API keys
+// Always use GPT-4o for best results
 function getAIModel(): string {
-  // If using OpenRouter, use a compatible model
-  if (process.env.OPENROUTER_API_KEY) {
-    return "cognitivecomputations/dolphin3.0-mistral-24b:free"; // A free model on OpenRouter
-  }
-  
-  // Otherwise use OpenAI's latest model (released after knowledge cutoff)
-  // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-  return "gpt-4o"; // Using GPT-4o for optimal quality and capabilities
+  // Use latest GPT-4o model (released after knowledge cutoff)
+  // the newest OpenAI model is "gpt-4o" which was released May 13, 2024
+  return "gpt-4o"; 
 }
 
 // Handle AI errors gracefully with fallback responses
@@ -345,6 +330,68 @@ export async function generateInvoiceDetails(
         description.includes('composite') || description.includes('footings') || 
         description.includes('railing') || description.includes('stairs') || 
         description.includes('permit')) {
+      // Try to generate a specialized construction invoice if we have API access
+      try {
+        console.log("Attempting to generate specialized construction invoice with GPT-4o...");
+        
+        const constructionPrompt = `
+        You are a master builder and construction cost estimator with 30+ years of experience. Generate an extremely accurate and detailed invoice for this construction project:
+        
+        Project: ${projectDescription}
+        Client: ${clientName}
+        
+        Create 6-8 specific line items for construction that would be included in this project with:
+        1. EXTREMELY specific descriptions for each component (materials, dimensions, specifications)
+        2. Realistic quantities based on industry standards
+        3. Accurate 2025 construction pricing (high-end pricing for premium quality work)
+        4. Proper breakdown of construction phases (site prep, foundation, framing, etc.)
+        5. Technical construction terminology that shows deep expertise
+        
+        Format response as JSON with structure:
+        {
+          "items": [
+            {"description": "Detailed construction item", "quantity": 1, "price": 5000}
+          ],
+          "notes": "Payment terms and details",
+          "projectStory": "Detailed construction narrative",
+          "costBreakdown": [
+            {"category": "Materials", "percentage": 40, "description": "Detailed materials breakdown"}
+          ]
+        }`;
+        
+        const constructionResponse = await openai.chat.completions.create({
+          model: getAIModel(),
+          messages: [
+            {
+              role: "system",
+              content: "You are a master builder and construction cost estimator with 30+ years experience in all aspects of residential and commercial construction. You have encyclopedic knowledge of construction materials, labor costs, building codes, and professional estimating practices. You create extraordinarily detailed and accurate construction estimates that reflect current industry pricing standards."
+            },
+            {
+              role: "user",
+              content: constructionPrompt
+            }
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.3,
+          max_tokens: 2500,
+        });
+        
+        const constructionResult = JSON.parse(constructionResponse.choices[0].message.content);
+        
+        if (constructionResult.items && Array.isArray(constructionResult.items) && constructionResult.items.length > 0) {
+          return {
+            items: constructionResult.items,
+            notes: constructionResult.notes || `Thank you, ${clientName}, for choosing our construction services. All work is guaranteed for 5 years. Payment is due within 15 days of invoice date.`,
+            projectStory: constructionResult.projectStory || undefined,
+            costBreakdown: Array.isArray(constructionResult.costBreakdown) ? constructionResult.costBreakdown : undefined
+          };
+        }
+      } catch (constructionError) {
+        console.error("Error generating specialized construction invoice:", constructionError);
+        // Fall back to template if the specialized generation fails
+      }
+      
+      // Use the template as fallback
       template = invoiceTemplates.construction;
     
     // Web development detection
