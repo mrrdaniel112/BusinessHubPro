@@ -60,14 +60,24 @@ const NavItem = ({ href, icon, label, active, onClick }: NavItemProps & { onClic
     <Link href={href}>
       <div
         className={cn(
-          "flex items-center px-3 py-2.5 text-sm font-medium rounded-md group cursor-pointer border",
+          "flex items-center px-3 py-3 text-sm font-semibold rounded-md group cursor-pointer border-l-4 transition-all duration-200",
           active
-            ? "text-white bg-primary-600 border-primary-700 shadow-sm"
-            : "text-gray-700 hover:bg-gray-100 hover:text-gray-900 border-transparent hover:border-gray-200"
+            ? "text-white bg-primary-600 border-l-primary-800 shadow-md scale-102 transform translate-x-1"
+            : "text-gray-700 hover:bg-gray-50 hover:text-gray-900 border-l-transparent hover:border-l-primary-400"
         )}
+        style={{
+          boxShadow: active ? "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)" : "none"
+        }}
       >
-        <Icon className={cn("mr-3 h-5 w-5", active ? "text-white" : "text-gray-500")} />
-        {label}
+        <Icon 
+          className={cn(
+            "mr-3 h-5 w-5 transition-all", 
+            active ? "text-white scale-125" : "text-gray-500"
+          )} 
+        />
+        <span className={active ? "font-bold" : "font-medium"}>
+          {label}
+        </span>
       </div>
     </Link>
   );
