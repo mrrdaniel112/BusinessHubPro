@@ -1,17 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { useAuth } from "@/context/auth-context";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { format, isEqual, isSameDay, isSameMonth, isToday, addDays, startOfMonth, endOfMonth, eachDayOfInterval, parseISO, isValid } from "date-fns";
+import { format, isSameDay, addDays, isPast } from "date-fns";
 import { CalendarIcon, PlusCircle, Clock, MapPin, Users, BadgeCheck, AlertCircle, Calendar as CalendarIcon2 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Badge } from "@/components/ui/badge"; 
 
 // Event types with colors
 const EVENT_TYPES = [
@@ -37,6 +37,7 @@ export default function Calendar() {
   const { user } = useAuth();
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [events, setEvents] = useState<CalendarEvent[]>([
     { id: "1", title: "Invoice Due - ABC Corp", date: new Date(2025, 2, 31), type: "invoice", description: "Payment for Project Phase 1", time: "5:00 PM" },
     { id: "2", title: "Client Meeting - XYZ Inc", date: new Date(2025, 3, 2), type: "meeting", description: "Discuss new project requirements", location: "Client Office", time: "10:00 AM" },
@@ -47,6 +48,7 @@ export default function Calendar() {
   
   const [isAddEventOpen, setIsAddEventOpen] = useState(false);
   const [isViewEventOpen, setIsViewEventOpen] = useState(false);
+  const [isDateEventsOpen, setIsDateEventsOpen] = useState(false);
   const [newEvent, setNewEvent] = useState({
     title: "",
     date: new Date(),
@@ -63,7 +65,24 @@ export default function Calendar() {
 
   // Get events for a specific day
   const getEventsForDay = (day: Date) => {
-    return events.filter(event => isSameDay(day, event.date));
+    return events.filter(event => isSameDay(new Date(event.date), day));
+  };
+
+  // Calendar date selection handler
+  const handleDateSelect = (selectedDate: Date | undefined) => {
+    setDate(selectedDate);
+    
+    if (selectedDate) {
+      const eventsOnDay = getEventsForDay(selectedDate);
+      if (eventsOnDay.length > 0) {
+        setSelectedDate(selectedDate);
+        setIsDateEventsOpen(true);
+      } else if (eventsOnDay.length === 0) {
+        // If no events, open the add event dialog with the selected date
+        setNewEvent({...newEvent, date: selectedDate });
+        setIsAddEventOpen(true);
+      }
+    }
   };
 
   // Upcoming events (next 14 days)
@@ -96,6 +115,7 @@ export default function Calendar() {
   const handleDeleteEvent = (id: string) => {
     setEvents(events.filter(event => event.id !== id));
     setIsViewEventOpen(false);
+    setIsDateEventsOpen(false);
   };
 
   // Get event type info
@@ -103,43 +123,32 @@ export default function Calendar() {
     return EVENT_TYPES.find(t => t.value === type) || EVENT_TYPES[3]; // Default to task
   };
 
-  // Calendar day renderer with events
-  const renderCalendarDay = (day: Date) => {
+  // Function to check if a day has events
+  const dayHasEvents = (day: Date): boolean => {
+    return getEventsForDay(day).length > 0;
+  };
+
+  // Custom day renderer to show event indicators
+  const renderDay = (day: Date, events: CalendarEvent[]) => {
     const dayEvents = getEventsForDay(day);
+    const types = new Set(dayEvents.map(event => event.type));
     
+    // Return the event indicators for the day
     return (
-      <div 
-        className={cn(
-          "h-full w-full p-1 flex flex-col relative",
-          !isSameMonth(day, date || new Date()) && "text-muted-foreground opacity-50",
-          isToday(day) && "bg-primary-50 text-primary-700 font-medium rounded-md",
-          dayEvents.length > 0 && "cursor-pointer hover:bg-muted"
-        )}
-        onClick={() => {
-          if (dayEvents.length > 0) {
-            setSelectedEvent(dayEvents[0]);
-            setIsViewEventOpen(true);
-          }
-        }}
-      >
-        <time dateTime={format(day, 'yyyy-MM-dd')} className="ml-auto font-normal text-xs">
-          {format(day, 'd')}
-        </time>
+      <div className="relative h-full w-full p-2">
+        <div className="absolute top-1 right-1 text-xs">{format(day, 'd')}</div>
+        
         {dayEvents.length > 0 && (
-          <div className="mt-auto">
-            {dayEvents.slice(0, 2).map((event, i) => (
-              <div 
-                key={event.id} 
-                className={`text-xs truncate mt-1 px-1 py-0.5 rounded-sm ${getEventTypeInfo(event.type).color} bg-opacity-20 border-l-2 ${getEventTypeInfo(event.type).color}`}
-              >
-                {event.title}
-              </div>
-            ))}
-            {dayEvents.length > 2 && (
-              <div className="text-xs text-muted-foreground mt-1">
-                +{dayEvents.length - 2} more
-              </div>
-            )}
+          <div className="absolute bottom-1 left-0 right-0 flex justify-center">
+            <div className="flex space-x-1">
+              {Array.from(types).slice(0, 3).map((type, i) => (
+                <div 
+                  key={i} 
+                  className={`h-1.5 w-1.5 rounded-full ${getEventTypeInfo(type).color}`}
+                />
+              ))}
+              {types.size > 3 && <div className="h-1.5 w-1.5 rounded-full bg-gray-400" />}
+            </div>
           </div>
         )}
       </div>
@@ -180,16 +189,26 @@ export default function Calendar() {
                 <CalendarComponent
                   mode="single"
                   selected={date}
-                  onSelect={setDate}
+                  onSelect={handleDateSelect}
                   className="rounded-md border"
-                  components={{
-                    Day: ({ day, ...props }) => (
-                      <CalendarComponent.Day day={day} {...props}>
-                        {renderCalendarDay(day)}
-                      </CalendarComponent.Day>
-                    )
+                  modifiersClassNames={{
+                    selected: "bg-primary text-primary-foreground",
+                    today: "bg-primary-50 text-primary-700 font-medium"
                   }}
                 />
+              </div>
+                            
+              <div className="mt-4 flex flex-wrap gap-2">
+                {EVENT_TYPES.map(type => (
+                  <Badge 
+                    key={type.value} 
+                    variant="outline" 
+                    className="flex items-center gap-1"
+                  >
+                    <div className={`w-2 h-2 rounded-full ${type.color}`} />
+                    <span>{type.label}</span>
+                  </Badge>
+                ))}
               </div>
             </CardContent>
           </Card>
@@ -432,6 +451,88 @@ export default function Calendar() {
                 Delete
               </Button>
               <Button type="button" onClick={() => setIsViewEventOpen(false)}>
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Events for Selected Date Dialog */}
+      {selectedDate && (
+        <Dialog open={isDateEventsOpen} onOpenChange={setIsDateEventsOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Events on {formatDate(selectedDate)}</DialogTitle>
+              <DialogDescription>
+                All scheduled events for this date
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
+                {getEventsForDay(selectedDate).map((event) => {
+                  const eventType = getEventTypeInfo(event.type);
+                  
+                  return (
+                    <div 
+                      key={event.id}
+                      className="flex p-3 bg-muted rounded-md hover:bg-muted/80 cursor-pointer"
+                      onClick={() => {
+                        setSelectedEvent(event);
+                        setIsDateEventsOpen(false);
+                        setIsViewEventOpen(true);
+                      }}
+                    >
+                      <div className="flex-shrink-0">
+                        <div className={`w-1 h-full rounded-full ${eventType.color}`} />
+                      </div>
+                      <div className="ml-3">
+                        <div className="font-medium mb-1">{event.title}</div>
+                        <div className="text-sm text-muted-foreground flex flex-wrap items-center gap-x-3">
+                          {event.time && (
+                            <div className="flex items-center gap-1">
+                              <Clock size={12} />
+                              <span>{event.time}</span>
+                            </div>
+                          )}
+                          {event.location && (
+                            <div className="flex items-center gap-1">
+                              <MapPin size={12} />
+                              <span>{event.location}</span>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-1">
+                            <Badge 
+                              variant="outline" 
+                              className="px-1 h-5 text-xs flex items-center gap-1"
+                            >
+                              <div className={`w-1.5 h-1.5 rounded-full ${eventType.color}`} />
+                              {eventType.label}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            <DialogFooter className="flex justify-between">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  if (selectedDate) {
+                    setNewEvent({...newEvent, date: selectedDate});
+                    setIsDateEventsOpen(false);
+                    setIsAddEventOpen(true);
+                  }
+                }}
+              >
+                <PlusCircle size={16} className="mr-2" />
+                Add Event
+              </Button>
+              <Button type="button" onClick={() => setIsDateEventsOpen(false)}>
                 Close
               </Button>
             </DialogFooter>
