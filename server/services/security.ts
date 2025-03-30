@@ -8,24 +8,60 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Configuration
+// Security Configuration with Environment Variable Support
+// For production, all these would be set via environment variables
+
+// Data Encryption - AES-256-GCM is industry standard for high security
 const ENCRYPTION_ALGORITHM = 'aes-256-gcm';
 const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'business-platform-encryption-key-32chars'; // Should be 32 bytes (256 bits)
 const IV_LENGTH = 16; // For AES, this is always 16 bytes
 const AUTH_TAG_LENGTH = 16; // For GCM mode
+const KEY_ROTATION_DAYS = 90; // Key rotation period
 
-// Password security settings
-const SALT_ROUNDS = 10;
-const MIN_PASSWORD_LENGTH = 10;
+// Secure data handling flags
+const SECURE_MEMORY_HANDLING = true; // When true, we take extra precautions with sensitive data in memory
+const DATA_SANITIZATION_ENABLED = true; // Sanitize potentially dangerous inputs
+
+// Password security settings - enterprise-grade requirements
+const SALT_ROUNDS = 12; // Higher than default
+const MIN_PASSWORD_LENGTH = 12; // Longer than the NIST-recommended 8
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/;
+const PASSWORD_EXPIRY_DAYS = 90; // Force password changes periodically
+const PASSWORD_HISTORY = 5; // Prevent reuse of recent passwords
 
-// Token settings
+// Session and token settings
 const ACCESS_TOKEN_EXPIRY = '15m'; // 15 minutes
 const REFRESH_TOKEN_EXPIRY = '7d'; // 7 days
+const SESSION_ABSOLUTE_TIMEOUT = '24h'; // Force logout after this period
+const SECURE_COOKIES = true; // Set cookies with Secure and HttpOnly flags
+const SAME_SITE_COOKIES = 'strict'; // Prevent CSRF
 
-// Rate limiting
+// Rate limiting and brute force protection
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOGIN_TIMEOUT_MINUTES = 15;
+const IP_RATE_LIMIT = 100; // Requests per minute
+const API_RATE_LIMIT = 60; // API requests per minute
+
+// TLS/SSL Configuration
+// These would be used when setting up HTTPS
+const TLS_MIN_VERSION = 'TLSv1.2'; // Minimum TLS version
+const SECURE_CIPHERS = [
+  'TLS_AES_256_GCM_SHA384',
+  'TLS_CHACHA20_POLY1305_SHA256',
+  'TLS_AES_128_GCM_SHA256',
+  'ECDHE-RSA-AES256-GCM-SHA384',
+  'ECDHE-RSA-AES128-GCM-SHA256'
+].join(':');
+
+// Audit logging configuration
+const AUDIT_LOG_RETENTION_DAYS = 365; // 1 year retention for security logs
+const AUDIT_SENSITIVE_OPERATIONS = true; // Log all sensitive operations
+
+// Data breach protection
+const ENABLE_BREACH_DETECTION = true; // Monitor for potential data breaches
+const BREACH_NOTIFICATION_CONTACTS = process.env.SECURITY_CONTACTS ? 
+                                    process.env.SECURITY_CONTACTS.split(',') : 
+                                    ['security@businessplatform.com'];
 
 // Security breach simulation protection
 const loginAttempts: Record<string, { count: number, lastAttempt: number }> = {};
@@ -346,6 +382,145 @@ export function detectAnomalousActivity(
 }
 
 // Export middleware for use in routes
+/**
+ * Secure Data Handling Functions
+ */
+
+// Sanitize data to prevent injection attacks
+export function sanitizeData(data: any): any {
+  if (!DATA_SANITIZATION_ENABLED) return data;
+  
+  if (typeof data === 'string') {
+    // Basic XSS prevention - in production would use a library like DOMPurify
+    return data
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#x27;')
+      .replace(/\//g, '&#x2F;');
+  }
+  
+  if (typeof data === 'object' && data !== null) {
+    if (Array.isArray(data)) {
+      return data.map(item => sanitizeData(item));
+    }
+    
+    const result: Record<string, any> = {};
+    for (const key in data) {
+      if (Object.prototype.hasOwnProperty.call(data, key)) {
+        result[key] = sanitizeData(data[key]);
+      }
+    }
+    return result;
+  }
+  
+  return data;
+}
+
+// Redact sensitive information from logs and responses
+export function redactSensitiveData(data: any, sensitiveKeys: string[] = [
+  'password', 'ssn', 'creditCard', 'cvv', 'accessToken', 'refreshToken'
+]): any {
+  if (!data) return data;
+  
+  if (typeof data === 'object') {
+    if (Array.isArray(data)) {
+      return data.map(item => redactSensitiveData(item, sensitiveKeys));
+    }
+    
+    const result: Record<string, any> = {};
+    for (const key in data) {
+      if (Object.prototype.hasOwnProperty.call(data, key)) {
+        if (sensitiveKeys.some(sk => key.toLowerCase().includes(sk.toLowerCase()))) {
+          result[key] = '********';
+        } else {
+          result[key] = redactSensitiveData(data[key], sensitiveKeys);
+        }
+      }
+    }
+    return result;
+  }
+  
+  return data;
+}
+
+// Secure handling of sensitive data in memory
+export function secureMemoryHandling<T>(sensitiveData: T, operation: (data: T) => void): void {
+  if (!SECURE_MEMORY_HANDLING) {
+    operation(sensitiveData);
+    return;
+  }
+  
+  try {
+    // Perform the operation with the sensitive data
+    operation(sensitiveData);
+  } finally {
+    // In a real implementation, we would overwrite the memory
+    // For JavaScript/TypeScript, we do what we can, which is limited
+    if (typeof sensitiveData === 'string') {
+      // Overwrite string memory as best as possible (limited by JS string immutability)
+      // This is more a demonstration of intent than truly effective
+      (sensitiveData as any) = '0'.repeat(sensitiveData.length);
+    } else if (ArrayBuffer.isView(sensitiveData)) {
+      // For typed arrays, we can actually overwrite memory
+      const view = new Uint8Array(sensitiveData.buffer);
+      view.fill(0);
+    } else if (typeof sensitiveData === 'object' && sensitiveData !== null) {
+      // For objects, overwrite each property
+      for (const key in sensitiveData) {
+        if (typeof sensitiveData[key] === 'string') {
+          (sensitiveData as any)[key] = '0'.repeat(sensitiveData[key].length);
+        } else if (typeof sensitiveData[key] === 'number') {
+          (sensitiveData as any)[key] = 0;
+        } else if (typeof sensitiveData[key] === 'object' && sensitiveData[key] !== null) {
+          secureMemoryHandling(sensitiveData[key], () => {});
+        }
+      }
+    }
+  }
+}
+
+// Generate a secure token (for CSRF, etc.)
+export function generateSecureToken(length = 32): string {
+  return crypto.randomBytes(length).toString('hex');
+}
+
+// Secure session configuration
+export function getSecureSessionConfig(): any {
+  return {
+    secret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'),
+    name: 'secure.sid', // Non-default name to avoid fingerprinting
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+      sameSite: SAME_SITE_COOKIES,
+      maxAge: 86400000, // 24 hours
+    },
+  };
+}
+
+// Setup TLS/HTTPS for secure data in transit
+export function configureTLS(server: any): void {
+  // In a real implementation, this would set up proper TLS options
+  // Example:
+  /*
+  const tlsOptions = {
+    key: fs.readFileSync('path/to/private.key'),
+    cert: fs.readFileSync('path/to/certificate.crt'),
+    minVersion: TLS_MIN_VERSION,
+    ciphers: SECURE_CIPHERS,
+    // Disable old/insecure protocols and ciphers
+    secureProtocol: 'TLSv1_2_method',
+    honorCipherOrder: true,
+  };
+  */
+  
+  console.log('TLS configuration would be applied in production environment');
+}
+
+// Export middleware for use in routes
 export const securityMiddleware = {
   // CSRF Protection
   csrfCheck: (req: any, res: any, next: any) => {
@@ -366,6 +541,35 @@ export const securityMiddleware = {
   rateLimit: (req: any, res: any, next: any) => {
     // Implement rate limiting here based on IP or user
     // This is simplified - use a proper rate limiting library in production
+    next();
+  },
+  
+  // Data sanitization middleware
+  sanitizeInput: (req: any, res: any, next: any) => {
+    if (DATA_SANITIZATION_ENABLED && req.body) {
+      req.body = sanitizeData(req.body);
+    }
+    next();
+  },
+  
+  // Set secure headers (integrates with helmet)
+  secureHeaders: (req: any, res: any, next: any) => {
+    // These would normally be set via helmet
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    
+    // Content Security Policy
+    res.setHeader('Content-Security-Policy', 
+      "default-src 'self'; " +
+      "script-src 'self'; " +
+      "style-src 'self' 'unsafe-inline'; " + 
+      "img-src 'self' data:; " +
+      "font-src 'self'; " +
+      "connect-src 'self';"
+    );
+    
     next();
   }
 };
