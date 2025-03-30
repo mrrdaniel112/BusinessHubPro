@@ -18,7 +18,9 @@ import {
   // CRM schemas
   clients, Client, InsertClient,
   clientInteractions, ClientInteraction, InsertClientInteraction,
-  clientDeals, ClientDeal, InsertClientDeal
+  clientDeals, ClientDeal, InsertClientDeal,
+  // Employee Management
+  employees, Employee, InsertEmployee
 } from "@shared/schema";
 
 export interface IStorage {
@@ -136,6 +138,14 @@ export interface IStorage {
   updateClientDeal(id: number, deal: Partial<InsertClientDeal>): Promise<ClientDeal | undefined>;
   getClientDealsByStage(userId: number, stage: string): Promise<ClientDeal[]>;
   getClientDealsForecast(userId: number): Promise<{ stage: string, count: number, value: number }[]>;
+  
+  // Employee Management
+  getEmployees(userId: number): Promise<Employee[]>;
+  getEmployeeById(id: number): Promise<Employee | undefined>;
+  createEmployee(employee: InsertEmployee): Promise<Employee>;
+  updateEmployee(id: number, employee: Partial<InsertEmployee>): Promise<Employee | undefined>;
+  getEmployeesByStatus(userId: number, status: string): Promise<Employee[]>;
+  getTimeEntriesByEmployee(userId: number, employeeId: number): Promise<TimeEntry[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -162,6 +172,9 @@ export class MemStorage implements IStorage {
   private clientInteractions: Map<number, ClientInteraction>;
   private clientDeals: Map<number, ClientDeal>;
   
+  // Employee Management
+  private employees: Map<number, Employee>;
+  
   private userCurrentId: number;
   private transactionCurrentId: number;
   private inventoryItemCurrentId: number;
@@ -184,6 +197,9 @@ export class MemStorage implements IStorage {
   private clientCurrentId: number;
   private clientInteractionCurrentId: number;
   private clientDealCurrentId: number;
+  
+  // Employee Management IDs
+  private employeeCurrentId: number;
 
   constructor() {
     // Initialize maps
@@ -210,6 +226,9 @@ export class MemStorage implements IStorage {
     this.clientInteractions = new Map();
     this.clientDeals = new Map();
     
+    // Initialize Employee Management maps
+    this.employees = new Map();
+    
     // Initialize IDs
     this.userCurrentId = 1;
     this.transactionCurrentId = 1;
@@ -234,10 +253,13 @@ export class MemStorage implements IStorage {
     this.clientInteractionCurrentId = 1;
     this.clientDealCurrentId = 1;
     
+    // Initialize Employee Management IDs
+    this.employeeCurrentId = 1;
+    
     // No demo user or pre-seeded data - each user will get their own data when created
   }
 
-  private seedDemoData(userId: number) {
+  private async seedDemoData(userId: number) {
     const currentUserName = `User-${userId}`;
     const currentYear = new Date().getFullYear();
     
@@ -1163,6 +1185,156 @@ export class MemStorage implements IStorage {
         });
       }
     }
+    
+    // Seed employee data
+    // Create 5-10 employees for different departments
+    const departments = ["Engineering", "Marketing", "Sales", "Finance", "Operations", "Human Resources", "Customer Support"];
+    const positions = {
+      "Engineering": ["Software Engineer", "QA Engineer", "DevOps Engineer", "CTO", "Technical Lead"],
+      "Marketing": ["Marketing Specialist", "Content Creator", "SEO Specialist", "CMO", "Social Media Manager"],
+      "Sales": ["Sales Representative", "Account Executive", "Sales Manager", "VP of Sales", "Business Development"],
+      "Finance": ["Accountant", "Financial Analyst", "CFO", "Bookkeeper", "Controller"],
+      "Operations": ["Operations Manager", "Project Manager", "COO", "Logistics Coordinator", "Process Analyst"],
+      "Human Resources": ["HR Specialist", "Recruiter", "HR Manager", "Compensation Analyst", "Training Coordinator"],
+      "Customer Support": ["Support Specialist", "Customer Success Manager", "Support Lead", "Technical Support", "Account Manager"]
+    };
+    const salaryTypes = ["hourly", "monthly", "yearly"];
+    const statuses = ["active", "on_leave", "terminated"];
+    const statusWeights = [0.8, 0.15, 0.05]; // 80% active, 15% on leave, 5% terminated
+    
+    const employeeCount = 5 + Math.floor(Math.random() * 6); // 5-10 employees
+    
+    for (let i = 0; i < employeeCount; i++) {
+      // Select random department
+      const department = departments[Math.floor(Math.random() * departments.length)];
+      
+      // Select random position from that department
+      const position = positions[department as keyof typeof positions][Math.floor(Math.random() * positions[department as keyof typeof positions].length)];
+      
+      // Random status based on weights
+      let status;
+      const r = Math.random();
+      if (r < statusWeights[0]) {
+        status = statuses[0]; // active
+      } else if (r < statusWeights[0] + statusWeights[1]) {
+        status = statuses[1]; // on_leave
+      } else {
+        status = statuses[2]; // terminated
+      }
+      
+      // Random salary
+      const baseSalary = department === "Engineering" || department === "Finance" ? 
+        80000 + Math.floor(Math.random() * 40000) : 
+        50000 + Math.floor(Math.random() * 30000);
+      
+      const salaryType = salaryTypes[Math.floor(Math.random() * salaryTypes.length)];
+      let salary;
+      
+      if (salaryType === "hourly") {
+        // Convert yearly to hourly (assuming 2080 work hours per year)
+        salary = (baseSalary / 2080).toFixed(2);
+      } else if (salaryType === "monthly") {
+        // Convert yearly to monthly
+        salary = (baseSalary / 12).toFixed(2);
+      } else {
+        // Yearly
+        salary = baseSalary.toString();
+      }
+      
+      // Random start date between 1-5 years ago
+      const startDate = new Date();
+      startDate.setFullYear(startDate.getFullYear() - (1 + Math.floor(Math.random() * 5)));
+      startDate.setMonth(Math.floor(Math.random() * 12));
+      startDate.setDate(1 + Math.floor(Math.random() * 28));
+      
+      // End date (only for terminated employees)
+      let endDate = null;
+      if (status === "terminated") {
+        endDate = new Date();
+        endDate.setMonth(endDate.getMonth() - Math.floor(Math.random() * 6));
+      }
+      
+      // Generate name
+      const firstNames = ["James", "Mary", "John", "Patricia", "Robert", "Jennifer", "Michael", "Linda", "William", "Elizabeth", "David", "Susan", "Richard", "Jessica", "Joseph", "Sarah", "Thomas", "Karen", "Charles", "Lisa"];
+      const lastNames = ["Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez", "Hernandez", "Lopez", "Gonzalez", "Wilson", "Anderson", "Thomas", "Taylor", "Moore", "Jackson", "Martin"];
+      
+      const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+      const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+      
+      // Generate email
+      const emailDomains = ["gmail.com", "yahoo.com", "hotmail.com", "outlook.com", "example.com"];
+      const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}@${emailDomains[Math.floor(Math.random() * emailDomains.length)]}`;
+      
+      // Random phone number
+      const areaCode = 100 + Math.floor(Math.random() * 900);
+      const prefix = 100 + Math.floor(Math.random() * 900);
+      const lineNumber = 1000 + Math.floor(Math.random() * 9000);
+      const phone = `(${areaCode}) ${prefix}-${lineNumber}`;
+      
+      // Create employee
+      const employee: InsertEmployee = {
+        userId,
+        firstName,
+        lastName,
+        email,
+        phone,
+        address: `${1000 + Math.floor(Math.random() * 9000)} Main St`,
+        city: ["New York", "Los Angeles", "Chicago", "Houston", "Phoenix", "Philadelphia", "San Antonio", "San Diego"][Math.floor(Math.random() * 8)],
+        state: ["NY", "CA", "IL", "TX", "AZ", "PA", "TX", "CA"][Math.floor(Math.random() * 8)],
+        zipCode: `${10000 + Math.floor(Math.random() * 90000)}`,
+        country: "USA",
+        position,
+        department,
+        salary,
+        salaryType,
+        startDate: startDate.toISOString().split('T')[0],
+        endDate: endDate ? endDate.toISOString().split('T')[0] : null,
+        status,
+        taxInfo: status !== "terminated" ? `SSN: XXX-XX-${1000 + Math.floor(Math.random() * 9000)}` : null,
+        bankAccountInfo: status !== "terminated" ? `Routing: XXXXXX, Account: XXXX${100 + Math.floor(Math.random() * 900)}` : null,
+        emergencyContact: `${firstNames[Math.floor(Math.random() * firstNames.length)]} ${lastNames[Math.floor(Math.random() * lastNames.length)]}: (${100 + Math.floor(Math.random() * 900)}) ${100 + Math.floor(Math.random() * 900)}-${1000 + Math.floor(Math.random() * 9000)}`,
+        notes: Math.random() > 0.7 ? `Employee notes for ${firstName} ${lastName}` : null
+      };
+      
+      const createdEmployee = await this.createEmployee(employee);
+      
+      // If active employee, create some time entries
+      if (status === "active") {
+        const entryCount = 1 + Math.floor(Math.random() * 4); // 1-4 time entries
+        
+        for (let j = 0; j < entryCount; j++) {
+          const today = new Date();
+          const entryDate = new Date();
+          entryDate.setDate(today.getDate() - Math.floor(Math.random() * 30)); // Entry within last 30 days
+          
+          const startHour = 8 + Math.floor(Math.random() * 3); // 8-10 AM
+          const startTime = new Date(entryDate);
+          startTime.setHours(startHour, 0, 0, 0);
+          
+          const durationHours = 4 + Math.floor(Math.random() * 5); // 4-8 hours
+          const endTime = new Date(startTime);
+          endTime.setHours(startTime.getHours() + durationHours);
+          
+          const projectNames = ["Website Redesign", "Mobile App Development", "Client Consultation", "Marketing Campaign", "Financial Analysis", "Inventory Management"];
+          
+          const projectName = projectNames[Math.floor(Math.random() * projectNames.length)];
+          const timeEntry: InsertTimeEntry = {
+            userId,
+            projectId: `PROJ-${userId}-${Math.floor(Math.random() * 5) + 1}`, // Mock project ID as string
+            projectName,
+            taskDescription: `Work on ${projectName}`,
+            startTime,
+            endTime,
+            duration: String(durationHours * 60), // in minutes as string
+            billable: Math.random() > 0.3, // 70% chance of being billable
+            billingRate: `${50 + Math.floor(Math.random() * 50)}`,
+            notes: `Completed by ${createdEmployee.firstName} ${createdEmployee.lastName}`
+          };
+          
+          await this.createTimeEntry(timeEntry);
+        }
+      }
+    }
   }
 
   // Users
@@ -1182,7 +1354,7 @@ export class MemStorage implements IStorage {
     this.users.set(id, user);
     
     // Generate unique sample data for each new user
-    this.seedDemoData(id);
+    await this.seedDemoData(id);
     
     return user;
   }
@@ -2020,6 +2192,102 @@ export class MemStorage implements IStorage {
       
       return { stage, count, value };
     });
+  }
+
+  // ==== Employee Management Methods ====
+  async getEmployees(userId: number): Promise<Employee[]> {
+    return Array.from(this.employees.values()).filter(
+      (employee) => employee.userId === userId
+    );
+  }
+
+  async getEmployeeById(id: number): Promise<Employee | undefined> {
+    return this.employees.get(id);
+  }
+
+  async createEmployee(employee: InsertEmployee): Promise<Employee> {
+    const id = this.employeeCurrentId++;
+    
+    // Explicitly create the employee object to ensure types match
+    const newEmployee: Employee = {
+      id,
+      userId: employee.userId,
+      firstName: employee.firstName,
+      lastName: employee.lastName,
+      email: employee.email,
+      phone: employee.phone || null,
+      address: employee.address || null,
+      city: employee.city || null,
+      state: employee.state || null,
+      zipCode: employee.zipCode || null,
+      country: employee.country || null,
+      position: employee.position,
+      department: employee.department || null,
+      salary: employee.salary,
+      salaryType: employee.salaryType,
+      startDate: employee.startDate,
+      endDate: employee.endDate || null,
+      status: employee.status,
+      taxInfo: employee.taxInfo || null,
+      bankAccountInfo: employee.bankAccountInfo || null,
+      emergencyContact: employee.emergencyContact || null,
+      notes: employee.notes || null,
+      createdAt: new Date()
+    };
+    
+    this.employees.set(id, newEmployee);
+    return newEmployee;
+  }
+
+  async updateEmployee(id: number, employeeUpdate: Partial<InsertEmployee>): Promise<Employee | undefined> {
+    const employee = await this.getEmployeeById(id);
+    if (!employee) return undefined;
+
+    // Process the updates with proper null handling
+    const processedUpdate: Partial<Employee> = {};
+    
+    // Only update fields that are explicitly provided
+    if (employeeUpdate.firstName !== undefined) processedUpdate.firstName = employeeUpdate.firstName;
+    if (employeeUpdate.lastName !== undefined) processedUpdate.lastName = employeeUpdate.lastName;
+    if (employeeUpdate.email !== undefined) processedUpdate.email = employeeUpdate.email;
+    if (employeeUpdate.phone !== undefined) processedUpdate.phone = employeeUpdate.phone || null;
+    if (employeeUpdate.address !== undefined) processedUpdate.address = employeeUpdate.address || null;
+    if (employeeUpdate.city !== undefined) processedUpdate.city = employeeUpdate.city || null;
+    if (employeeUpdate.state !== undefined) processedUpdate.state = employeeUpdate.state || null;
+    if (employeeUpdate.zipCode !== undefined) processedUpdate.zipCode = employeeUpdate.zipCode || null;
+    if (employeeUpdate.country !== undefined) processedUpdate.country = employeeUpdate.country || null;
+    if (employeeUpdate.position !== undefined) processedUpdate.position = employeeUpdate.position;
+    if (employeeUpdate.department !== undefined) processedUpdate.department = employeeUpdate.department || null;
+    if (employeeUpdate.salary !== undefined) processedUpdate.salary = employeeUpdate.salary;
+    if (employeeUpdate.salaryType !== undefined) processedUpdate.salaryType = employeeUpdate.salaryType;
+    if (employeeUpdate.startDate !== undefined) processedUpdate.startDate = employeeUpdate.startDate;
+    if (employeeUpdate.endDate !== undefined) processedUpdate.endDate = employeeUpdate.endDate || null;
+    if (employeeUpdate.status !== undefined) processedUpdate.status = employeeUpdate.status;
+    if (employeeUpdate.taxInfo !== undefined) processedUpdate.taxInfo = employeeUpdate.taxInfo || null;
+    if (employeeUpdate.bankAccountInfo !== undefined) processedUpdate.bankAccountInfo = employeeUpdate.bankAccountInfo || null;
+    if (employeeUpdate.emergencyContact !== undefined) processedUpdate.emergencyContact = employeeUpdate.emergencyContact || null;
+    if (employeeUpdate.notes !== undefined) processedUpdate.notes = employeeUpdate.notes || null;
+    
+    const updatedEmployee = { ...employee, ...processedUpdate };
+    this.employees.set(id, updatedEmployee);
+    return updatedEmployee;
+  }
+
+  async getEmployeesByStatus(userId: number, status: string): Promise<Employee[]> {
+    return (await this.getEmployees(userId)).filter(
+      (employee) => employee.status === status
+    );
+  }
+
+  async getTimeEntriesByEmployee(userId: number, employeeId: number): Promise<TimeEntry[]> {
+    const employee = await this.getEmployeeById(employeeId);
+    if (!employee) return [];
+    
+    // In a real implementation, each TimeEntry would have an employeeId field
+    // Here we're mocking it by returning a subset of time entries
+    return Array.from(this.timeEntries.values())
+      .filter(entry => entry.userId === userId)
+      .slice(0, 5); // Return first 5 entries as a mock
   }
 }
 

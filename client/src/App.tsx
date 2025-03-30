@@ -28,6 +28,7 @@ import InventoryCostAnalysis from "./pages/inventory-cost-analysis";
 import PayrollProcessing from "./pages/payroll-processing";
 import TimeTracking from "./pages/time-tracking";
 import ClientManagement from "./pages/client-management";
+import EmployeeManagement from "./pages/employee-management";
 
 function ProtectedRouteWithLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -183,6 +184,14 @@ function Router() {
         {() => (
           <ProtectedRouteWithLayout>
             <ClientManagement />
+          </ProtectedRouteWithLayout>
+        )}
+      </Route>
+      
+      <Route path="/employee-management">
+        {() => (
+          <ProtectedRouteWithLayout>
+            <EmployeeManagement />
           </ProtectedRouteWithLayout>
         )}
       </Route>

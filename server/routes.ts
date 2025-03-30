@@ -26,7 +26,13 @@ import {
   insertBankTransactionSchema,
   insertBudgetSchema,
   insertBudgetCategorySchema,
-  insertInventoryCostSchema
+  insertInventoryCostSchema,
+  // CRM schemas
+  insertClientSchema,
+  insertClientInteractionSchema,
+  insertClientDealSchema,
+  // Employee management schema
+  insertEmployeeSchema
 } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
@@ -1783,6 +1789,117 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedDeal = await storage.updateClientDeal(dealId, updateData);
       return res.json(updatedDeal);
     } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Employee Management Routes
+  app.get("/api/employees", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const employees = await storage.getEmployees(userId);
+      return res.json(employees);
+    } catch (error) {
+      console.error("Error fetching employees:", error);
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.get("/api/employees/:id", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const employeeId = parseInt(req.params.id);
+      
+      if (isNaN(employeeId)) {
+        return res.status(400).json({ message: "Invalid employee ID" });
+      }
+      
+      const employee = await storage.getEmployeeById(employeeId);
+      
+      if (!employee || employee.userId !== userId) {
+        return res.status(404).json({ message: "Employee not found" });
+      }
+      
+      return res.json(employee);
+    } catch (error) {
+      console.error("Error fetching employee:", error);
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.get("/api/employees/status/:status", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const status = req.params.status;
+      
+      if (!status) {
+        return res.status(400).json({ message: "Status is required" });
+      }
+      
+      const employees = await storage.getEmployeesByStatus(userId, status);
+      return res.json(employees);
+    } catch (error) {
+      console.error("Error fetching employees by status:", error);
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.post("/api/employees", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      
+      const employeeData = insertEmployeeSchema.parse({
+        ...req.body,
+        userId
+      });
+      
+      const employee = await storage.createEmployee(employeeData);
+      return res.status(201).json(employee);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).message });
+      }
+      console.error("Error creating employee:", error);
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.put("/api/employees/:id", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const employeeId = parseInt(req.params.id);
+      
+      if (isNaN(employeeId)) {
+        return res.status(400).json({ message: "Invalid employee ID" });
+      }
+      
+      const existingEmployee = await storage.getEmployeeById(employeeId);
+      
+      if (!existingEmployee || existingEmployee.userId !== userId) {
+        return res.status(404).json({ message: "Employee not found" });
+      }
+      
+      const updatedEmployee = await storage.updateEmployee(employeeId, req.body);
+      return res.json(updatedEmployee);
+    } catch (error) {
+      console.error("Error updating employee:", error);
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.get("/api/employees/:employeeId/time-entries", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const employeeId = parseInt(req.params.employeeId);
+      
+      if (isNaN(employeeId)) {
+        return res.status(400).json({ message: "Invalid employee ID" });
+      }
+      
+      const timeEntries = await storage.getTimeEntriesByEmployee(userId, employeeId);
+      return res.json(timeEntries);
+    } catch (error) {
+      console.error("Error fetching time entries for employee:", error);
       return res.status(500).json({ message: "Server error" });
     }
   });

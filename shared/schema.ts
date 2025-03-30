@@ -534,3 +534,38 @@ export type InsertClientInteraction = z.infer<typeof insertClientInteractionSche
 
 export type ClientDeal = typeof clientDeals.$inferSelect;
 export type InsertClientDeal = z.infer<typeof insertClientDealSchema>;
+
+// Employee schema
+export const employees = pgTable("employees", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone"),
+  address: text("address"),
+  city: text("city"),
+  state: text("state"),
+  zipCode: text("zip_code"),
+  country: text("country"),
+  position: text("position").notNull(),
+  department: text("department"),
+  salary: text("salary").notNull(),
+  salaryType: text("salary_type").notNull(),
+  startDate: text("start_date").notNull(),
+  endDate: text("end_date"),
+  status: text("status").notNull(),
+  taxInfo: text("tax_info"),
+  bankAccountInfo: text("bank_account_info"),
+  emergencyContact: text("emergency_contact"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertEmployeeSchema = createInsertSchema(employees).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
+export type Employee = typeof employees.$inferSelect;
