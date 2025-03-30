@@ -158,16 +158,16 @@ export default function Sidebar() {
             
             <div className="pt-4 mt-4 border-t border-gray-200">
               <NavItem
-                href="#"
+                href="/calendar"
                 icon="calendar-line"
                 label="Calendar"
-                active={false}
+                active={isActive("/calendar")}
               />
               <NavItem
-                href="#"
+                href="/profile"
                 icon="user-line"
                 label="Profile"
-                active={false}
+                active={isActive("/profile")}
               />
               <NavItem
                 href="#"

@@ -117,17 +117,17 @@ export default function MobileNav({ opened, onClose, location }: MobileNavProps)
             {/* User profile menu items with divider */}
             <div className="border-t border-gray-200 mt-4 pt-4">
               <MobileNavItem
-                href="#"
+                href="/calendar"
                 icon="calendar-line"
                 label="Calendar"
-                active={false}
+                active={isActive("/calendar")}
                 onClick={onClose}
               />
               <MobileNavItem
-                href="#"
+                href="/profile"
                 icon="user-line"
                 label="Profile"
-                active={false}
+                active={isActive("/profile")}
                 onClick={onClose}
               />
               <div 

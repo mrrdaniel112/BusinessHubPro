@@ -13,6 +13,8 @@ import AiInsights from "@/pages/ai-insights";
 import BusinessAssistant from "@/pages/business-assistant";
 import AdminDashboard from "@/pages/admin-dashboard";
 import Login from "@/pages/login";
+import Calendar from "@/pages/calendar";
+import Profile from "@/pages/profile";
 import MainLayout from "@/components/layout/main-layout";
 import { AuthProvider } from "@/context/auth-context";
 import { ProtectedRoute } from "@/components/auth/protected-route";
@@ -98,6 +100,22 @@ function Router() {
         {() => (
           <ProtectedRouteWithLayout>
             <AdminDashboard />
+          </ProtectedRouteWithLayout>
+        )}
+      </Route>
+      
+      <Route path="/calendar">
+        {() => (
+          <ProtectedRouteWithLayout>
+            <Calendar />
+          </ProtectedRouteWithLayout>
+        )}
+      </Route>
+      
+      <Route path="/profile">
+        {() => (
+          <ProtectedRouteWithLayout>
+            <Profile />
           </ProtectedRouteWithLayout>
         )}
       </Route>
