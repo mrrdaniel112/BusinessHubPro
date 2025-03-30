@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Invoice } from "@shared/schema";
 import { EnhancedInvoiceForm } from "@/components/forms/new-enhanced-invoice-form";
+import { useIntegration } from "@/context/integration-context";
 
 export default function Invoices() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -34,6 +35,7 @@ export default function Invoices() {
     notes: ""
   });
   const { toast } = useToast();
+  const { handleEvent, syncData, updateInsights } = useIntegration();
 
   const { data: invoices = [], isLoading } = useQuery<Invoice[]>({
     queryKey: ['/api/invoices'],
@@ -60,8 +62,15 @@ export default function Invoices() {
         throw error;
       }
     },
-    onSuccess: () => {
+    onSuccess: (invoice) => {
+      // Invalidate invoice queries
       queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
+      
+      // Notify other modules using the integration service
+      handleEvent('invoice.created', invoice);
+      syncData('invoices', invoice);
+      updateInsights('financial');
+      
       toast({
         title: "Success",
         description: "Invoice created successfully",
@@ -98,8 +107,19 @@ export default function Invoices() {
         throw error;
       }
     },
-    onSuccess: () => {
+    onSuccess: (updatedInvoice) => {
+      // Invalidate invoice queries
       queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
+      
+      // Notify other modules about invoice status change
+      handleEvent('invoice.statusChanged', updatedInvoice);
+      syncData('invoices', updatedInvoice);
+      
+      // If status is paid, update financial insights
+      if (updatedInvoice.status === 'paid') {
+        updateInsights('financial');
+      }
+      
       toast({
         title: "Status Updated",
         description: "Invoice status has been updated successfully",
@@ -129,7 +149,13 @@ export default function Invoices() {
         throw error;
       }
     },
-    onSuccess: () => {
+    onSuccess: (result, variables) => {
+      // Notify other modules that reminders were sent
+      handleEvent('invoice.remindersSent', { invoiceIds: variables });
+      
+      // Update client management module
+      syncData('clients', { action: 'remindersSent', invoiceIds: variables });
+      
       toast({
         title: "Success",
         description: "Reminders sent to clients with pending invoices",

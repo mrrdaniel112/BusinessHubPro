@@ -80,10 +80,15 @@ export default function MobileNav({ opened, onClose, location }: MobileNavProps)
 
   return (
     <Dialog open={opened} onOpenChange={() => onClose()}>
+      <DialogTitle className="sr-only">Navigation Menu</DialogTitle>
+      <DialogDescription className="sr-only">
+        Main navigation menu with links to all sections of the application
+      </DialogDescription>
       <DialogContent 
         onTouchStart={handleTouchStart}
         className="sm:max-w-[425px] p-0 max-h-[100dvh] inset-0 overflow-hidden pt-safe ios-specific transform-gpu"
         style={{ WebkitOverflowScrolling: 'touch' }}
+        aria-describedby="navigation-description"
       >
         <div className="flex flex-col h-full bg-white">
           <div className="flex items-center justify-between px-4 pt-5 pb-4 border-b">

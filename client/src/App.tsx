@@ -18,6 +18,7 @@ import Profile from "@/pages/profile";
 import TaxManagement from "@/pages/tax-management";
 import MainLayout from "@/components/layout/main-layout";
 import { AuthProvider } from "@/context/auth-context";
+import { IntegrationProvider } from "@/context/integration-context";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { lazy, Suspense, useEffect } from "react";
 
@@ -279,8 +280,10 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <Router />
-        <Toaster />
+        <IntegrationProvider>
+          <Router />
+          <Toaster />
+        </IntegrationProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
