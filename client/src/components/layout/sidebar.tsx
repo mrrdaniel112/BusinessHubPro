@@ -24,6 +24,12 @@ const getIcon = (iconName: string) => {
     "calendar-line": Icons.Calendar,
     "user-line": Icons.User,
     "shield-line": Icons.Shield,
+    "tax-line": Icons.Receipt,
+    "payroll-line": Icons.Users,
+    "time-line": Icons.Clock,
+    "bank-line": Icons.Building,
+    "budget-line": Icons.PiggyBank,
+    "inventory-cost-line": Icons.BarChart3,
   };
   
   const Icon = IconMap[iconName] || Icons.CircleDot;
@@ -114,54 +120,127 @@ export default function Sidebar() {
           </div>
           
           <nav className="flex-1 px-2 space-y-1 bg-white">
+            {/* Main Navigation */}
             <NavItem
               href="/"
               icon="dashboard-line"
               label="Dashboard"
               active={isActive("/")}
             />
-            <NavItem
-              href="/financials"
-              icon="money-dollar-circle-line"
-              label="Financials"
-              active={isActive("/financials")}
-            />
-            <NavItem
-              href="/inventory"
-              icon="store-2-line"
-              label="Inventory"
-              active={isActive("/inventory")}
-            />
-            <NavItem
-              href="/contracts"
-              icon="file-text-line"
-              label="Contracts"
-              active={isActive("/contracts")}
-            />
-            <NavItem
-              href="/expenses"
-              icon="receipt-line"
-              label="Expenses"
-              active={isActive("/expenses")}
-            />
-            <NavItem
-              href="/invoices"
-              icon="bill-line"
-              label="Invoices"
-              active={isActive("/invoices")}
-            />
-            <NavItem
-              href="/ai-insights"
-              icon="line-chart-line"
-              label="AI Insights"
-              active={isActive("/ai-insights")}
-            />
-            <NavItem
-              href="/business-assistant"
-              icon="robot-line"
-              label="Business Assistant"
-              active={isActive("/business-assistant")}
-            />
+            
+            {/* Financial Management */}
+            <div className="py-2">
+              <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Financial Management
+              </h3>
+              <div className="space-y-1 mt-1">
+                <NavItem
+                  href="/financials"
+                  icon="money-dollar-circle-line"
+                  label="Financials"
+                  active={isActive("/financials")}
+                />
+                <NavItem
+                  href="/expenses"
+                  icon="receipt-line"
+                  label="Expenses"
+                  active={isActive("/expenses")}
+                />
+                <NavItem
+                  href="/invoices"
+                  icon="bill-line"
+                  label="Invoices"
+                  active={isActive("/invoices")}
+                />
+                <NavItem
+                  href="/tax-management"
+                  icon="tax-line"
+                  label="Tax Management"
+                  active={isActive("/tax-management")}
+                />
+                <NavItem
+                  href="/bank-reconciliation"
+                  icon="bank-line"
+                  label="Bank Reconciliation"
+                  active={isActive("/bank-reconciliation")}
+                />
+                <NavItem
+                  href="/budget-planning"
+                  icon="budget-line"
+                  label="Budget Planning"
+                  active={isActive("/budget-planning")}
+                />
+              </div>
+            </div>
+            
+            {/* Inventory & Assets */}
+            <div className="py-2">
+              <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Inventory & Assets
+              </h3>
+              <div className="space-y-1 mt-1">
+                <NavItem
+                  href="/inventory"
+                  icon="store-2-line"
+                  label="Inventory"
+                  active={isActive("/inventory")}
+                />
+                <NavItem
+                  href="/inventory-cost-analysis"
+                  icon="inventory-cost-line"
+                  label="Cost Analysis"
+                  active={isActive("/inventory-cost-analysis")}
+                />
+              </div>
+            </div>
+            
+            {/* HR & Projects */}
+            <div className="py-2">
+              <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                HR & Projects
+              </h3>
+              <div className="space-y-1 mt-1">
+                <NavItem
+                  href="/contracts"
+                  icon="file-text-line"
+                  label="Contracts"
+                  active={isActive("/contracts")}
+                />
+                <NavItem
+                  href="/payroll-processing"
+                  icon="payroll-line"
+                  label="Payroll"
+                  active={isActive("/payroll-processing")}
+                />
+                <NavItem
+                  href="/time-tracking"
+                  icon="time-line"
+                  label="Time Tracking"
+                  active={isActive("/time-tracking")}
+                />
+              </div>
+            </div>
+            
+            {/* AI Tools */}
+            <div className="py-2">
+              <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                AI Tools
+              </h3>
+              <div className="space-y-1 mt-1">
+                <NavItem
+                  href="/ai-insights"
+                  icon="line-chart-line"
+                  label="AI Insights"
+                  active={isActive("/ai-insights")}
+                />
+                <NavItem
+                  href="/business-assistant"
+                  icon="robot-line"
+                  label="Business Assistant"
+                  active={isActive("/business-assistant")}
+                />
+              </div>
+            </div>
             
             {user?.role === 'admin' && (
               <NavItem
