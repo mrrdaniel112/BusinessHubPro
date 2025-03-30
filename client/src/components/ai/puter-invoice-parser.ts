@@ -20,35 +20,52 @@ export async function parseLinesWithPuter(text: string): Promise<ParsedInvoiceIt
   try {
     console.log("Attempting to parse with Puter AI...");
     
-    // Enhanced prompt for better accuracy and more detailed instruction
+    // Significantly enhanced prompt with industry-specific terminology and 2025 pricing
     const prompt = `
-    You are an expert financial analyst who specializes in invoice parsing and cost estimation.
+    You are a master invoice specialist with 25+ years experience in technical cost analysis and project estimation. You have deep expertise in current 2025 market rates across multiple industries.
     
-    I need you to carefully analyze the following text and extract detailed invoice line items:
+    Analyze this text and extract highly detailed and professionally described invoice line items:
     "${text}"
     
     For each line item you identify:
     
-    1. Extract a DETAILED and SPECIFIC description that captures the exact service or product
-    2. Determine the quantity (default to 1 for services if not explicitly stated)
-    3. Determine a REALISTIC MARKET RATE price in USD (no $ symbol)
+    1. Create an EXCEPTIONALLY DETAILED description using precise industry terminology and technical specifications
+       - Include specific measurements (dimensions, volumes, weights, etc.)
+       - Specify exact materials, equipment types, or professional methodologies
+       - Use industry-standard units of measurement
+       - Include technical parameters that differentiate premium from standard services
     
-    IMPORTANT INSTRUCTIONS:
-    - Be extremely thorough in your analysis
-    - Look for line items even if they're not clearly formatted
-    - Make reasonable professional estimates for prices if exact values aren't specified
-    - If multiple items are mentioned, break them down into separate line items
-    - For projects or services, consider what detailed components would be included
+    2. Determine accurate quantities
+       - For professional services: specify in hours, days, or appropriate service units
+       - For physical items: use exact counts with appropriate unit descriptors
+       - For recurring services: include frequency (monthly, quarterly, etc.)
+       - For area-based services: use square footage or appropriate spatial measurements
     
-    YOU MUST RETURN YOUR RESULTS USING EXACTLY THIS FORMAT (one item per line):
+    3. Calculate PRECISE 2025 MARKET RATES in USD
+       - Research-based pricing reflecting current market conditions
+       - Include regional cost factors (use high-tier metropolitan pricing)
+       - Consider materials/labor distinctions within overall price
+       - Factor in complexity premiums for specialized work
+    
+    CRITICAL INSTRUCTIONS:
+    - Break complex services into 5-8 highly granular components that would appear on a professional invoice
+    - Use EXACTLY the specialized terminology a true industry expert would use
+    - Apply precise technical specifications in each description
+    - Include regulatory compliance elements where relevant
+    - Distinguish between basic vs. premium service tiers
+    - Factor in specialty equipment or material costs
+    - Consider both direct and indirect costs in your pricing
+    
+    YOUR RESPONSE MUST USE THIS EXACT FORMAT (one item per line):
     Description | Quantity | Price
     
-    For example:
-    Custom website design with responsive interfaces and brand integration | 1 | 2500
-    High-resolution custom icon development for website navigation | 10 | 50
-    Professional content creation with SEO optimization | 1 | 1500
+    Example of expected detail level:
+    Commercial-grade WordPress website development with responsive Elementor Pro framework implementation and ADA compliance integration (WCAG 2.1 AA) | 1 | 4200
+    Custom PHP module development for proprietary ERP system integration including secure API endpoints with 256-bit encryption | 1 | 3800
+    High-resolution digital asset creation (vector format) including favicon package, social media templates, and print-ready source files (Adobe CC) | 1 | 1850
+    Technical SEO implementation including schema markup, Core Web Vitals optimization, and canonical URL structure for multi-language support | 1 | 2200
     
-    DO NOT include any other text, explanations, or headers in your response. ONLY return the line items in the exact format specified.
+    ONLY return the parsed line items with no additional text, explanations, or commentary.
     `;
     
     // Call Puter AI to extract the information with enhanced parsing
@@ -115,60 +132,185 @@ export async function parseLinesWithPuter(text: string): Promise<ParsedInvoiceIt
  * @returns ParsedInvoiceItem[] Array of parsed line items
  */
 export function parseLinesFallback(text: string): ParsedInvoiceItem[] {
-  console.log("Using fallback parser");
-  const lines = text.split('\n').filter(line => line.trim() !== '');
-  const items: ParsedInvoiceItem[] = [];
+  console.log("Using enhanced fallback parser");
   
-  for (const line of lines) {
+  // Enhanced text preprocessing
+  // Remove common headers and non-item text
+  const cleanedText = text
+    .replace(/invoice|estimate|quote|proposal|bill|receipt/gi, '')
+    .replace(/total|subtotal|tax|discount|sum|amount|due|paid/gi, '')
+    .replace(/date|payment terms|invoice number|client|customer/gi, '')
+    .trim();
+  
+  // Smart line splitting - handles various delimiters and line breaks
+  const rawLines = cleanedText
+    .split(/\n|;|•|\*|\\|\/|→|⇒|--+|==+|#{3,}|={3,}|-{3,}/)
+    .flatMap(line => line.split(/(?<=[.?!])\s+(?=[A-Z])/))  // Split by sentence boundaries
+    .map(line => line.trim())
+    .filter(line => {
+      // Filter out lines that are too short or don't look like invoice items
+      return line.length > 5 && 
+             !line.match(/^(page|invoice|date|total|bill|to|from)\s*[:;-]?\s*$/i) &&
+             !line.match(/^(thank|sincerely|regards|truly)/i);
+    });
+  
+  // Process the lines into potential items
+  const potentialItems: ParsedInvoiceItem[] = [];
+  
+  for (const line of rawLines) {
+    // Skip truly empty lines
+    if (!line.trim()) continue;
+    
     let description = line.trim();
     let quantity = 1;
-    let price = 1500; // Default price
+    let price = 0;
     
-    // Try different parsing patterns
+    // Enhanced pattern matching for professional invoice variations
     
-    // Pattern 1: "Quantity x Description $Price"
-    // Example: "10x Custom icons $50"
-    const pattern1 = /^(\d+)(?:x|\s+)(.+?)(?:\s-\s|\s–\s|\s:\s)?\s*\$?(\d+(?:,\d+)*(?:\.\d+)?)/i;
-    const match1 = description.match(pattern1);
+    // Pattern 1: Detect quantity with x/hrs format and price
+    // Examples: "10x Custom icons $500", "40 hrs Premium consulting $6000"
+    const qtyPricePattern = /(?:^|\s)(\d+\.?\d*)(?:\s*x|\s*hrs?|\s*hours?|\s*units?|\s*pieces?)?\s+(.+?)(?:\s*-\s*|\s*:\s*|\s*at\s*|\s*for\s*)?\s*\$?\s*(\d+(?:,\d+)*(?:\.\d+)?)\s*(?:\/(?:each|hr|hour|unit|piece))?(?:\s|$)/i;
+    const qtyPriceMatch = description.match(qtyPricePattern);
     
-    if (match1) {
-      quantity = parseInt(match1[1], 10);
-      description = match1[2].trim();
-      price = parseFloat(match1[3].replace(/,/g, ''));
+    if (qtyPriceMatch) {
+      quantity = parseFloat(qtyPriceMatch[1]);
+      description = qtyPriceMatch[2].trim();
+      price = parseFloat(qtyPriceMatch[3].replace(/,/g, ''));
     } else {
-      // Pattern 2: "Description $Price"
-      // Example: "Website design $2500"
-      const pattern2 = /^(.+?)(?:\s-\s|\s–\s|\s:\s)?\s*\$?(\d+(?:,\d+)*(?:\.\d+)?)/i;
-      const match2 = description.match(pattern2);
+      // Pattern 2: Price at end of line
+      // Example: "Website development and design $3500"
+      const priceEndPattern = /^(.+?)(?:\s*-\s*|\s*:\s*|\s*\|\s*|\s+)(?:\$\s*)?(\d+(?:,\d+)*(?:\.\d+)?)(?:\s*(?:USD|dollars|total|each))?$/i;
+      const priceEndMatch = description.match(priceEndPattern);
       
-      if (match2) {
-        description = match2[1].trim();
-        price = parseFloat(match2[2].replace(/,/g, ''));
+      if (priceEndMatch) {
+        description = priceEndMatch[1].trim();
+        price = parseFloat(priceEndMatch[2].replace(/,/g, ''));
       } else {
-        // Pattern 3: "Description - $Price"
-        // Example: "Content creation - $1500"
-        const pattern3 = /^(.+?)\s*[-–:]\s*\$?(\d+(?:,\d+)*(?:\.\d+)?)/i;
-        const match3 = description.match(pattern3);
+        // Pattern 3: Detect numbered list items with price
+        // Example: "1. Initial consultation and project planning - $1,200"
+        const numberedItemPattern = /^\s*(?:\d+[\.\):]|\*|\-|\+)\s*(.+?)(?:\s*-\s*|\s*:\s*|\s*\|\s*|\s+)(?:\$\s*)?(\d+(?:,\d+)*(?:\.\d+)?)(?:\s*(?:USD|dollars|total|each))?$/i;
+        const numberedMatch = description.match(numberedItemPattern);
         
-        if (match3) {
-          description = match3[1].trim();
-          price = parseFloat(match3[2].replace(/,/g, ''));
+        if (numberedMatch) {
+          description = numberedMatch[1].trim();
+          price = parseFloat(numberedMatch[2].replace(/,/g, ''));
+        } else {
+          // Pattern 4: Description with price in parentheses
+          // Example: "Logo design (premium package) ($750)"
+          const parenthesesPricePattern = /^(.+?)\s*\(\s*\$?\s*(\d+(?:,\d+)*(?:\.\d+)?)\s*\)$/i;
+          const parenthesesMatch = description.match(parenthesesPricePattern);
+          
+          if (parenthesesMatch) {
+            description = parenthesesMatch[1].trim();
+            price = parseFloat(parenthesesMatch[2].replace(/,/g, ''));
+          }
         }
       }
     }
     
-    // Create the item regardless of whether we parsed everything
-    // This ensures we at least capture a line as a description even if we
-    // couldn't parse quantity/price
-    items.push({
+    // Intelligent price estimation for descriptions without a detected price
+    if (price === 0 || isNaN(price)) {
+      // Analyze the description to estimate a reasonable price
+      const lowerDesc = description.toLowerCase();
+      
+      // Web development and digital services
+      if (lowerDesc.includes('website') || lowerDesc.includes('web') || lowerDesc.includes('site')) {
+        price = 3500;
+      } else if (lowerDesc.includes('app') || lowerDesc.includes('application') || lowerDesc.includes('software')) {
+        price = 5000;
+      } else if (lowerDesc.includes('logo') || lowerDesc.includes('brand')) {
+        price = 1200;
+      } else if (lowerDesc.includes('design') || lowerDesc.includes('graphic')) {
+        price = 1500;
+      } else if (lowerDesc.includes('consult') || lowerDesc.includes('advisory')) {
+        price = 2000;
+      } else if (lowerDesc.includes('seo') || lowerDesc.includes('marketing')) {
+        price = 1800;
+      } else if (lowerDesc.includes('content') || lowerDesc.includes('writing')) {
+        price = 1200;
+      // Construction/Physical Work
+      } else if (lowerDesc.includes('install') || lowerDesc.includes('setup')) {
+        price = 850;
+      } else if (lowerDesc.includes('repair') || lowerDesc.includes('fix')) {
+        price = 450;
+      // Maintenance services
+      } else if (lowerDesc.includes('maintain') || lowerDesc.includes('support')) {
+        price = 750;
+      // Default for unrecognized services
+      } else {
+        price = 1500;
+      }
+    }
+    
+    // Validate quantity to ensure it's reasonable
+    if (quantity <= 0 || isNaN(quantity)) {
+      quantity = 1;
+    }
+    
+    // Cap extremely large quantities which are likely errors
+    if (quantity > 1000) {
+      quantity = 1;
+    }
+    
+    // Add the item if description is meaningful
+    // Filter out items that are likely not real line items
+    const nonItemPatterns = [
+      /^(?:page|total|subtotal|tax|invoice|please|thank)/i,
+      /^(?:due|payment)\s+(?:date|terms)/i,
+      /^for\s+more\s+information/i
+    ];
+    
+    const isLikelyNonItem = nonItemPatterns.some(pattern => pattern.test(description));
+    
+    if (description.length > 5 && !isLikelyNonItem) {
+      // Make description more professional if it's very short
+      if (description.length < 15) {
+        // Enhance short descriptions based on context
+        const enhancedDescriptions: Record<string, string> = {
+          'logo': 'Professional logo design with brand identity guidelines',
+          'website': 'Custom responsive website development with SEO optimization',
+          'design': 'Professional graphic design services with unlimited revisions',
+          'consultation': 'Expert business strategy consultation and implementation planning',
+          'content': 'High-quality content creation with SEO optimization',
+          'marketing': 'Comprehensive digital marketing strategy and implementation',
+          'development': 'Custom software development with technical documentation',
+          'maintenance': 'Ongoing technical maintenance and support services'
+        };
+        
+        // Find the closest key match
+        for (const [key, enhancedDesc] of Object.entries(enhancedDescriptions)) {
+          if (description.toLowerCase().includes(key)) {
+            description = enhancedDesc;
+            break;
+          }
+        }
+      }
+      
+      potentialItems.push({
+        id: Math.random().toString(36).substring(2, 9),
+        description,
+        quantity,
+        price
+      });
+    }
+  }
+  
+  // If we didn't find any items but have text, create a generic line item
+  if (potentialItems.length === 0 && text.trim().length > 0) {
+    // Create a single item with the entire text as description
+    const genericDescription = text.length > 100 
+      ? text.substring(0, 100) + '...' 
+      : text;
+      
+    potentialItems.push({
       id: Math.random().toString(36).substring(2, 9),
-      description,
-      quantity,
-      price
+      description: 'Professional services: ' + genericDescription,
+      quantity: 1,
+      price: 2500
     });
   }
   
-  return items;
+  return potentialItems;
 }
 
 /**

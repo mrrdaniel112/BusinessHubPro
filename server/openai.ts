@@ -33,8 +33,9 @@ function getAIModel(): string {
     return "cognitivecomputations/dolphin3.0-mistral-24b:free"; // A free model on OpenRouter
   }
   
-  // Otherwise use OpenAI's standard model
-  return "gpt-4o"; // Default to GPT-4o if using OpenAI directly
+  // Otherwise use OpenAI's latest model (released after knowledge cutoff)
+  // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+  return "gpt-4o"; // Using GPT-4o for optimal quality and capabilities
 }
 
 // Handle AI errors gracefully with fallback responses
@@ -194,57 +195,66 @@ export async function generateInvoiceDetails(
     
     // Use OpenAI to generate custom invoice content with improved prompt
     const prompt = `
-      Create a highly detailed and accurate invoice for the specific project described below. The invoice should tell a compelling story about the project and provide an intelligent, realistic breakdown of costs. The output must be extremely specific to the project details provided.
+      You are a specialized industry professional with 25+ years of experience in creating extremely accurate and detailed invoices for projects in the field described below. Your expertise allows you to break down complex work into precisely priced components that reflect current market rates.
 
       Project Description: ${projectDescription}
       Client Name: ${clientName}
 
-      Your task is to generate:
+      Your task is to create an EXCEPTIONALLY detailed and accurate invoice with the following elements:
 
-      1. 4-8 detailed line items that precisely match the project work. Each line item must:
-         - Have a highly specific description (minimum 8-12 words) that clearly relates to the exact work mentioned
-         - Include realistic quantities (usually 1 for services, but can be higher for physical items or multi-part deliverables)
-         - Have accurate market-rate pricing in USD that reflects the complexity and scope of each specific item
-         - NOT use generic template language - every line item must directly relate to something mentioned in the project description
+      1. 5-8 highly specific line items that demonstrate deep technical understanding of the project. Each line item MUST:
+         - Include extremely precise terminology specific to this industry and project type
+         - Break down the work into logical components a professional in this field would separately invoice
+         - Use proper technical language that shows expert-level understanding of this exact work
+         - Include appropriate units of measurement (hours, square feet, linear feet, etc.)
+         - Apply accurate 2025 pricing that reflects current market rates for this EXACT type of work
+         - Consider regional pricing variations and complexity factors
+         - Include any specialty materials, permits, or equipment required for this specific work
+         - Break larger tasks into the sub-components a real professional would bill separately
 
-      2. A professional invoice note that:
-         - Addresses ${clientName} by name
-         - Includes standard payment terms (Net 30)
-         - Mentions specific project completion details or next steps
-         - Expresses genuine appreciation for the business relationship
+      2. A professional and personalized invoice note that:
+         - Addresses ${clientName} by name in a professional but warm manner
+         - Includes specific payment terms, methods and due dates
+         - References exact project deliverables and outcomes achieved
+         - Mentions any warranties or guarantees that apply to this specific type of work
+         - Discusses any follow-up or maintenance requirements typical for this service
 
-      3. A compelling project story (150-250 words) that:
-         - Describes the exact journey of THIS specific project from consultation through completion
-         - Mentions specific challenges encountered and how they were skillfully overcome
-         - Highlights the unique value delivered to ${clientName}
-         - Includes specific project milestones or achievements
-         - Uses storytelling techniques to create a narrative arc
+      3. A comprehensive project narrative (250-300 words) that clearly demonstrates:
+         - Specific technical challenges encountered in THIS exact type of project
+         - Precise methods and techniques used that show industry expertise
+         - Accurate timeline details with realistic milestones for this scope
+         - Concrete benefits and value delivered to ${clientName}
+         - Specific quality control measures implemented
+         - Technical standards and compliance requirements met
+         - Any specialized equipment or techniques employed
 
-      4. A detailed cost breakdown that:
-         - Divides the total project cost into 4-5 logical categories
-         - Assigns accurate percentages to each category (must sum to 100%)
-         - Provides specific descriptions of what each category includes for THIS project
-         - Uses industry-standard terminology appropriate for the project type
+      4. A professional cost breakdown that:
+         - Divides costs into 5-6 industry-standard categories a real professional would use
+         - Assigns accurate percentages based on typical cost distributions for this work
+         - Provides detailed explanations of what each category includes
+         - Uses proper technical terminology that demonstrates field expertise
+         - Distinguishes between labor, materials, equipment, and other cost types
+         - Identifies any areas where costs were optimized or premium options selected
 
-      Remember, the goal is to create an invoice that is so customized and specific that it appears to have been manually created by an expert specifically for ${clientName}'s project. Every element should directly relate to the project described.
+      CRITICAL: Your invoice MUST appear as if created by a true industry expert who has performed this exact type of work hundreds of times. Every detail should reflect deep technical knowledge and accurate pricing specific to this project type. Use precise industry jargon, measurements, and pricing structures that would only be known by professionals in this specific field.
 
       Format your response as JSON with this exact structure:
       {
         "items": [
           {
-            "description": "Very detailed and specific item description related to the project",
+            "description": "Highly technical and specific line item description with industry terminology",
             "quantity": number,
             "price": number
           },
           ...more items...
         ],
-        "notes": "Professional invoice note addressing ${clientName} with payment terms",
-        "projectStory": "Detailed narrative of the project journey...",
+        "notes": "Professional and personalized invoice note for ${clientName}",
+        "projectStory": "Detailed technical narrative of the project journey with specific challenges and solutions...",
         "costBreakdown": [
           {
-            "category": "Category name relevant to this project",
+            "category": "Industry-standard category name",
             "percentage": number,
-            "description": "Detailed explanation of what this category includes"
+            "description": "Detailed explanation with technical terminology"
           },
           ...more categories...
         ]
@@ -256,7 +266,7 @@ export async function generateInvoiceDetails(
       messages: [
         {
           role: "system",
-          content: "You are a highly experienced estimator and project manager with 25+ years in the industry. You excel at creating detailed, accurate, and customized invoices that precisely reflect the specific work done. You have deep expertise in cost estimation, narrative writing, and professional financial documentation. Your invoices are known for their clarity, accuracy, and attention to detail. You NEVER use generic descriptions or placeholder text - every element of your invoices directly relates to the specific project described."
+          content: "You are a highly specialized master technician and industry expert with 25+ years of hands-on experience in multiple technical fields. You have performed thousands of installations, repairs, and professional services across residential, commercial, and industrial settings. You possess encyclopedic knowledge of industry-specific terminology, pricing structures, material costs, labor requirements, and regional pricing variations for 2025. Your expertise includes permits, code requirements, specialty equipment, and advanced techniques used by true professionals. You create invoices with extraordinarily precise technical details, accurate measurements, and realistic pricing that reflect your deep expertise. You use exactly the terminology, units, and pricing structures that real professionals in each specific industry would use."
         },
         {
           role: "user",
