@@ -6,6 +6,17 @@ import { parseInvoiceLines, ParsedInvoiceItem } from "../ai/puter-invoice-parser
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+// Extend Window interface to include Puter AI
+declare global {
+  interface Window {
+    puter: {
+      ai: {
+        chat: (prompt: string, options?: any) => Promise<string>;
+      };
+    };
+  }
+}
+
 export interface ParseInvoiceItemsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -98,6 +109,9 @@ export function ParseInvoiceItemsDialog({
     setIsParsing(true);
     setResponseMessages(["Analyzing your project requirements..."]);
     
+    // Add debugging
+    console.log("Processing job description:", jobDescription);
+    
     try {
       // First try to use our global window.puter object if it exists
       let parsedItems: ParsedInvoiceItem[] = [];
@@ -118,7 +132,7 @@ export function ParseInvoiceItemsDialog({
       
       let useDefaultItems = false;
       
-      if (typeof window !== 'undefined' && window.puter?.ai?.chat) {
+      if (typeof window !== 'undefined' && 'puter' in window && 'ai' in window.puter && 'chat' in window.puter.ai) {
         try {
           // Enhanced prompt for better results
           const prompt = `
@@ -133,10 +147,11 @@ export function ParseInvoiceItemsDialog({
           2. Each line item must have:
              - A highly detailed description (at least 8-10 words) that clearly specifies the exact deliverable
              - An appropriate quantity (usually 1 for services, more for physical items or time-based work)
-             - A professional, market-competitive price in USD that reflects the real value of that item
-          3. Be extremely specific to the exact project described - avoid generic descriptions
-          4. Use industry-standard terminology and realistic pricing for each component
-          5. Ensure the complete invoice covers ALL aspects of the project as described
+             - A professional, market-competitive price in USD (numeric value only, no $ symbol)
+          3. The price MUST BE A NUMBER WITHOUT ANY CURRENCY SYMBOLS (e.g., use "3500" not "$3500")
+          4. Be extremely specific to the exact project described - avoid generic descriptions
+          5. Use industry-standard terminology and realistic pricing for each component
+          6. Ensure the complete invoice accurately reflects the real cost of the project
           
           Return ONLY the line items in EXACTLY this format (one item per line):
           Description | Quantity | Price
@@ -147,6 +162,7 @@ export function ParseInvoiceItemsDialog({
           Technical SEO implementation with schema markup and performance optimization | 1 | 1200
           
           DO NOT include any other text, explanations, or headings in your response.
+          REMEMBER: Price must be a number only, with no currency symbols.
           `;
           
           // Stream the response with improved UI feedback
@@ -326,14 +342,23 @@ export function ParseInvoiceItemsDialog({
           quantity = !isNaN(parsedQuantity) && parsedQuantity > 0 ? parsedQuantity : 1;
         }
         
-        // More robust price parsing
+        // Enhanced price parsing
         let price = 0;
         if (priceStr) {
           // Remove any non-numeric characters except decimal points and commas
           const cleanPriceStr = priceStr.replace(/[^\d.,]/g, '').replace(/,/g, '');
           const parsedPrice = parseFloat(cleanPriceStr);
-          price = !isNaN(parsedPrice) ? parsedPrice : 1500;
+          
+          // Ensure we have a valid positive price, use reasonable default if not
+          if (!isNaN(parsedPrice) && parsedPrice > 0) {
+            price = parsedPrice;
+            console.log(`Successfully parsed price: ${price} from "${priceStr}"`);
+          } else {
+            console.log(`Failed to parse price from "${priceStr}", using default price`);
+            price = 1500;
+          }
         } else {
+          console.log("No price string found, using default price");
           price = 1500; // Default price
         }
         

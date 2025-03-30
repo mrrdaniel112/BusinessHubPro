@@ -1008,6 +1008,7 @@ Logo redesign"
               )}
             </Button>
           </DialogFooter>
+        </div>
         </DialogContent>
       </Dialog>
     );

@@ -224,6 +224,15 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
   
   // Update amount when items change
   useEffect(() => {
+    if (items.length === 0) {
+      setFormState(prev => ({
+        ...prev,
+        amount: "0.00",
+        items: "[]"
+      }));
+      return;
+    }
+    
     // Force the recalculation of total after items are updated
     const subtotal = calculateSubtotal();
     const tax = calculateTax();
@@ -241,6 +250,7 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
       items: items.length
     });
     
+    // Make sure items are properly serialized and amount is correctly set
     setFormState(prev => ({
       ...prev,
       amount: formattedTotal,
@@ -293,11 +303,18 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
   // Handle receipt of parsed items
   const handleParsedItems = (parsedItems: ParsedInvoiceItem[]) => {
     if (parsedItems && parsedItems.length > 0) {
-      setItems(parsedItems.map(item => ({
+      // Ensure all parsed items have valid quantity and price values
+      const validItems = parsedItems.map(item => ({
         ...item,
-        quantity: item.quantity || 1, // Ensure quantity is set
-        price: item.price || 1500 // Ensure price is set with default
-      })));
+        quantity: item.quantity > 0 ? item.quantity : 1, // Ensure positive quantity
+        price: item.price > 0 ? item.price : 1500 // Ensure positive price with default
+      }));
+      
+      // Log the items for debugging
+      console.log("Setting parsed items:", validItems);
+      
+      // Update items state which will trigger total recalculation
+      setItems(validItems);
     }
   };
 
