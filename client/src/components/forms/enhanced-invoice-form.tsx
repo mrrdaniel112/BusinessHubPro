@@ -201,6 +201,24 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
   // Calculate totals with safe handling for invalid values
   const calculateSubtotal = () => {
     return items.reduce((sum, item) => {
+      const quantity = parseFloat(item.quantity.toString()) || 0;
+      const price = parseFloat(item.price.toString()) || 0;
+      return sum + (quantity * price);
+    }, 0).toFixed(2);
+  };
+
+  const calculateTax = () => {
+    const subtotal = parseFloat(calculateSubtotal());
+    const taxRate = parseFloat(formState.taxRate || '0') / 100;
+    return (subtotal * taxRate).toFixed(2);
+  };
+
+  const calculateTotal = () => {
+    const subtotal = parseFloat(calculateSubtotal());
+    const tax = parseFloat(calculateTax());
+    return (subtotal + tax).toFixed(2);
+  };
+    return items.reduce((sum, item) => {
       const quantity = typeof item.quantity === 'number' ? item.quantity : 0;
       const price = typeof item.price === 'number' ? item.price : 0;
       

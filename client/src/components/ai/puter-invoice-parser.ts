@@ -76,22 +76,38 @@ export async function parseLinesWithPuter(text: string): Promise<ParsedInvoiceIt
     const items: ParsedInvoiceItem[] = [];
     
     for (const line of lines) {
-      // Skip header or instruction lines
-      if (line.includes("Description | Quantity | Price") || 
-          line.includes("---") || 
-          line.includes("example:")) {
-        continue;
-      }
-      
-      // Try to parse AI-formatted responses first (pipe-delimited)
-      const parts = line.split('|').map(s => s.trim());
-      if (parts.length >= 3) {
-        const description = parts[0];
-        const quantity = parseInt(parts[1], 10) || 1;
+      try {
+        // Skip header or instruction lines
+        if (line.includes("Description | Quantity | Price") || 
+            line.includes("---") || 
+            line.includes("example:")) {
+          continue;
+        }
         
-        // More robust price parsing
-        let price = 0;
-        const priceText = parts[2].replace(/\$|,/g, '').trim();
+        // Try to parse AI-formatted responses first (pipe-delimited)
+        const parts = line.split('|').map(s => s.trim());
+        if (parts.length >= 3) {
+          const description = parts[0];
+          const quantity = parseFloat(parts[1]) || 1;
+          
+          // Enhanced price parsing
+          let price = 0;
+          const priceText = parts[2].replace(/[^\d.-]/g, '');
+          price = parseFloat(priceText);
+          
+          if (!isNaN(price) && price > 0) {
+            items.push({
+              id: Math.random().toString(36).substr(2, 7),
+              description,
+              quantity,
+              price: Number(price.toFixed(2))
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Error parsing line:", line, error);
+      }
+    }
         if (priceText) {
           const parsedPrice = parseFloat(priceText);
           price = !isNaN(parsedPrice) ? parsedPrice : 1500; // Default to 1500 if parsing fails
