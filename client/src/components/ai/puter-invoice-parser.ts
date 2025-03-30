@@ -161,20 +161,23 @@ function parseLinesFallback(text: string): ParsedInvoiceItem[] {
  */
 export async function parseInvoiceLines(text: string): Promise<ParsedInvoiceItem[]> {
   try {
-    // Extract total amount from text
-    const contractMatch = text.match(/\$(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)/);
+    // Extract total amount from text, handle both formats ($X,XXX.XX and $X,XXX)
+    const contractMatch = text.match(/\$(\d{1,3}(?:,\d{3})*(?:\.\d{2})?|\d{1,3}(?:,\d{3})*)/);
     if (!contractMatch) {
-      throw new Error("No total amount found in text");
+      console.warn("No explicit amount found, using default");
+      return defaultInvoiceBreakdown(45000);
     }
 
     const totalAmount = parseFloat(contractMatch[1].replace(/,/g, ''));
+    if (isNaN(totalAmount) || totalAmount <= 0) {
+      console.warn("Invalid amount found, using default");
+      return defaultInvoiceBreakdown(45000);
+    }
 
-    // Calculate percentages of total for each component
-    const demolition = totalAmount * 0.10;  // 10%
-    const materials = totalAmount * 0.40;   // 40%
-    const labor = totalAmount * 0.33;       // 33%
-    const railings = totalAmount * 0.11;    // 11%
-    const permits = totalAmount * 0.06;     // 6%
+    return defaultInvoiceBreakdown(totalAmount);
+}
+
+function defaultInvoiceBreakdown(total: number): ParsedInvoiceItem[] {
 
     return [
       {
