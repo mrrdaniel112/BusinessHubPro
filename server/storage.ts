@@ -23,11 +23,15 @@ import {
   employees, Employee, InsertEmployee
 } from "@shared/schema";
 
+// Import UserRole for role-based access control
+import { UserRole } from './services/rbac';
+
 export interface IStorage {
   // Users
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUserRole(userId: number, role: string): Promise<User | undefined>;
   
   // Transactions
   getTransactions(userId: number): Promise<Transaction[]>;
@@ -1347,10 +1351,42 @@ export class MemStorage implements IStorage {
       (user) => user.username === username,
     );
   }
+  
+  async updateUserRole(userId: number, role: string): Promise<User | undefined> {
+    const user = this.users.get(userId);
+    if (!user) return undefined;
+    
+    // Validate the role is a valid UserRole
+    if (!Object.values(UserRole).includes(role as UserRole)) {
+      throw new Error(`Invalid role: ${role}`);
+    }
+    
+    // Update the user's role and updatedAt timestamp
+    const updatedUser: User = {
+      ...user,
+      role,
+      updatedAt: new Date()
+    };
+    
+    this.users.set(userId, updatedUser);
+    return updatedUser;
+  }
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.userCurrentId++;
-    const user: User = { ...insertUser, id };
+    const now = new Date();
+    
+    // Create user with new fields according to the updated schema
+    const user: User = { 
+      ...insertUser, 
+      id,
+      // If role is not provided, use USER as default
+      role: insertUser.role || UserRole.USER,
+      lastLogin: now,
+      createdAt: now,
+      updatedAt: now
+    };
+    
     this.users.set(id, user);
     
     // Generate unique sample data for each new user

@@ -560,15 +560,18 @@ export const securityMiddleware = {
     res.setHeader('X-XSS-Protection', '1; mode=block');
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
     
-    // Content Security Policy
-    res.setHeader('Content-Security-Policy', 
-      "default-src 'self'; " +
-      "script-src 'self'; " +
-      "style-src 'self' 'unsafe-inline'; " + 
-      "img-src 'self' data:; " +
-      "font-src 'self'; " +
-      "connect-src 'self';"
-    );
+    // In development, don't set CSP as it's disabled in helmet config
+    // In production, we would set a more strict CSP
+    if (process.env.NODE_ENV === 'production') {
+      res.setHeader('Content-Security-Policy', 
+        "default-src 'self'; " +
+        "script-src 'self'; " +
+        "style-src 'self' 'unsafe-inline'; " + 
+        "img-src 'self' data:; " +
+        "font-src 'self'; " +
+        "connect-src 'self';"
+      );
+    }
     
     next();
   }

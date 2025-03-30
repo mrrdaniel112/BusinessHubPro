@@ -2,6 +2,9 @@ import { pgTable, text, serial, integer, numeric, timestamp, boolean } from "dri
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Importing the UserRole enum for type safety
+import { UserRole } from '../server/services/rbac';
+
 // User schema
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -9,6 +12,10 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   fullName: text("full_name").notNull(),
   email: text("email").notNull(),
+  role: text("role").notNull().default(UserRole.USER),
+  lastLogin: timestamp("last_login"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -16,6 +23,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   password: true,
   fullName: true,
   email: true,
+  role: true,
 });
 
 // Transaction schema

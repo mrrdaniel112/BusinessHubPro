@@ -46,6 +46,7 @@ import {
   generateSupplyRecommendations
 } from "./openai";
 import { NotificationOptions, sendInvoiceNotifications } from "./services/notification";
+import { UserRole, requireAdmin, hasPermission, Resource, PermissionScope } from "./services/rbac";
 
 import session from "express-session";
 
@@ -1900,6 +1901,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.json(timeEntries);
     } catch (error) {
       console.error("Error fetching time entries for employee:", error);
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  /* ------------------ User Role Management Routes ------------------ */
+  
+  // Get all available roles (admin only)
+  app.get("/api/roles", requireAuth, requireAdmin, (req, res) => {
+    try {
+      return res.json({
+        roles: Object.values(UserRole)
+      });
+    } catch (error) {
+      console.error("Error getting roles:", error);
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+  
+  // Update a user's role (admin only)
+  app.patch("/api/users/:userId/role", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const targetUserId = parseInt(req.params.userId);
+      const { role } = req.body;
+      
+      if (!role || !Object.values(UserRole).includes(role as UserRole)) {
+        return res.status(400).json({ message: "Invalid role provided" });
+      }
+      
+      const user = await storage.getUser(targetUserId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const updatedUser = await storage.updateUserRole(targetUserId, role);
+      
+      if (!updatedUser) {
+        return res.status(500).json({ message: "Failed to update user role" });
+      }
+      
+      return res.json({
+        id: updatedUser.id,
+        username: updatedUser.username,
+        role: updatedUser.role,
+        email: updatedUser.email
+      });
+    } catch (error) {
+      console.error("Error updating user role:", error);
       return res.status(500).json({ message: "Server error" });
     }
   });
