@@ -876,107 +876,139 @@ Logo redesign"
             </div>
           </div>
           
-          {/* Notes */}
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-medium">Notes</h3>
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant={notesType === 'manual' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setNotesType('manual')}
-                >
-                  Manual
-                </Button>
-                <Button
-                  variant={notesType === 'ai' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setNotesType('ai')}
-                >
-                  AI-Generated
-                </Button>
+          {/* Two-column layout for Notes and Totals/Sending Options */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Notes Column */}
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium">Notes</h3>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant={notesType === 'manual' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setNotesType('manual')}
+                  >
+                    Manual
+                  </Button>
+                  <Button
+                    variant={notesType === 'ai' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setNotesType('ai')}
+                  >
+                    AI-Generated
+                  </Button>
+                </div>
               </div>
+              
+              <Textarea
+                value={formState.notes}
+                onChange={(e) => setFormState({ ...formState, notes: e.target.value })}
+                placeholder="Additional notes for the client"
+                className="min-h-[100px]"
+              />
             </div>
             
-            <Textarea
-              value={formState.notes}
-              onChange={(e) => setFormState({ ...formState, notes: e.target.value })}
-              placeholder="Additional notes for the client"
-              className="min-h-[100px]"
-            />
+            {/* Totals Summary and Sending Options Column */}
+            <div className="space-y-4">
+              {/* Invoice Total Summary Card */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-md">Invoice Summary</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="font-medium">Subtotal:</span>
+                      <span>${calculateSubtotal().toFixed(2)}</span>
+                    </div>
+                    
+                    {includeTax && (
+                      <div className="flex justify-between">
+                        <span className="font-medium">Tax ({taxRate}%):</span>
+                        <span>${calculateTax().toFixed(2)}</span>
+                      </div>
+                    )}
+                    
+                    <div className="flex justify-between border-t border-b py-2 mt-2">
+                      <span className="font-bold">Total:</span>
+                      <span className="font-bold text-lg">${calculateTotal().toFixed(2)}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              {/* Sending Options */}
+              <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="sending-options">
+                  <AccordionTrigger>
+                    <div className="flex items-center">
+                      <i className="ri-mail-send-line mr-2 text-primary-600"></i>
+                      Sending Options
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-4">
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          checked={sendOptions.sendEmail}
+                          onCheckedChange={(checked) => 
+                            setSendOptions({ ...sendOptions, sendEmail: checked })}
+                          id="email-toggle"
+                        />
+                        <label
+                          htmlFor="email-toggle"
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                          Send via Email
+                        </label>
+                      </div>
+                      
+                      {sendOptions.sendEmail && (
+                        <div>
+                          <FormLabel htmlFor="emailAddress">Email Address</FormLabel>
+                          <Input
+                            id="emailAddress"
+                            type="email"
+                            value={sendOptions.emailAddress}
+                            onChange={(e) => setSendOptions({ ...sendOptions, emailAddress: e.target.value })}
+                            placeholder="client@example.com"
+                          />
+                        </div>
+                      )}
+                      
+                      {/* SMS functionality has been removed as requested */}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </div>
           </div>
           
-          {/* Sending Options */}
-          <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="sending-options">
-              <AccordionTrigger>
-                <div className="flex items-center">
-                  <i className="ri-mail-send-line mr-2 text-primary-600"></i>
-                  Sending Options
-                </div>
-              </AccordionTrigger>
-              <AccordionContent>
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={sendOptions.sendEmail}
-                      onCheckedChange={(checked) => 
-                        setSendOptions({ ...sendOptions, sendEmail: checked })}
-                      id="email-toggle"
-                    />
-                    <label
-                      htmlFor="email-toggle"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      Send via Email
-                    </label>
-                  </div>
-                  
-                  {sendOptions.sendEmail && (
-                    <div>
-                      <FormLabel htmlFor="emailAddress">Email Address</FormLabel>
-                      <Input
-                        id="emailAddress"
-                        type="email"
-                        value={sendOptions.emailAddress}
-                        onChange={(e) => setSendOptions({ ...sendOptions, emailAddress: e.target.value })}
-                        placeholder="client@example.com"
-                      />
-                    </div>
-                  )}
-                  
-                  {/* SMS functionality has been removed as requested */}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        </div>
-        
-        <DialogFooter>
-          <Button 
-            variant="outline" 
-            onClick={() => onOpenChange(false)}
-          >
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleSubmit}
-            disabled={invoiceMutation.isPending}
-          >
-            {invoiceMutation.isPending ? (
-              <>
-                <i className="ri-loader-4-line animate-spin mr-1"></i>
-                Saving...
-              </>
-            ) : (
-              <>
-                <i className="ri-save-line mr-1"></i>
-                {isEditing ? 'Update' : 'Create'} Invoice
-              </>
-            )}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => onOpenChange(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSubmit}
+              disabled={invoiceMutation.isPending}
+            >
+              {invoiceMutation.isPending ? (
+                <>
+                  <i className="ri-loader-4-line animate-spin mr-1"></i>
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <i className="ri-save-line mr-1"></i>
+                  {isEditing ? 'Update' : 'Create'} Invoice
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
 }

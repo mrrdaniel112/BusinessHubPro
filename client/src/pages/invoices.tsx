@@ -14,7 +14,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Invoice } from "@shared/schema";
-import { EnhancedInvoiceForm } from "@/components/forms/enhanced-invoice-form";
+import { EnhancedInvoiceForm } from "@/components/forms/new-enhanced-invoice-form";
 
 export default function Invoices() {
   const [searchTerm, setSearchTerm] = useState("");
