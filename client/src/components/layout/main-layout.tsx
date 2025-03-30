@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import Sidebar from "./sidebar";
 import MobileNav from "./mobile-nav";
+import { NotificationCenter } from "@/components/notifications/notification-center";
 import { cn } from "@/lib/utils";
 
 type MainLayoutProps = {
@@ -53,8 +54,13 @@ export default function MainLayout({ children }: MainLayoutProps) {
               <span className="text-lg font-semibold text-primary-600 truncate mobile-text-adjust">Business Platform</span>
             </div>
           </div>
-          <div className="flex items-center pr-safe">
-            <div className="ml-3 relative">
+          <div className="flex items-center space-x-2 pr-safe">
+            {/* Notification Center */}
+            <div className="relative">
+              <NotificationCenter />
+            </div>
+            {/* User profile */}
+            <div className="relative">
               <div>
                 <button
                   type="button"

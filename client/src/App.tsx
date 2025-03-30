@@ -19,6 +19,7 @@ import TaxManagement from "@/pages/tax-management";
 import MainLayout from "@/components/layout/main-layout";
 import { AuthProvider } from "@/context/auth-context";
 import { IntegrationProvider } from "@/context/integration-context";
+import { NotificationProvider } from "@/context/notification-context";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { lazy, Suspense, useEffect } from "react";
 
@@ -280,10 +281,12 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <IntegrationProvider>
-          <Router />
-          <Toaster />
-        </IntegrationProvider>
+        <NotificationProvider>
+          <IntegrationProvider>
+            <Router />
+            <Toaster />
+          </IntegrationProvider>
+        </NotificationProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

@@ -73,6 +73,75 @@ const requireAuth = (req: Request, res: Response, next: Function) => {
   }
 };
 
+// Sample notifications for development
+const sampleNotifications = [
+  {
+    id: 1,
+    title: "New Invoice Created",
+    message: "Invoice #INV-2025-001 for $2,500.00 has been created.",
+    timestamp: new Date(),
+    isRead: false,
+    type: "success",
+    priority: "medium",
+    module: "Invoices",
+    entityType: "invoice",
+    entityId: "1",
+    actionUrl: "/invoices/1"
+  },
+  {
+    id: 2,
+    title: "Expense Approved",
+    message: "The Office Supplies expense for $350.00 has been approved.",
+    timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
+    isRead: true,
+    type: "success",
+    priority: "medium",
+    module: "Expenses",
+    entityType: "expense",
+    entityId: "5",
+    actionUrl: "/expenses/5"
+  },
+  {
+    id: 3,
+    title: "Invoice Overdue",
+    message: "Invoice #INV-2025-042 for Client XYZ is overdue by 5 days.",
+    timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
+    isRead: false,
+    type: "warning",
+    priority: "high",
+    module: "Invoices",
+    entityType: "invoice",
+    entityId: "42",
+    actionUrl: "/invoices/42"
+  },
+  {
+    id: 4,
+    title: "Low Inventory Alert",
+    message: "Product X is running low with only 5 units remaining.",
+    timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
+    isRead: false,
+    type: "warning",
+    priority: "high",
+    module: "Inventory",
+    entityType: "inventory",
+    entityId: "15",
+    actionUrl: "/inventory/15"
+  },
+  {
+    id: 5,
+    title: "New Client Added",
+    message: "John Smith has been added as a new client.",
+    timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
+    isRead: true,
+    type: "info",
+    priority: "medium",
+    module: "Clients",
+    entityType: "client",
+    entityId: "8",
+    actionUrl: "/client-management/8"
+  }
+];
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // User routes
   app.post("/api/auth/login", async (req, res) => {
@@ -1948,6 +2017,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error updating user role:", error);
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Notification routes
+  app.get("/api/notifications", requireAuth, (req, res) => {
+    try {
+      // Return the sample notifications in a real app this would fetch from a database
+      return res.json(sampleNotifications);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Mark notification as read
+  app.post("/api/notifications/:id/read", requireAuth, (req, res) => {
+    try {
+      const notificationId = parseInt(req.params.id);
+      
+      // Find the notification in our sample data
+      const notificationIndex = sampleNotifications.findIndex(n => n.id === notificationId);
+      
+      if (notificationIndex === -1) {
+        return res.status(404).json({ message: "Notification not found" });
+      }
+      
+      // Update the notification as read
+      sampleNotifications[notificationIndex].isRead = true;
+      
+      return res.json(sampleNotifications[notificationIndex]);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Mark all notifications as read
+  app.post("/api/notifications/read-all", requireAuth, (req, res) => {
+    try {
+      // Mark all notifications as read
+      sampleNotifications.forEach(notification => {
+        notification.isRead = true;
+      });
+      
+      return res.json({ success: true });
+    } catch (error) {
       return res.status(500).json({ message: "Server error" });
     }
   });

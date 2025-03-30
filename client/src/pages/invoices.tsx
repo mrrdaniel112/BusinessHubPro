@@ -35,7 +35,7 @@ export default function Invoices() {
     notes: ""
   });
   const { toast } = useToast();
-  const { handleEvent, syncData, updateInsights } = useIntegration();
+  const { onEvent, emitEvent } = useIntegration();
 
   const { data: invoices = [], isLoading } = useQuery<Invoice[]>({
     queryKey: ['/api/invoices'],
@@ -67,9 +67,12 @@ export default function Invoices() {
       queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
       
       // Notify other modules using the integration service
-      handleEvent('invoice.created', invoice);
-      syncData('invoices', invoice);
-      updateInsights('financial');
+      emitEvent('entity:created', {
+        module: 'invoices',
+        entityType: 'invoice',
+        entityId: invoice.id,
+        data: invoice
+      });
       
       toast({
         title: "Success",
@@ -112,12 +115,25 @@ export default function Invoices() {
       queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
       
       // Notify other modules about invoice status change
-      handleEvent('invoice.statusChanged', updatedInvoice);
-      syncData('invoices', updatedInvoice);
+      emitEvent('entity:updated', {
+        module: 'invoices',
+        entityType: 'invoice',
+        entityId: updatedInvoice.id,
+        data: updatedInvoice
+      });
       
-      // If status is paid, update financial insights
+      // If status is paid, trigger financial update event
       if (updatedInvoice.status === 'paid') {
-        updateInsights('financial');
+        emitEvent('module:interaction', {
+          module: 'financials',
+          entityType: 'transaction',
+          entityId: updatedInvoice.id,
+          data: { 
+            source: 'invoices', 
+            action: 'payment',
+            invoice: updatedInvoice
+          }
+        });
       }
       
       toast({
@@ -151,10 +167,15 @@ export default function Invoices() {
     },
     onSuccess: (result, variables) => {
       // Notify other modules that reminders were sent
-      handleEvent('invoice.remindersSent', { invoiceIds: variables });
-      
-      // Update client management module
-      syncData('clients', { action: 'remindersSent', invoiceIds: variables });
+      emitEvent('module:interaction', { 
+        module: 'clients',
+        entityType: 'invoice',
+        entityId: 'batch',
+        data: {
+          invoiceIds: variables,
+          action: 'remindersSent'
+        }
+      });
       
       toast({
         title: "Success",

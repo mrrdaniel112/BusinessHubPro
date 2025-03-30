@@ -11,8 +11,19 @@ export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
+  options?: { params?: Record<string, string> }
 ): Promise<Response> {
-  const res = await fetch(url, {
+  // Add query parameters to URL if provided
+  let finalUrl = url;
+  if (options?.params && Object.keys(options.params).length > 0) {
+    const searchParams = new URLSearchParams();
+    for (const [key, value] of Object.entries(options.params)) {
+      searchParams.append(key, value);
+    }
+    finalUrl = `${url}?${searchParams.toString()}`;
+  }
+  
+  const res = await fetch(finalUrl, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
     body: data ? JSON.stringify(data) : undefined,

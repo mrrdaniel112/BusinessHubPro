@@ -1,278 +1,377 @@
-/**
- * Integration Service
- * 
- * This service helps connect various modules of the application, ensuring data flows smoothly
- * between different features and providing a cohesive user experience.
- */
-
-import { queryClient } from "@/lib/queryClient";
+// Integration service to connect all aspects of the platform
 
 /**
- * Synchronizes data between different modules when changes occur
- * @param sourceModule The module where the change originated
- * @param data The data that was changed
+ * Main integration service that connects different modules of the platform.
+ * This service is responsible for handling cross-module events and data relationships.
  */
-export function syncModuleData(sourceModule: string, data: any): void {
-  // Invalidate relevant queries based on the source module
-  const moduleMappings: Record<string, string[]> = {
-    // When financial data changes, update these related modules
-    'finances': ['/api/dashboard', '/api/financials', '/api/cash-flow', '/api/tax-management'],
-    
-    // When invoice data changes, update these related modules
-    'invoices': ['/api/dashboard', '/api/financials', '/api/cash-flow', '/api/client-management'],
-    
-    // When expense data changes, update these related modules
-    'expenses': ['/api/dashboard', '/api/financials', '/api/cash-flow', '/api/tax-management'],
-    
-    // When inventory data changes, update these related modules
-    'inventory': ['/api/dashboard', '/api/inventory-cost-analysis', '/api/financials'],
-    
-    // When client data changes, update these related modules
-    'clients': ['/api/dashboard', '/api/invoices', '/api/contracts', '/api/client-management'],
-    
-    // When employee data changes, update these related modules
-    'employees': ['/api/dashboard', '/api/payroll-processing', '/api/time-tracking', '/api/employee-management'],
-    
-    // When contract data changes, update these related modules
-    'contracts': ['/api/dashboard', '/api/invoices', '/api/client-management'],
-    
-    // When bank data changes, update these related modules
-    'banking': ['/api/dashboard', '/api/financials', '/api/bank-reconciliation', '/api/cash-flow'],
-    
-    // When tax data changes, update these related modules
-    'taxes': ['/api/dashboard', '/api/financials', '/api/tax-management'],
-    
-    // When calendar data changes, update these related modules
-    'calendar': ['/api/dashboard', '/api/time-tracking', '/api/client-management'],
-    
-    // When time tracking data changes, update these related modules
-    'timeTracking': ['/api/dashboard', '/api/payroll-processing', '/api/employee-management'],
-    
-    // When payroll data changes, update these related modules
-    'payroll': ['/api/dashboard', '/api/financials', '/api/employee-management'],
-    
-    // When budget data changes, update these related modules
-    'budget': ['/api/dashboard', '/api/financials', '/api/cash-flow', '/api/budget-planning'],
-  };
 
-  // Find queries to invalidate
-  const queriesToInvalidate = moduleMappings[sourceModule] || [];
-  
-  // Invalidate all affected queries
-  queriesToInvalidate.forEach(queryKey => {
-    queryClient.invalidateQueries({ queryKey: [queryKey] });
-  });
-}
+// Simple browser-compatible event emitter
+class BrowserEventEmitter {
+  private events: Record<string, Function[]> = {};
+  private maxListeners: number = 10;
 
-/**
- * Updates AI insights when relevant data changes occur
- * @param dataType The type of data that changed
- */
-export function updateAIInsights(dataType: string): void {
-  // Force refresh of AI insights based on data type
-  queryClient.invalidateQueries({ queryKey: ['/api/ai-insights'] });
-  
-  // Update specific insight types based on the data change
-  const insightMappings: Record<string, string[]> = {
-    'financial': ['financial-health', 'cash-flow-forecast'],
-    'inventory': ['inventory-optimization', 'supply-chain'],
-    'clients': ['client-relationships', 'sales-forecast'],
-    'expenses': ['expense-patterns', 'cost-saving-opportunities'],
-    'time': ['productivity-analysis', 'resource-allocation'],
-  };
-  
-  // Find specific insights to update
-  const insightsToUpdate = insightMappings[dataType] || [];
-  
-  // Invalidate specific insight queries
-  insightsToUpdate.forEach(insightType => {
-    queryClient.invalidateQueries({ queryKey: [`/api/ai-insights/${insightType}`] });
-  });
-}
+  on(event: string, listener: Function): void {
+    if (!this.events[event]) {
+      this.events[event] = [];
+    }
+    
+    if (this.events[event].length >= this.maxListeners) {
+      console.warn(`Warning: event '${event}' has exceeded max listeners (${this.maxListeners})`);
+    }
+    
+    this.events[event].push(listener);
+  }
 
-/**
- * Connect events from one module to actions in another
- * @param event The event that occurred
- * @param payload The data associated with the event
- */
-export function handleCrossModuleEvent(event: string, payload: any): void {
-  // Map events to actions in other modules
-  switch (event) {
-    case 'invoice.created':
-      // When an invoice is created, update financial forecasts and client information
-      syncModuleData('finances', payload);
-      syncModuleData('clients', payload);
-      updateAIInsights('financial');
-      break;
-    
-    case 'expense.recorded':
-      // When an expense is recorded, update financial data and tax information
-      syncModuleData('finances', payload);
-      syncModuleData('taxes', payload);
-      updateAIInsights('expenses');
-      break;
-    
-    case 'client.added':
-      // When a client is added, update related modules
-      syncModuleData('clients', payload);
-      updateAIInsights('clients');
-      break;
-    
-    case 'inventory.updated':
-      // When inventory changes, update cost analysis and supply chain insights
-      syncModuleData('inventory', payload);
-      updateAIInsights('inventory');
-      break;
-    
-    case 'time.tracked':
-      // When time entries are recorded, update payroll and project tracking
-      syncModuleData('timeTracking', payload);
-      syncModuleData('payroll', payload);
-      updateAIInsights('time');
-      break;
-    
-    case 'transaction.imported':
-      // When bank transactions are imported, update financial data
-      syncModuleData('banking', payload);
-      syncModuleData('finances', payload);
-      updateAIInsights('financial');
-      break;
-    
-    case 'contract.signed':
-      // When a contract is signed, update invoicing and client management
-      syncModuleData('contracts', payload);
-      syncModuleData('clients', payload);
-      updateAIInsights('clients');
-      break;
-    
-    default:
-      console.log('Unhandled cross-module event:', event);
+  off(event: string, listener: Function): void {
+    if (!this.events[event]) return;
+    this.events[event] = this.events[event].filter(l => l !== listener);
+  }
+
+  emit(event: string, ...args: any[]): void {
+    if (!this.events[event]) return;
+    this.events[event].forEach(listener => {
+      try {
+        listener(...args);
+      } catch (error) {
+        console.error(`Error in event listener for ${event}:`, error);
+      }
+    });
+  }
+
+  setMaxListeners(n: number): void {
+    this.maxListeners = n;
   }
 }
 
-// Data integration helpers
+// Define the module types in our system
+export type ModuleType = 
+  | 'financials' 
+  | 'inventory' 
+  | 'contracts' 
+  | 'expenses' 
+  | 'invoices' 
+  | 'clients'
+  | 'employees'
+  | 'payroll'
+  | 'budget'
+  | 'tax'
+  | 'timeTracking'
+  | 'banking';
 
-/**
- * Gets related data for a specific entity across modules
- * @param entityType The type of entity (client, invoice, etc.)
- * @param entityId The ID of the entity
- */
-export async function getIntegratedEntityData(entityType: string, entityId: string | number) {
-  // Define the data sources based on entity type
-  const dataSources: Record<string, string[]> = {
-    'client': ['/api/clients', '/api/invoices', '/api/contracts'],
-    'invoice': ['/api/invoices', '/api/clients', '/api/finances'],
-    'expense': ['/api/expenses', '/api/taxes', '/api/finances'],
-    'employee': ['/api/employees', '/api/time-tracking', '/api/payroll-processing'],
-    'inventory': ['/api/inventory', '/api/inventory-cost-analysis', '/api/finances'],
-  };
-  
-  const sources = dataSources[entityType] || [];
-  
-  // Collect data from all relevant sources
-  const results = await Promise.all(
-    sources.map(async (source) => {
-      try {
-        // Use query client to fetch data with existing cached data when available
-        const data = await queryClient.fetchQuery({
-          queryKey: [`${source}/${entityId}`],
-          queryFn: () => fetch(`${source}/${entityId}`).then(res => res.json())
-        });
-        return { source, data, success: true };
-      } catch (error) {
-        console.error(`Error fetching data from ${source}:`, error);
-        return { source, data: null, success: false };
-      }
-    })
-  );
-  
-  // Combine results into a single object
-  return results.reduce((combined, result) => {
-    if (result.success) {
-      const moduleName = result.source.split('/')[2]; // Extract module name from path
-      combined[moduleName] = result.data;
-    }
-    return combined;
-  }, {} as Record<string, any>);
+// Define the entity types in our system
+export type EntityType =
+  | 'transaction'
+  | 'invoice'
+  | 'contract'
+  | 'expense'
+  | 'inventory'
+  | 'client'
+  | 'employee'
+  | 'payroll'
+  | 'taxDocument'
+  | 'timeEntry'
+  | 'bankTransaction';
+
+// Define the events that can be emitted in our system
+export type IntegrationEvent = 
+  | 'entity:created'
+  | 'entity:updated'
+  | 'entity:deleted'
+  | 'module:interaction'
+  | 'data:relationship:created'
+  | 'data:relationship:updated'
+  | 'data:relationship:deleted'
+  | 'notification:created';
+
+// Define the payload for integration events
+export interface IntegrationEventPayload {
+  module: ModuleType;
+  entityType: EntityType;
+  entityId: string | number;
+  action?: string;
+  timestamp: Date;
+  data?: Record<string, any>;
+  relationshipType?: string;
+  relationshipId?: string | number;
+  userId?: number;
 }
 
-/**
- * Updates data across multiple modules
- * @param entityType The type of entity being updated
- * @param entityId The ID of the entity
- * @param updates The updates to apply
- */
-export async function updateAcrossModules(
-  entityType: string, 
-  entityId: string | number, 
-  updates: Record<string, any>
-): Promise<void> {
-  // Get a list of APIs to update based on entity type and the updates provided
-  const updateEndpoints: Record<string, string[]> = {
-    'client': ['/api/clients', '/api/client-management'],
-    'invoice': ['/api/invoices', '/api/finances'],
-    'expense': ['/api/expenses', '/api/finances', '/api/tax-management'],
-    'employee': ['/api/employees', '/api/payroll-processing'],
-    'inventory': ['/api/inventory', '/api/inventory-cost-analysis'],
-  };
-  
-  const endpoints = updateEndpoints[entityType] || [];
-  
-  // Send updates to all relevant endpoints
-  await Promise.all(
-    endpoints.map(async (endpoint) => {
-      try {
-        const response = await fetch(`${endpoint}/${entityId}`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(updates),
+class IntegrationService {
+  private eventEmitter: BrowserEventEmitter;
+  private dataRelationships: Map<string, any[]>;
+  private isInitialized: boolean = false;
+
+  constructor() {
+    this.eventEmitter = new BrowserEventEmitter();
+    this.dataRelationships = new Map();
+    
+    // Set higher limit for event listeners
+    this.eventEmitter.setMaxListeners(50);
+  }
+
+  /**
+   * Initialize the integration service and establish initial connections
+   */
+  public initialize(): void {
+    if (this.isInitialized) return;
+    
+    console.log('IntegrationService: Initializing');
+    
+    // Register default relationships
+    this.registerDefaultRelationships();
+    
+    this.isInitialized = true;
+  }
+
+  /**
+   * Register default relationships between different modules and entities
+   */
+  private registerDefaultRelationships(): void {
+    // Define relationships between modules
+    this.registerRelationship('invoices', 'clients', 'invoices_to_clients');
+    this.registerRelationship('expenses', 'inventory', 'expenses_to_inventory');
+    this.registerRelationship('contracts', 'clients', 'contracts_to_clients');
+    this.registerRelationship('payroll', 'employees', 'payroll_to_employees');
+    this.registerRelationship('timeTracking', 'employees', 'timeTracking_to_employees');
+    this.registerRelationship('timeTracking', 'clients', 'timeTracking_to_clients');
+    this.registerRelationship('banking', 'financials', 'banking_to_financials');
+    this.registerRelationship('inventory', 'financials', 'inventory_to_financials');
+  }
+
+  /**
+   * Register an event listener
+   */
+  public on(event: IntegrationEvent, listener: (payload: IntegrationEventPayload) => void): void {
+    this.eventEmitter.on(event, listener);
+  }
+
+  /**
+   * Remove an event listener
+   */
+  public off(event: IntegrationEvent, listener: (payload: IntegrationEventPayload) => void): void {
+    this.eventEmitter.off(event, listener);
+  }
+
+  /**
+   * Emit an event
+   */
+  public emit(event: IntegrationEvent, payload: IntegrationEventPayload): void {
+    // Add timestamp if not present
+    if (!payload.timestamp) {
+      payload.timestamp = new Date();
+    }
+    
+    console.log(`IntegrationService: Emitting ${event}`, payload);
+    
+    this.eventEmitter.emit(event, payload);
+
+    // If this is an entity update, check for relationships and propagate
+    if (event.startsWith('entity:')) {
+      this.propagateRelationships(payload);
+    }
+
+    // Check if notification should be created
+    if (event !== 'notification:created') {
+      this.checkNotificationTrigger(event, payload);
+    }
+  }
+
+  /**
+   * Register a relationship between two modules
+   */
+  public registerRelationship(
+    sourceModule: ModuleType, 
+    targetModule: ModuleType, 
+    relationshipType: string
+  ): void {
+    const key = `${sourceModule}:${targetModule}`;
+    
+    if (!this.dataRelationships.has(key)) {
+      this.dataRelationships.set(key, []);
+    }
+    
+    const relationships = this.dataRelationships.get(key) || [];
+    
+    if (!relationships.includes(relationshipType)) {
+      relationships.push(relationshipType);
+      console.log(`IntegrationService: Registered relationship ${relationshipType} between ${sourceModule} and ${targetModule}`);
+    }
+  }
+
+  /**
+   * Propagate changes across registered relationships
+   */
+  private propagateRelationships(payload: IntegrationEventPayload): void {
+    const { module, entityType, entityId } = payload;
+    
+    // Find all potential target modules that have a relationship with this module
+    // Use Array.from to convert Map iterator to array to avoid downlevelIteration issues
+    for (const [key, relationshipTypes] of Array.from(this.dataRelationships.entries())) {
+      const [sourceModule, targetModule] = key.split(':');
+      
+      if (sourceModule === module) {
+        // Emit module interaction event for each relationship
+        relationshipTypes.forEach((relationshipType: string) => {
+          this.emit('module:interaction', {
+            module: targetModule as ModuleType,
+            entityType: 'transaction', // Generic transaction type for module interactions
+            entityId: 'system',
+            timestamp: new Date(),
+            data: {
+              sourceModule: module,
+              sourceEntityType: entityType,
+              sourceEntityId: entityId,
+              relationshipType
+            }
+          });
         });
-        
-        if (!response.ok) {
-          throw new Error(`Failed to update ${endpoint}`);
+      }
+    }
+  }
+
+  /**
+   * Determine if an event should trigger a notification
+   */
+  private checkNotificationTrigger(event: IntegrationEvent, payload: IntegrationEventPayload): void {
+    // Define events that should trigger notifications
+    const notificationTriggers = [
+      { event: 'entity:created', entityType: 'invoice' },
+      { event: 'entity:updated', entityType: 'invoice' },
+      { event: 'entity:created', entityType: 'contract' },
+      { event: 'entity:updated', entityType: 'inventory', action: 'lowStock' },
+      { event: 'entity:created', entityType: 'expense' },
+      { event: 'entity:created', entityType: 'client' },
+      { event: 'entity:created', entityType: 'employee' },
+      { event: 'entity:updated', entityType: 'taxDocument' },
+    ];
+    
+    // Check if this event should trigger a notification
+    const shouldTrigger = notificationTriggers.some(trigger => {
+      if (trigger.event === event && trigger.entityType === payload.entityType) {
+        if (trigger.action && trigger.action !== payload.action) {
+          return false;
         }
-      } catch (error) {
-        console.error(`Error updating ${endpoint}:`, error);
-        // Continue with other updates even if one fails
+        return true;
       }
-    })
-  );
-  
-  // Determine which modules were affected and sync their data
-  const moduleMapping: Record<string, string> = {
-    '/api/clients': 'clients',
-    '/api/client-management': 'clients',
-    '/api/invoices': 'invoices',
-    '/api/finances': 'finances',
-    '/api/expenses': 'expenses',
-    '/api/tax-management': 'taxes',
-    '/api/employees': 'employees',
-    '/api/payroll-processing': 'payroll',
-    '/api/inventory': 'inventory',
-    '/api/inventory-cost-analysis': 'inventory',
-  };
-  
-  // Sync data for all affected modules
-  const affectedModules = new Set(endpoints.map(endpoint => moduleMapping[endpoint]));
-  affectedModules.forEach(module => {
-    if (module) {
-      syncModuleData(module, { entityType, entityId, updates });
+      return false;
+    });
+    
+    if (shouldTrigger) {
+      // Create a notification payload based on the event
+      this.createNotificationFromEvent(event, payload);
     }
-  });
-  
-  // Update AI insights based on the entity type
-  const insightMapping: Record<string, string> = {
-    'client': 'clients',
-    'invoice': 'financial',
-    'expense': 'expenses',
-    'employee': 'time',
-    'inventory': 'inventory',
-  };
-  
-  const insightType = insightMapping[entityType];
-  if (insightType) {
-    updateAIInsights(insightType);
+  }
+
+  /**
+   * Create a notification from an event
+   */
+  private createNotificationFromEvent(event: IntegrationEvent, payload: IntegrationEventPayload): void {
+    // Define a mapping from events to notification content
+    let notificationData: {
+      title: string;
+      message: string;
+      type: 'success' | 'error' | 'warning' | 'info';
+      priority: 'low' | 'medium' | 'high';
+    } | null = null;
+    
+    const { module, entityType, entityId, action, data } = payload;
+    
+    // Determine notification content based on event and entity type
+    if (event === 'entity:created' && entityType === 'invoice') {
+      notificationData = {
+        title: 'New Invoice Created',
+        message: `Invoice ${data?.invoiceNumber || `#${entityId}`} has been created.`,
+        type: 'success',
+        priority: 'medium'
+      };
+    } else if (event === 'entity:updated' && entityType === 'invoice') {
+      notificationData = {
+        title: 'Invoice Updated',
+        message: `Invoice ${data?.invoiceNumber || `#${entityId}`} has been updated.`,
+        type: 'info',
+        priority: 'low'
+      };
+    } else if (event === 'entity:created' && entityType === 'contract') {
+      notificationData = {
+        title: 'New Contract Created',
+        message: `Contract with ${data?.clientName || 'a client'} has been created.`,
+        type: 'success',
+        priority: 'medium'
+      };
+    } else if (event === 'entity:updated' && entityType === 'inventory' && action === 'lowStock') {
+      notificationData = {
+        title: 'Low Inventory Alert',
+        message: `${data?.itemName || 'An item'} is running low with only ${data?.quantity || 'few'} units remaining.`,
+        type: 'warning',
+        priority: 'high'
+      };
+    } else if (event === 'entity:created' && entityType === 'expense') {
+      notificationData = {
+        title: 'New Expense Recorded',
+        message: `A ${data?.category || ''} expense for ${data?.amount || '$0.00'} has been recorded.`,
+        type: 'info',
+        priority: 'low'
+      };
+    } else if (event === 'entity:created' && entityType === 'client') {
+      notificationData = {
+        title: 'New Client Added',
+        message: `${data?.clientName || 'A new client'} has been added to your client list.`,
+        type: 'success',
+        priority: 'medium'
+      };
+    } else if (event === 'entity:updated' && entityType === 'taxDocument') {
+      notificationData = {
+        title: 'Tax Document Updated',
+        message: `Tax document for ${data?.period || 'a period'} has been updated.`,
+        type: 'warning',
+        priority: 'high'
+      };
+    }
+    
+    if (notificationData) {
+      // Emit a notification:created event
+      this.emit('notification:created', {
+        module,
+        entityType,
+        entityId,
+        timestamp: new Date(),
+        data: {
+          ...notificationData,
+          actionUrl: this.determineActionUrl(module, entityType, entityId)
+        }
+      });
+    }
+  }
+
+  /**
+   * Determine the appropriate URL for an action link in a notification
+   */
+  private determineActionUrl(module: ModuleType, entityType: EntityType, entityId: string | number): string {
+    // Map module types to their respective routes
+    const moduleRoutes: Record<ModuleType, string> = {
+      financials: '/financials',
+      inventory: '/inventory',
+      contracts: '/contracts',
+      expenses: '/expenses',
+      invoices: '/invoices',
+      clients: '/client-management',
+      employees: '/employee-management',
+      payroll: '/payroll-processing',
+      budget: '/budget-planning',
+      tax: '/tax-management',
+      timeTracking: '/time-tracking',
+      banking: '/bank-reconciliation'
+    };
+    
+    // Generate the action URL based on module and entity type
+    return `${moduleRoutes[module]}/${entityId}`;
   }
 }
+
+// Create a singleton instance
+export const integrationService = new IntegrationService();
+
+// Initialize on import
+integrationService.initialize();
+
+export default integrationService;
