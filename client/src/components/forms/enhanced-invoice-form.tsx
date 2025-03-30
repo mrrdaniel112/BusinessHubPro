@@ -98,9 +98,9 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
     emailAddress: ""
   });
   const [isParseDialogOpen, setIsParseDialogOpen] = useState(false); // State for parse dialog
-  
+
   const isEditing = !!invoiceToEdit;
-  
+
   // Initial form state
   const [formState, setFormState] = useState({
     invoiceNumber: `INV-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
@@ -112,7 +112,7 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
     notes: "",
     items: "[]"
   });
-  
+
   // Reset form when modal opens/closes
   useEffect(() => {
     if (open) {
@@ -120,7 +120,7 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
         // Parse the items from the stored JSON
         const parsedItems = JSON.parse(invoiceToEdit.items || "[]");
         setItems(parsedItems);
-        
+
         // Set form state from existing invoice
         setFormState({
           invoiceNumber: invoiceToEdit.invoiceNumber,
@@ -155,7 +155,7 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
       });
     }
   }, [open, isEditing, invoiceToEdit]);
-  
+
   // Mutation for creating/updating invoice
   const invoiceMutation = useMutation({
     mutationFn: async (invoice: any) => {
@@ -165,9 +165,9 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
         issueDate: invoice.issueDate instanceof Date ? invoice.issueDate.toISOString() : invoice.issueDate,
         dueDate: invoice.dueDate instanceof Date ? invoice.dueDate.toISOString() : invoice.dueDate
       };
-      
+
       console.log("Sending invoice data to API:", formattedInvoice);
-      
+
       try {
         if (isEditing && invoiceToEdit) {
           const res = await apiRequest('PATCH', `/api/invoices/${invoiceToEdit.id}`, formattedInvoice);
@@ -197,13 +197,18 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
       });
     }
   });
-  
+
   // Calculate totals with safe handling for invalid values
   const calculateSubtotal = () => {
     return items.reduce((sum, item) => {
-      const quantity = parseFloat(item.quantity.toString()) || 0;
-      const price = parseFloat(item.price.toString()) || 0;
-      return sum + (quantity * price);
+      const quantity = typeof item.quantity === 'number' ? item.quantity : 1;
+      const price = typeof item.price === 'number' ? item.price : 0;
+
+      // For square footage items, use price directly
+      const lineItemTotal = item.description.toLowerCase().includes('sq. ft') ? 
+        parseFloat(price.toFixed(2)) :
+        parseFloat((quantity * price).toFixed(2));
+      return sum + lineItemTotal;
     }, 0).toFixed(2);
   };
 
@@ -218,54 +223,33 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
     const tax = parseFloat(calculateTax());
     return (subtotal + tax).toFixed(2);
   };
-    return items.reduce((sum, item) => {
-      const quantity = typeof item.quantity === 'number' ? item.quantity : 0;
-      const price = typeof item.price === 'number' ? item.price : 0;
-      
-      // Ensure we're using precise calculation for each line item
-      const lineItemTotal = parseFloat((quantity * price).toFixed(2));
-      return sum + lineItemTotal;
-    }, 0);
-  };
-  
-  const calculateTax = () => {
-    const subtotal = calculateSubtotal();
-    const rate = typeof taxRate === 'number' ? taxRate : 0;
-    // Use toFixed to ensure proper decimal calculation and convert back to number
-    return includeTax ? parseFloat((subtotal * (rate / 100)).toFixed(2)) : 0;
-  };
-  
-  const calculateTotal = () => {
-    // Use toFixed to ensure proper decimal precision for the final total
-    return parseFloat((calculateSubtotal() + calculateTax()).toFixed(2));
-  };
-  
+
   // Update amount when items change
   useEffect(() => {
     // Force the recalculation of total after items are updated
     const subtotal = calculateSubtotal();
     const tax = calculateTax();
-    
+
     // Use the calculateTotal function to ensure consistent calculations
     const total = calculateTotal();
-    
+
     // Format with 2 decimal places
     const formattedTotal = total.toFixed(2);
-    
+
     console.log("Calculated total:", { 
       subtotal: subtotal.toFixed(2), 
       tax: tax.toFixed(2), 
       total: formattedTotal,
       items: items.length
     });
-    
+
     setFormState(prev => ({
       ...prev,
       amount: formattedTotal,
       items: JSON.stringify(items)
     }));
   }, [items, includeTax, taxRate]);
-  
+
   // Handle adding items
   const addItem = () => {
     if (newItem.description && newItem.quantity > 0) {
@@ -284,12 +268,12 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
       });
     }
   };
-  
+
   // Handle removing items
   const removeItem = (id: string) => {
     setItems(items.filter(item => item.id !== id));
   };
-  
+
   // Invoice templates
   const invoiceTemplates = {
     renovation: {
@@ -393,7 +377,7 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
       notes: "Thank you for choosing us for your software development needs! This invoice covers all development services as outlined in our agreement. Payment is due within 30 days of receipt. We provide 60 days of post-deployment support to ensure a smooth transition."
     }
   };
-  
+
   // Apply template to form
   const applyTemplate = (templateName: string) => {
     const template = invoiceTemplates[templateName as keyof typeof invoiceTemplates] || invoiceTemplates.default;
@@ -402,7 +386,7 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
       ...prev,
       notes: template.notes
     }));
-    
+
     toast({
       title: `${template.title} Template Applied`,
       description: `Applied the ${template.description} template to your invoice`,
@@ -413,26 +397,26 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
   const parseTextToLineItems = (text: string): InvoiceItem[] => {
     // Split the text by new lines and filter out empty lines
     const lines = text.split('\n').filter(line => line.trim() !== '');
-    
+
     return lines.map(line => {
       let description = line.trim();
       let quantity = 1;
       let price = 1500; // Default price
-      
+
       // Try to extract quantity if format is like "5x Widget" or "5 Widget"
       const quantityMatch = description.match(/^(\d+)(?:x|\s+)/);
       if (quantityMatch) {
         quantity = parseInt(quantityMatch[1], 10);
         description = description.replace(quantityMatch[0], '').trim();
       }
-      
+
       // Try to extract price if format is like "Widget - $500" or "Widget $500"
       const priceMatch = description.match(/[\s-]*\$(\d+(?:,\d+)*(?:\.\d+)?)/);
       if (priceMatch) {
         price = parseFloat(priceMatch[1].replace(/,/g, ''));
         description = description.replace(priceMatch[0], '').trim();
       }
-      
+
       return {
         id: Math.random().toString(36).substring(2, 9),
         description,
@@ -441,7 +425,7 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
       };
     });
   };
-  
+
   // Handle items parsed from Puter AI
   const handleParsedItems = (parsedItems: ParsedInvoiceItem[]) => {
     // Convert ParsedInvoiceItem[] to InvoiceItem[]
@@ -451,10 +435,10 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
       quantity: item.quantity,
       price: item.price
     }));
-    
+
     // Add the parsed items to the existing items
     setItems([...items, ...newItems]);
-    
+
     toast({
       title: "Items Added",
       description: `Successfully added ${parsedItems.length} items to your invoice`,
@@ -471,33 +455,33 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
       });
       return;
     }
-    
+
     setIsGeneratingAI(true);
-    
+
     try {
       // First try with AI
       const res = await apiRequest('POST', '/api/ai/generate-invoice', {
         projectDescription,
         clientName: formState.clientName
       });
-      
+
       if (res.ok) {
         const aiData = await res.json();
-        
+
         if (aiData.items && Array.isArray(aiData.items)) {
           setItems(aiData.items.map((item: any) => ({
             ...item,
             id: Math.random().toString(36).substring(2, 9)
           })));
         }
-        
+
         if (aiData.notes) {
           setFormState(prev => ({
             ...prev,
             notes: aiData.notes
           }));
         }
-        
+
         toast({
           title: "AI Generation Complete",
           description: "Invoice details have been generated based on your project description",
@@ -507,13 +491,13 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
       }
     } catch (error) {
       console.error("Error generating AI content:", error);
-      
+
       // Fallback to parsing text when AI fails
       const parsedItems = parseTextToLineItems(projectDescription);
-      
+
       if (parsedItems.length > 0) {
         setItems(parsedItems);
-        
+
         toast({
           title: "Line Items Created",
           description: `Created ${parsedItems.length} invoice items from your description`,
@@ -529,7 +513,7 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
       setIsGeneratingAI(false);
     }
   };
-  
+
   // Handle form submission
   const handleSubmit = () => {
     if (!formState.clientName) {
@@ -540,7 +524,7 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
       });
       return;
     }
-    
+
     if (items.length === 0) {
       toast({
         title: "Validation Error",
@@ -549,7 +533,7 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
       });
       return;
     }
-    
+
     // Create the invoice with all the data including notification options
     invoiceMutation.mutate({
       ...formState,
@@ -563,7 +547,7 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
         `\n\nSend to: ${sendOptions.emailAddress}` : '')
     });
   };
-  
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[800px] max-h-[80vh] w-[95vw] overflow-y-scroll" style={{WebkitOverflowScrolling: 'touch'}}>
@@ -573,7 +557,7 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
             Create a detailed, professional invoice with AI assistance
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="grid gap-6 py-4">
           {/* Basic Information */}
           <div className="grid grid-cols-2 gap-4">
@@ -595,7 +579,7 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
               />
             </div>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <FormLabel htmlFor="issueDate">Issue Date</FormLabel>
@@ -648,7 +632,7 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
               </Popover>
             </div>
           </div>
-          
+
           <div>
             <FormLabel htmlFor="status">Status</FormLabel>
             <Select 
@@ -666,7 +650,7 @@ export function EnhancedInvoiceForm({ open, onOpenChange, invoiceToEdit }: Enhan
               </SelectContent>
             </Select>
           </div>
-          
+
           {/* Quick line item entry section */}
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="ai-generation">
@@ -712,7 +696,7 @@ Logo redesign"
               </AccordionContent>
             </AccordionItem>
           </Accordion>
-          
+
           {/* Template Selection */}
           <div className="space-y-4">
             <div className="flex justify-between items-center">
@@ -738,7 +722,7 @@ Logo redesign"
               ))}
             </div>
           </div>
-          
+
           {/* Line Items */}
           <div className="space-y-4">
             <div className="flex justify-between items-center">
@@ -752,14 +736,14 @@ Logo redesign"
                 Parse Items from Text
               </Button>
             </div>
-            
+
             {/* Parse Items Dialog */}
             <ParseInvoiceItemsDialog
               open={isParseDialogOpen}
               onOpenChange={setIsParseDialogOpen}
               onItemsParsed={handleParsedItems}
             />
-            
+
             <Table>
               <TableHeader>
                 <TableRow>
@@ -776,7 +760,7 @@ Logo redesign"
                   const quantity = typeof item.quantity === 'number' ? item.quantity : 0;
                   const price = typeof item.price === 'number' ? item.price : 0;
                   const lineTotal = parseFloat((quantity * price).toFixed(2));
-                  
+
                   return (
                     <TableRow key={item.id}>
                       <TableCell>{item.description}</TableCell>
@@ -788,6 +772,7 @@ Logo redesign"
                           variant="ghost" 
                           size="sm" 
                           onClick={() => removeItem(item.id)}
+                        >```javascript
                         >
                           <i className="ri-delete-bin-line text-red-500"></i>
                         </Button>
@@ -841,7 +826,7 @@ Logo redesign"
                 </TableRow>
               </TableBody>
             </Table>
-            
+
             {/* Tax calculation */}
             <div className="flex justify-end space-x-4 items-center">
               <div className="flex items-center space-x-2">
@@ -857,7 +842,7 @@ Logo redesign"
                   Include Tax
                 </label>
               </div>
-              
+
               {includeTax && (
                 <div className="flex items-center space-x-2">
                   <Input
@@ -872,28 +857,28 @@ Logo redesign"
                 </div>
               )}
             </div>
-            
+
             {/* Totals */}
             <div className="space-y-2">
               <div className="flex justify-between border-t pt-2">
                 <span className="font-medium">Subtotal:</span>
                 <span>${calculateSubtotal().toFixed(2)}</span>
               </div>
-              
+
               {includeTax && (
                 <div className="flex justify-between">
                   <span className="font-medium">Tax ({taxRate}%):</span>
                   <span>${calculateTax().toFixed(2)}</span>
                 </div>
               )}
-              
+
               <div className="flex justify-between border-t border-b py-2">
                 <span className="font-bold">Total:</span>
                 <span className="font-bold">${calculateTotal().toFixed(2)}</span>
               </div>
             </div>
           </div>
-          
+
           {/* Two-column layout for Notes and Totals/Sending Options */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Notes Column */}
@@ -917,7 +902,7 @@ Logo redesign"
                   </Button>
                 </div>
               </div>
-              
+
               <Textarea
                 value={formState.notes}
                 onChange={(e) => setFormState({ ...formState, notes: e.target.value })}
@@ -925,7 +910,7 @@ Logo redesign"
                 className="min-h-[100px]"
               />
             </div>
-            
+
             {/* Totals Summary and Sending Options Column */}
             <div className="space-y-4">
               {/* Invoice Total Summary Card */}
@@ -939,14 +924,14 @@ Logo redesign"
                       <span className="font-medium">Subtotal:</span>
                       <span>${calculateSubtotal().toFixed(2)}</span>
                     </div>
-                    
+
                     {includeTax && (
                       <div className="flex justify-between">
                         <span className="font-medium">Tax ({taxRate}%):</span>
                         <span>${calculateTax().toFixed(2)}</span>
                       </div>
                     )}
-                    
+
                     <div className="flex justify-between border-t border-b py-2 mt-2">
                       <span className="font-bold">Total:</span>
                       <span className="font-bold text-lg">${calculateTotal().toFixed(2)}</span>
@@ -954,7 +939,7 @@ Logo redesign"
                   </div>
                 </CardContent>
               </Card>
-              
+
               {/* Sending Options */}
               <Accordion type="single" collapsible className="w-full">
                 <AccordionItem value="sending-options">
@@ -980,7 +965,7 @@ Logo redesign"
                           Send via Email
                         </label>
                       </div>
-                      
+
                       {sendOptions.sendEmail && (
                         <div>
                           <FormLabel htmlFor="emailAddress">Email Address</FormLabel>
@@ -993,7 +978,7 @@ Logo redesign"
                           />
                         </div>
                       )}
-                      
+
                       {/* SMS functionality has been removed as requested */}
                     </div>
                   </AccordionContent>
@@ -1001,7 +986,7 @@ Logo redesign"
               </Accordion>
             </div>
           </div>
-          
+
           <DialogFooter>
             <Button 
               variant="outline" 
