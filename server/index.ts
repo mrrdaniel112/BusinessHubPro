@@ -1,11 +1,30 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import session from "express-session";
+import createMemoryStore from "memorystore";
 
 const app = express();
 // Increase JSON body size limit to 10MB for image uploads
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: false, limit: '10mb' }));
+
+// Create memory store for session persistence
+const MemoryStore = createMemoryStore(session);
+
+// Configure session middleware with persistent storage
+app.use(session({
+  secret: 'business-platform-secret-key',
+  resave: false,
+  saveUninitialized: true,
+  store: new MemoryStore({
+    checkPeriod: 86400000 // prune expired entries every 24h
+  }),
+  cookie: { 
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+  }
+}));
 
 app.use((req, res, next) => {
   const start = Date.now();

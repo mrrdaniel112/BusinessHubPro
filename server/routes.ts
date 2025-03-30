@@ -41,11 +41,29 @@ import {
 } from "./openai";
 import { NotificationOptions, sendInvoiceNotifications } from "./services/notification";
 
-// Mock authentication middleware (for demo purposes)
+import session from "express-session";
+
+// Setup types for session
+declare module "express-session" {
+  interface SessionData {
+    userId?: number;
+    authenticated?: boolean;
+  }
+}
+
+// Authentication middleware
 const requireAuth = (req: Request, res: Response, next: Function) => {
-  // For demo, we'll use a fixed user ID (1 for demo user)
-  req.user = { id: 1 };
-  next();
+  if (req.session.authenticated && req.session.userId) {
+    req.user = { id: req.session.userId };
+    next();
+  } else {
+    // For demonstration purposes, we'll automatically authenticate as user 1
+    // In a production app, this would redirect to login
+    req.session.authenticated = true;
+    req.session.userId = 1;
+    req.user = { id: 1 };
+    next();
+  }
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -64,13 +82,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid credentials" });
       }
       
-      // For a real app, you'd set a session cookie here
-      // For demo, we'll just return the user object
-      return res.json({
-        id: user.id,
-        username: user.username,
-        fullName: user.fullName,
-        email: user.email
+      // Set session data
+      req.session.authenticated = true;
+      req.session.userId = user.id;
+      
+      // Save session before returning response
+      req.session.save(err => {
+        if (err) {
+          console.error("Error saving session:", err);
+          return res.status(500).json({ message: "Error creating session" });
+        }
+        
+        // Return the user object
+        return res.json({
+          id: user.id,
+          username: user.username,
+          fullName: user.fullName,
+          email: user.email
+        });
       });
     } catch (error) {
       return res.status(500).json({ message: "Server error" });
@@ -88,11 +117,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const user = await storage.createUser(userData);
       
-      return res.status(201).json({
-        id: user.id,
-        username: user.username,
-        fullName: user.fullName,
-        email: user.email
+      // Set session data after successful registration
+      req.session.authenticated = true;
+      req.session.userId = user.id;
+      
+      // Save session before returning response
+      req.session.save(err => {
+        if (err) {
+          console.error("Error saving session during registration:", err);
+          return res.status(500).json({ message: "Error creating session" });
+        }
+        
+        return res.status(201).json({
+          id: user.id,
+          username: user.username,
+          fullName: user.fullName,
+          email: user.email
+        });
       });
     } catch (error) {
       if (error instanceof ZodError) {
@@ -100,6 +141,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       return res.status(500).json({ message: "Server error" });
     }
+  });
+  
+  // Logout route
+  app.post("/api/auth/logout", (req, res) => {
+    req.session.destroy(err => {
+      if (err) {
+        console.error("Error destroying session:", err);
+        return res.status(500).json({ message: "Error logging out" });
+      }
+      
+      // Clear the cookie on the client
+      res.clearCookie('connect.sid');
+      return res.status(200).json({ message: "Logged out successfully" });
+    });
+  });
+  
+  // Get current user route
+  app.get("/api/auth/user", (req, res) => {
+    if (!req.session.authenticated || !req.session.userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    const userId = req.session.userId;
+    
+    storage.getUser(userId)
+      .then(user => {
+        if (!user) {
+          req.session.destroy(err => {
+            if (err) console.error("Error destroying invalid session:", err);
+            res.clearCookie('connect.sid');
+            return res.status(401).json({ message: "User not found" });
+          });
+        } else {
+          return res.json({
+            id: user.id,
+            username: user.username,
+            fullName: user.fullName,
+            email: user.email
+          });
+        }
+      })
+      .catch(error => {
+        console.error("Error fetching user:", error);
+        return res.status(500).json({ message: "Server error" });
+      });
   });
 
   // Transaction routes
