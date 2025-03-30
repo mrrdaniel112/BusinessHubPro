@@ -428,18 +428,18 @@ export class EnhancedAuth {
    */
   static revokeAllTokensForUser(userId: number): void {
     // Remove access tokens
-    for (const [tokenId, data] of accessTokens.entries()) {
+    Array.from(accessTokens.entries()).forEach(([tokenId, data]) => {
       if (data.userId === userId) {
         accessTokens.delete(tokenId);
       }
-    }
+    });
     
     // Remove refresh tokens
-    for (const [tokenId, data] of refreshTokens.entries()) {
+    Array.from(refreshTokens.entries()).forEach(([tokenId, data]) => {
       if (data.userId === userId) {
         refreshTokens.delete(tokenId);
       }
-    }
+    });
     
     logSecurityEvent({
       type: 'logout',

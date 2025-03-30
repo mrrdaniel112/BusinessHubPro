@@ -155,7 +155,7 @@ export default function Login() {
                 
                 <div className="pt-2">
                   <p className="text-sm text-gray-500 mb-4">
-                    By completing your purchase, you agree to our Terms of Service and Privacy Policy.
+                    By completing your purchase, you agree to our <a href="/legal/terms" className="text-primary-600 hover:underline">Terms of Service</a> and <a href="/legal/privacy" className="text-primary-600 hover:underline">Privacy Policy</a>. 
                     Your 14-day free trial starts today. You won't be charged until the trial ends.
                   </p>
                   <div className="flex items-center space-x-2 mb-4">
@@ -287,6 +287,11 @@ export default function Login() {
                       Forgot password?
                     </a>
                   </div>
+                  <div className="text-center text-sm text-gray-500">
+                    <a href="/legal" className="text-primary-600 hover:underline">
+                      Legal Information
+                    </a>
+                  </div>
                   {/* Admin button removed per user request */}
                 </CardFooter>
               </Card>
@@ -372,7 +377,7 @@ export default function Login() {
                             </FormControl>
                             <div className="space-y-1 leading-none">
                               <FormLabel className="font-normal">
-                                I agree to the <a href="#" className="text-primary-600 hover:underline">Terms of Service</a> and <a href="#" className="text-primary-600 hover:underline">Privacy Policy</a>
+                                I agree to the <a href="/legal/terms" className="text-primary-600 hover:underline">Terms of Service</a> and <a href="/legal/privacy" className="text-primary-600 hover:underline">Privacy Policy</a>
                               </FormLabel>
                             </div>
                           </FormItem>
@@ -385,10 +390,15 @@ export default function Login() {
                     </form>
                   </Form>
                 </CardContent>
-                <CardFooter>
+                <CardFooter className="flex flex-col space-y-2">
                   <p className="text-sm text-center w-full text-gray-500">
                     By signing up, you'll get a 14-day free trial with full access to all features.
                   </p>
+                  <div className="text-center text-sm text-gray-500">
+                    <a href="/legal" className="text-primary-600 hover:underline">
+                      Legal Information
+                    </a>
+                  </div>
                 </CardFooter>
               </Card>
             </TabsContent>

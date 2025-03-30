@@ -2142,7 +2142,7 @@ export class MemStorage implements IStorage {
       clientId: deal.clientId,
       name: deal.name,
       value: deal.value,
-      currency: deal.currency,
+      currency: deal.currency || 'USD',
       stage: deal.stage,
       probability: deal.probability || null,
       expectedCloseDate: deal.expectedCloseDate || null,
@@ -2180,7 +2180,9 @@ export class MemStorage implements IStorage {
       (deal) => deal.userId === userId
     );
     
-    const stages = [...new Set(deals.map(deal => deal.stage))];
+    const stagesSet = new Set<string>();
+    deals.forEach(deal => stagesSet.add(deal.stage));
+    const stages = Array.from(stagesSet);
     
     return stages.map(stage => {
       const stageDeals = deals.filter(deal => deal.stage === stage);

@@ -30,6 +30,12 @@ import TimeTracking from "./pages/time-tracking";
 import ClientManagement from "./pages/client-management";
 import EmployeeManagement from "./pages/employee-management";
 
+// Import legal pages
+import LegalHub from "./pages/legal/index";
+import TermsOfService from "./pages/legal/terms";
+import PrivacyPolicy from "./pages/legal/privacy";
+import LegalDisclaimers from "./pages/legal/disclaimers";
+
 function ProtectedRouteWithLayout({ children }: { children: React.ReactNode }) {
   return (
     <ProtectedRoute>
@@ -42,6 +48,12 @@ function Router() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
+      
+      {/* Legal pages - public access */}
+      <Route path="/legal" component={LegalHub} />
+      <Route path="/legal/terms" component={TermsOfService} />
+      <Route path="/legal/privacy" component={PrivacyPolicy} />
+      <Route path="/legal/disclaimers" component={LegalDisclaimers} />
       
       <Route path="/">
         {() => (
