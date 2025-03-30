@@ -1,11 +1,12 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useRef } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
 import { 
   Table, 
@@ -24,6 +25,31 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Progress } from "@/components/ui/progress";
 import { 
   Users, 
   CalendarDays, 
@@ -33,11 +59,33 @@ import {
   Plus, 
   Search,
   Check,
-  Clock
+  Clock,
+  CheckCircle2,
+  Inbox,
+  MoreVertical,
+  Edit,
+  Trash2,
+  AlarmClock,
+  Mail,
+  Download,
+  Upload,
+  FileInput,
+  Printer,
+  HelpCircle,
+  BellRing
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Input } from "@/components/ui/input";
-import { format } from "date-fns";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { 
+  format, 
+  addMonths, 
+  subMonths, 
+  eachDayOfInterval, 
+  startOfMonth, 
+  endOfMonth, 
+  isToday,
+  isSameMonth
+} from "date-fns";
 
 export default function PayrollProcessing() {
   const { toast } = useToast();
@@ -346,54 +394,210 @@ export default function PayrollProcessing() {
         <TabsContent value="processing" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Payroll Processing</CardTitle>
-              <CardDescription>
-                Run and manage payroll processing.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="p-4 border rounded-lg bg-muted">
-                  <h3 className="text-lg font-medium mb-2">Current Payroll Status</h3>
-                  <div className="space-y-4">
-                    <div className="flex justify-between">
-                      <span>Pay Period:</span>
-                      <span className="font-medium">{formattedStartDate} - {formattedEndDate}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Status:</span>
-                      <span className="font-medium text-amber-500">Pending Approval</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Payment Date:</span>
-                      <span className="font-medium">{format(payPeriodEnd, "MMM d, yyyy")}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Total Amount:</span>
-                      <span className="font-medium">$47,250.00</span>
-                    </div>
-                  </div>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                  <CardTitle>Payroll Processing</CardTitle>
+                  <CardDescription>
+                    Run and manage payroll processing.
+                  </CardDescription>
                 </div>
-
-                <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-                  <Button className="w-full">
-                    <Check className="mr-2 h-4 w-4" />
-                    Approve Payroll
-                  </Button>
-                  <Button className="w-full" variant="outline">
-                    <FileText className="mr-2 h-4 w-4" />
-                    Export Payroll Report
-                  </Button>
-                </div>
-
-                <div className="text-center py-6">
-                  <h3 className="mb-2 text-lg font-medium">Advanced Processing Coming Soon</h3>
-                  <p className="text-muted-foreground">
-                    We're currently working on implementing advanced payroll processing features.
-                  </p>
+                <div className="flex items-center gap-2">
+                  <Select defaultValue="current-period">
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Select Pay Period" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="current-period">Current Period</SelectItem>
+                      <SelectItem value="off-cycle">Off-Cycle Payroll</SelectItem>
+                      <SelectItem value="bonus">Bonus Payment</SelectItem>
+                      <SelectItem value="commission">Commission Run</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="border rounded-lg overflow-hidden">
+                <div className="bg-muted p-4 border-b">
+                  <h3 className="text-lg font-medium">Current Pay Period ({formattedStartDate} - {formattedEndDate})</h3>
+                  <div className="text-sm text-muted-foreground">Pay Date: {format(payPeriodEnd, "MMMM d, yyyy")}</div>
+                </div>
+                
+                <div className="p-4">
+                  <ol className="relative border-l border-gray-200 ml-3 space-y-6">
+                    <li className="mb-6 ml-6">
+                      <span className="absolute flex items-center justify-center w-8 h-8 rounded-full -left-4 bg-green-100 text-green-800">
+                        <CheckCircle2 className="w-5 h-5" />
+                      </span>
+                      <h3 className="font-medium">Time and Attendance</h3>
+                      <p className="text-sm text-muted-foreground mb-2">Review and approve employee time data</p>
+                      <Badge variant="outline" className="bg-green-50 border-green-200 text-green-700">Completed</Badge>
+                    </li>
+                    
+                    <li className="mb-6 ml-6">
+                      <span className="absolute flex items-center justify-center w-8 h-8 rounded-full -left-4 bg-green-100 text-green-800">
+                        <CheckCircle2 className="w-5 h-5" />
+                      </span>
+                      <h3 className="font-medium">Pre-Process Review</h3>
+                      <p className="text-sm text-muted-foreground mb-2">Verify employee data and pay rates</p>
+                      <Badge variant="outline" className="bg-green-50 border-green-200 text-green-700">Completed</Badge>
+                    </li>
+                    
+                    <li className="mb-6 ml-6">
+                      <span className="absolute flex items-center justify-center w-8 h-8 rounded-full -left-4 bg-amber-100 text-amber-800">
+                        <AlarmClock className="w-5 h-5" />
+                      </span>
+                      <h3 className="font-medium">Process Payroll</h3>
+                      <p className="text-sm text-muted-foreground mb-2">Calculate wages, taxes, and deductions</p>
+                      <Badge variant="outline" className="bg-amber-50 border-amber-200 text-amber-700">In Progress</Badge>
+                      <div className="mt-3">
+                        <div className="flex justify-between text-sm mb-1">
+                          <span>Processing (75%)</span>
+                          <span>18 of 24 employees</span>
+                        </div>
+                        <Progress value={75} className="h-2" />
+                      </div>
+                    </li>
+                    
+                    <li className="mb-6 ml-6">
+                      <span className="absolute flex items-center justify-center w-8 h-8 rounded-full -left-4 bg-gray-100 text-gray-800">
+                        <div className="w-5 h-5 flex items-center justify-center">4</div>
+                      </span>
+                      <h3 className="font-medium">Review and Approve</h3>
+                      <p className="text-sm text-muted-foreground mb-2">Review calculated payroll and approve for payment</p>
+                      <Badge variant="outline">Pending</Badge>
+                    </li>
+                    
+                    <li className="mb-6 ml-6">
+                      <span className="absolute flex items-center justify-center w-8 h-8 rounded-full -left-4 bg-gray-100 text-gray-800">
+                        <div className="w-5 h-5 flex items-center justify-center">5</div>
+                      </span>
+                      <h3 className="font-medium">Payment Processing</h3>
+                      <p className="text-sm text-muted-foreground mb-2">Process payments via direct deposit or check</p>
+                      <Badge variant="outline">Pending</Badge>
+                    </li>
+                  </ol>
+                </div>
+              </div>
+              
+              <div className="grid gap-4 md:grid-cols-3">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-sm">Scheduled Pay Runs</CardTitle>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="w-[200px]">Upcoming payroll runs that are already scheduled.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm">{format(addMonths(payPeriodEnd, 0), "MMMM d, yyyy")}</div>
+                        <Badge variant="outline" className="bg-blue-50 text-blue-700">Scheduled</Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm">{format(addMonths(payPeriodEnd, 1), "MMMM d, yyyy")}</div>
+                        <Badge variant="outline" className="bg-blue-50 text-blue-700">Scheduled</Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm">{format(addMonths(payPeriodEnd, 2), "MMMM d, yyyy")}</div>
+                        <Badge variant="outline" className="bg-blue-50 text-blue-700">Scheduled</Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-sm">Recent Payroll Alerts</CardTitle>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="w-[200px]">Recent alerts related to payroll processing.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex items-start gap-2">
+                        <BellRing className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" />
+                        <div className="text-sm">
+                          <div className="font-medium">Missing time entries for 2 employees</div>
+                          <div className="text-muted-foreground">Action required before processing</div>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <BellRing className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" />
+                        <div className="text-sm">
+                          <div className="font-medium">Tax withholding changes</div>
+                          <div className="text-muted-foreground">3 employees updated their W-4 forms</div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-sm">Quick Actions</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <Button variant="outline" className="w-full justify-start" size="sm">
+                        <Mail className="h-4 w-4 mr-2" />
+                        Send Pay Notifications
+                      </Button>
+                      <Button variant="outline" className="w-full justify-start" size="sm">
+                        <Download className="h-4 w-4 mr-2" />
+                        Download Payroll Report
+                      </Button>
+                      <Button variant="outline" className="w-full justify-start" size="sm">
+                        <Upload className="h-4 w-4 mr-2" />
+                        Import Time Data
+                      </Button>
+                      <Button variant="outline" className="w-full justify-start" size="sm">
+                        <Printer className="h-4 w-4 mr-2" />
+                        Print Paystubs
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </CardContent>
+            
+            <CardFooter className="border-t pt-6 flex flex-col sm:flex-row gap-4 items-center justify-between">
+              <div className="flex flex-col">
+                <div className="text-sm font-medium mb-1">Current Payroll Status</div>
+                <div className="text-amber-500 font-medium flex items-center">
+                  <AlarmClock className="h-4 w-4 mr-1" />
+                  Processing in progress (75% complete)
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline">
+                  Cancel Run
+                </Button>
+                <Button>
+                  Continue to Approval
+                </Button>
+              </div>
+            </CardFooter>
           </Card>
         </TabsContent>
 
