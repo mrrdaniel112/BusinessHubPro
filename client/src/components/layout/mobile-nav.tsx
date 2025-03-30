@@ -16,22 +16,29 @@ const MobileNavItem = ({ href, icon, label, active, onClick }: {
   label: string; 
   active: boolean;
   onClick: () => void;
-}) => (
-  <Link href={href}>
-    <div
-      className={cn(
-        "flex items-center px-3 py-3 text-base font-medium rounded-md cursor-pointer touch-target",
-        active
-          ? "text-white bg-primary-600"
-          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-      )}
-      onClick={onClick}
-    >
-      <i className={cn(`ri-${icon} mr-3 text-xl`, active ? "" : "text-gray-400")}></i>
-      <span className="mobile-text-adjust">{label}</span>
-    </div>
-  </Link>
-);
+}) => {
+  // Verify that the icon string is valid
+  const iconClass = icon && icon.trim() !== "" 
+    ? `ri-${icon}` 
+    : 'ri-question-mark';
+
+  return (
+    <Link href={href}>
+      <div
+        className={cn(
+          "flex items-center px-3 py-3 text-base font-medium rounded-md cursor-pointer touch-target",
+          active
+            ? "text-white bg-primary-600"
+            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+        )}
+        onClick={onClick}
+      >
+        <i className={cn(`${iconClass} mr-3 text-xl`, active ? "" : "text-gray-400")}></i>
+        <span className="mobile-text-adjust">{label}</span>
+      </div>
+    </Link>
+  );
+};
 
 export default function MobileNav({ opened, onClose, location }: MobileNavProps) {
   const { logout } = useAuth();

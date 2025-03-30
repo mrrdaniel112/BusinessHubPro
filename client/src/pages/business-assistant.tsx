@@ -21,7 +21,8 @@ export default function BusinessAssistant() {
   const isMobile = useIsMobile();
 
   // Dynamically adjust the number of questions to show based on screen size
-  const questionsToShow = isMobile ? 4 : 6;
+  const questionsToShow = isMobile ? 4 : EXAMPLE_QUESTIONS.length;
+  const visibleQuestions = EXAMPLE_QUESTIONS.slice(0, questionsToShow);
 
   return (
     <div className="container mx-auto py-6 px-4 md:px-6 space-y-6">
@@ -34,40 +35,77 @@ export default function BusinessAssistant() {
         </div>
       </div>
 
-      {/* On mobile, show the elements in a different order to prevent overlap */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">{/* Changed to flex-col for mobile to stack properly */}
-        {/* Left side - Suggested questions - Fixed with z-index and better mobile layout */}
-        <div className="lg:col-span-1 space-y-4 z-10 relative">
-          <div className="bg-white p-5 rounded-lg border shadow-sm">
-            <h3 className="font-medium text-lg mb-3 text-primary-600">Example Questions</h3>
-            <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
-              {EXAMPLE_QUESTIONS.map((question, index) => (
-                <SuggestedQuestion key={index} question={question} />
-              ))}
+      {/* Mobile layout: Stack vertically */}
+      {isMobile && (
+        <div className="flex flex-col gap-6">
+          {/* Chat interface first on mobile */}
+          <div className="h-[50vh]">
+            <PuterChat />
+          </div>
+          
+          {/* Example questions section on mobile */}
+          <div className="space-y-4">
+            <div className="bg-white p-4 rounded-lg border shadow-sm">
+              <h3 className="font-medium text-lg mb-2 text-primary-600">Example Questions</h3>
+              <div className="space-y-2">
+                {visibleQuestions.map((question, index) => (
+                  <SuggestedQuestion key={index} question={question} />
+                ))}
+              </div>
+            </div>
+            
+            <div className="bg-gradient-to-br from-primary-50 to-primary-100 p-4 rounded-lg border shadow-sm">
+              <h3 className="font-medium text-lg mb-2">About this Assistant</h3>
+              <p className="text-sm text-slate-600 mb-2">
+                This AI-powered business assistant can help you with various aspects of running your business:
+              </p>
+              <ul className="text-sm text-slate-600 space-y-1 list-disc pl-4">
+                <li>Business strategy and planning</li>
+                <li>Marketing and sales advice</li>
+                <li>Financial management tips</li>
+                <li>Operations and logistics</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Desktop layout: Side by side */}
+      {!isMobile && (
+        <div className="grid grid-cols-4 gap-6">
+          {/* Left side - Suggested questions */}
+          <div className="col-span-1 space-y-4">
+            <div className="bg-white p-5 rounded-lg border shadow-sm">
+              <h3 className="font-medium text-lg mb-3 text-primary-600">Example Questions</h3>
+              <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
+                {EXAMPLE_QUESTIONS.map((question, index) => (
+                  <SuggestedQuestion key={index} question={question} />
+                ))}
+              </div>
+            </div>
+            
+            <div className="bg-gradient-to-br from-primary-50 to-primary-100 p-5 rounded-lg border shadow-sm">
+              <h3 className="font-medium text-lg mb-3">About this Assistant</h3>
+              <p className="text-sm text-slate-600 mb-3">
+                This AI-powered business assistant can help you with various aspects of running your business:
+              </p>
+              <ul className="text-sm text-slate-600 space-y-1 list-disc pl-4">
+                <li>Business strategy and planning</li>
+                <li>Marketing and sales advice</li>
+                <li>Financial management tips</li>
+                <li>Operations and logistics</li>
+                <li>Human resources guidance</li>
+                <li>Legal and compliance information</li>
+              </ul>
             </div>
           </div>
           
-          <div className="bg-gradient-to-br from-primary-50 to-primary-100 p-5 rounded-lg border shadow-sm">
-            <h3 className="font-medium text-lg mb-3">About this Assistant</h3>
-            <p className="text-sm text-slate-600 mb-3">
-              This AI-powered business assistant can help you with various aspects of running your business:
-            </p>
-            <ul className="text-sm text-slate-600 space-y-1 list-disc pl-4">
-              <li>Business strategy and planning</li>
-              <li>Marketing and sales advice</li>
-              <li>Financial management tips</li>
-              <li>Operations and logistics</li>
-              <li>Human resources guidance</li>
-              <li>Legal and compliance information</li>
-            </ul>
+          {/* Right side - Chat interface */}
+          <div className="col-span-3 h-[70vh]">
+            <PuterChat />
           </div>
         </div>
-        
-        {/* Right side - Chat interface */}
-        <div className="lg:col-span-3 h-[70vh]">
-          <PuterChat />
-        </div>
-      </div>
+      )}
     </div>
   );
 }

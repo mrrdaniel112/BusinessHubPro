@@ -97,6 +97,22 @@ export default function Sidebar() {
           <div className="flex items-center flex-shrink-0 px-4 mb-5">
             <span className="text-xl font-semibold text-primary-600">Business Platform</span>
           </div>
+          
+          {/* User profile section at top */}
+          <div className="px-4 mb-5">
+            <div className="flex items-center">
+              <img 
+                className="h-10 w-10 rounded-full" 
+                src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" 
+                alt="Profile" 
+              />
+              <div className="ml-3">
+                <p className="text-sm font-medium text-gray-700">{user?.name || "Premium User"}</p>
+                <p className="text-xs text-gray-500">{user?.subscriptionStatus === 'active' ? 'Premium Subscription' : 'Trial Account'}</p>
+              </div>
+            </div>
+          </div>
+          
           <nav className="flex-1 px-2 space-y-1 bg-white">
             <NavItem
               href="/"
@@ -178,6 +194,7 @@ export default function Sidebar() {
               />
             </div>
           </nav>
+          
           <div className="px-2 mt-6">
             <div className="p-4 rounded-lg bg-primary-50">
               <h3 className="text-sm font-medium text-primary-800">Your Trial</h3>
