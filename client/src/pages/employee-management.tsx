@@ -285,7 +285,7 @@ const EmployeeManagement = () => {
   const getTotalHours = () => {
     if (!timeEntries.length) return 0;
     
-    const total = timeEntries.reduce((sum, entry) => {
+    const total = timeEntries.reduce((sum: any, entry: any) => {
       if (entry.duration) {
         return sum + entry.duration;
       }
@@ -540,7 +540,7 @@ const EmployeeManagement = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {timeEntries.map((entry) => (
+                      {timeEntries.map((entry: any) => (
                         <TableRow key={entry.id}>
                           <TableCell>
                             <div className="font-medium">

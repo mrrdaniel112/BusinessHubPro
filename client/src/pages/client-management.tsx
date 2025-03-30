@@ -523,7 +523,7 @@ const ClientManagement = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {interactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((interaction) => (
+                  {interactions.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((interaction: any) => (
                     <Card key={interaction.id} className="overflow-hidden">
                       <CardHeader className="pb-3">
                         <div className="flex justify-between items-start">

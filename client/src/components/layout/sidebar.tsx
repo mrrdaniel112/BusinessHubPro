@@ -30,6 +30,8 @@ const getIcon = (iconName: string) => {
     "bank-line": Icons.Building,
     "budget-line": Icons.PiggyBank,
     "inventory-cost-line": Icons.BarChart3,
+    "client-line": Icons.Users,
+    "employee-line": Icons.UserRound,
   };
   
   const Icon = IconMap[iconName] || Icons.CircleDot;
@@ -237,6 +239,18 @@ export default function Sidebar() {
                   icon="time-line"
                   label="Time Tracking"
                   active={isActive("/time-tracking")}
+                />
+                <NavItem
+                  href="/client-management"
+                  icon="client-line"
+                  label="Client Management"
+                  active={isActive("/client-management")}
+                />
+                <NavItem
+                  href="/employee-management"
+                  icon="employee-line"
+                  label="Employee Management"
+                  active={isActive("/employee-management")}
                 />
               </div>
             </div>
