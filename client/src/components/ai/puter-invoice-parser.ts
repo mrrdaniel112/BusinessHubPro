@@ -210,6 +210,13 @@ export async function parseInvoiceLines(text: string): Promise<ParsedInvoiceItem
     ];
   } catch (error) {
     console.error("Error parsing invoice:", error);
-    return [];
+    return [
+      {
+        id: crypto.randomUUID(),
+        description: "Total Project Cost",
+        quantity: 1,
+        price: totalAmount
+      }
+    ];
   }
 }
