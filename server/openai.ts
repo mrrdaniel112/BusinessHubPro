@@ -376,7 +376,9 @@ export async function generateInvoiceDetails(
           max_tokens: 2500,
         });
         
-        const constructionResult = JSON.parse(constructionResponse.choices[0].message.content);
+        // Handle potential null content
+        const messageContent = constructionResponse.choices[0].message.content || '{"items":[], "notes":"Unable to generate estimate items."}';
+        const constructionResult = JSON.parse(messageContent);
         
         if (constructionResult.items && Array.isArray(constructionResult.items) && constructionResult.items.length > 0) {
           return {

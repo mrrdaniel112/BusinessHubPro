@@ -170,5 +170,256 @@ export type InsertReceipt = z.infer<typeof insertReceiptSchema>;
 export type Invoice = typeof invoices.$inferSelect;
 export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
 
+// Tax Item schema
+export const taxItems = pgTable("tax_items", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  name: text("name").notNull(),
+  category: text("category").notNull(), // 'income', 'expense', 'deduction'
+  amount: numeric("amount").notNull(),
+  taxYear: integer("tax_year").notNull(),
+  quarter: integer("quarter"), // For quarterly taxes
+  description: text("description"),
+  dateFiled: timestamp("date_filed"),
+  status: text("status").notNull(), // 'pending', 'filed', 'paid'
+  receiptId: integer("receipt_id"), // Optional link to a receipt
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertTaxItemSchema = createInsertSchema(taxItems).pick({
+  userId: true,
+  name: true,
+  category: true,
+  amount: true,
+  taxYear: true,
+  quarter: true,
+  description: true,
+  dateFiled: true,
+  status: true,
+  receiptId: true,
+});
+
+// Payroll schema
+export const payrollItems = pgTable("payroll_items", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  employeeName: text("employee_name").notNull(),
+  employeeId: text("employee_id").notNull(),
+  payPeriodStart: timestamp("pay_period_start").notNull(),
+  payPeriodEnd: timestamp("pay_period_end").notNull(),
+  paymentDate: timestamp("payment_date").notNull(),
+  grossAmount: numeric("gross_amount").notNull(),
+  taxWithholdings: numeric("tax_withholdings").notNull(),
+  otherDeductions: numeric("other_deductions").notNull(),
+  netAmount: numeric("net_amount").notNull(),
+  paymentMethod: text("payment_method").notNull(), // 'check', 'direct_deposit'
+  status: text("status").notNull(), // 'pending', 'processed', 'cancelled'
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertPayrollItemSchema = createInsertSchema(payrollItems).pick({
+  userId: true,
+  employeeName: true,
+  employeeId: true,
+  payPeriodStart: true,
+  payPeriodEnd: true,
+  paymentDate: true,
+  grossAmount: true,
+  taxWithholdings: true,
+  otherDeductions: true,
+  netAmount: true,
+  paymentMethod: true,
+  status: true,
+  notes: true,
+});
+
+// Time Tracking schema
+export const timeEntries = pgTable("time_entries", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  projectId: text("project_id"),
+  projectName: text("project_name").notNull(),
+  taskDescription: text("task_description").notNull(),
+  startTime: timestamp("start_time").notNull(),
+  endTime: timestamp("end_time"),
+  duration: numeric("duration"), // In minutes
+  billable: boolean("billable").notNull().default(true),
+  billingRate: numeric("billing_rate"),
+  invoiceId: integer("invoice_id"), // If this time has been invoiced
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertTimeEntrySchema = createInsertSchema(timeEntries).pick({
+  userId: true,
+  projectId: true,
+  projectName: true,
+  taskDescription: true,
+  startTime: true,
+  endTime: true,
+  duration: true,
+  billable: true,
+  billingRate: true,
+  invoiceId: true,
+  notes: true,
+});
+
+// Bank Account schema for reconciliation
+export const bankAccounts = pgTable("bank_accounts", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  accountName: text("account_name").notNull(),
+  accountNumber: text("account_number").notNull(),
+  bankName: text("bank_name").notNull(),
+  accountType: text("account_type").notNull(), // 'checking', 'savings', 'credit'
+  balance: numeric("balance").notNull(),
+  lastReconciled: timestamp("last_reconciled"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertBankAccountSchema = createInsertSchema(bankAccounts).pick({
+  userId: true,
+  accountName: true,
+  accountNumber: true,
+  bankName: true,
+  accountType: true,
+  balance: true,
+  lastReconciled: true,
+  notes: true,
+});
+
+// Bank Transaction schema for reconciliation
+export const bankTransactions = pgTable("bank_transactions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  bankAccountId: integer("bank_account_id").notNull(),
+  transactionDate: timestamp("transaction_date").notNull(),
+  description: text("description").notNull(),
+  amount: numeric("amount").notNull(),
+  category: text("category"),
+  reconciled: boolean("reconciled").notNull().default(false),
+  matchedTransactionId: integer("matched_transaction_id"), // Link to internal transaction
+  checkNumber: text("check_number"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertBankTransactionSchema = createInsertSchema(bankTransactions).pick({
+  userId: true,
+  bankAccountId: true,
+  transactionDate: true,
+  description: true,
+  amount: true,
+  category: true,
+  reconciled: true,
+  matchedTransactionId: true,
+  checkNumber: true,
+  notes: true,
+});
+
+// Budget schema
+export const budgets = pgTable("budgets", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  totalBudget: numeric("total_budget").notNull(),
+  status: text("status").notNull(), // 'planning', 'active', 'completed'
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertBudgetSchema = createInsertSchema(budgets).pick({
+  userId: true,
+  name: true,
+  description: true,
+  startDate: true,
+  endDate: true,
+  totalBudget: true,
+  status: true,
+  notes: true,
+});
+
+// Budget Category schema
+export const budgetCategories = pgTable("budget_categories", {
+  id: serial("id").primaryKey(),
+  budgetId: integer("budget_id").notNull(),
+  userId: integer("user_id").notNull(),
+  name: text("name").notNull(),
+  allocatedAmount: numeric("allocated_amount").notNull(),
+  spentAmount: numeric("spent_amount").notNull().default("0"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertBudgetCategorySchema = createInsertSchema(budgetCategories).pick({
+  budgetId: true,
+  userId: true,
+  name: true,
+  allocatedAmount: true,
+  spentAmount: true,
+  notes: true,
+});
+
+// Inventory Cost Analysis schema
+export const inventoryCosts = pgTable("inventory_costs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  inventoryItemId: integer("inventory_item_id").notNull(),
+  purchaseDate: timestamp("purchase_date").notNull(),
+  purchasePrice: numeric("purchase_price").notNull(),
+  quantity: integer("quantity").notNull(),
+  vendorName: text("vendor_name"),
+  shippingCost: numeric("shipping_cost").default("0"),
+  taxAmount: numeric("tax_amount").default("0"),
+  totalCost: numeric("total_cost").notNull(),
+  costPerUnit: numeric("cost_per_unit").notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertInventoryCostSchema = createInsertSchema(inventoryCosts).pick({
+  userId: true,
+  inventoryItemId: true,
+  purchaseDate: true,
+  purchasePrice: true,
+  quantity: true,
+  vendorName: true,
+  shippingCost: true,
+  taxAmount: true,
+  totalCost: true,
+  costPerUnit: true,
+  notes: true,
+});
+
 export type AiInsight = typeof aiInsights.$inferSelect;
 export type InsertAiInsight = z.infer<typeof insertAiInsightSchema>;
+
+// New type exports for the added features
+export type TaxItem = typeof taxItems.$inferSelect;
+export type InsertTaxItem = z.infer<typeof insertTaxItemSchema>;
+
+export type PayrollItem = typeof payrollItems.$inferSelect;
+export type InsertPayrollItem = z.infer<typeof insertPayrollItemSchema>;
+
+export type TimeEntry = typeof timeEntries.$inferSelect;
+export type InsertTimeEntry = z.infer<typeof insertTimeEntrySchema>;
+
+export type BankAccount = typeof bankAccounts.$inferSelect;
+export type InsertBankAccount = z.infer<typeof insertBankAccountSchema>;
+
+export type BankTransaction = typeof bankTransactions.$inferSelect;
+export type InsertBankTransaction = z.infer<typeof insertBankTransactionSchema>;
+
+export type Budget = typeof budgets.$inferSelect;
+export type InsertBudget = z.infer<typeof insertBudgetSchema>;
+
+export type BudgetCategory = typeof budgetCategories.$inferSelect;
+export type InsertBudgetCategory = z.infer<typeof insertBudgetCategorySchema>;
+
+export type InventoryCost = typeof inventoryCosts.$inferSelect;
+export type InsertInventoryCost = z.infer<typeof insertInventoryCostSchema>;

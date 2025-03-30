@@ -1,9 +1,13 @@
-import type { Express, Request as ExpressRequest, Response } from "express";
+import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 
 // Extend Express Request to include user property
-interface Request extends ExpressRequest {
-  user?: { id: number };
+declare global {
+  namespace Express {
+    interface Request {
+      user?: { id: number };
+    }
+  }
 }
 import { storage } from "./storage";
 import { 
@@ -13,7 +17,16 @@ import {
   insertContractSchema,
   insertReceiptSchema,
   insertInvoiceSchema,
-  insertAiInsightSchema
+  insertAiInsightSchema,
+  // New feature schemas
+  insertTaxItemSchema,
+  insertPayrollItemSchema,
+  insertTimeEntrySchema,
+  insertBankAccountSchema,
+  insertBankTransactionSchema,
+  insertBudgetSchema,
+  insertBudgetCategorySchema,
+  insertInventoryCostSchema
 } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
@@ -364,11 +377,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
         
         return res.json(invoiceDetails);
-      } catch (aiError) {
+      } catch (aiError: any) {
         console.error("Error generating invoice items with AI:", aiError);
         return res.status(500).json({ 
           message: "Failed to generate invoice items", 
-          error: aiError.message 
+          error: aiError?.message || "Unknown error" 
         });
       }
     } catch (error) {
@@ -410,7 +423,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const invoice = await storage.createInvoice(invoiceData);
       
       // Send email notifications if requested
-      const notificationResults = { email: null };
+      const notificationResults: { email: any } = { email: null };
       if (notificationOptions.sendEmail) {
         try {
           console.log("Sending invoice email notification:", notificationOptions);
@@ -650,7 +663,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get current inventory for context
-      const inventoryItems = await storage.getInventoryItems(req.user.id);
+      const inventoryItems = await storage.getInventoryItems(req.user!.id);
       
       const recommendations = await generateInventoryRecommendations(
         itemName, 
@@ -676,7 +689,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/ai/supply-recommendations", requireAuth, async (req, res) => {
     try {
       // Get current inventory
-      const inventoryItems = await storage.getInventoryItems(req.user.id);
+      const inventoryItems = await storage.getInventoryItems(req.user!.id);
       
       if (inventoryItems.length === 0) {
         return res.status(400).json({ 
@@ -760,13 +773,632 @@ export async function registerRoutes(app: Express): Promise<Server> {
         info: emailResult,
         error: emailResult.error
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error in test-email route:", error);
       return res.status(500).json({ 
         success: false,
         message: "Failed to send email", 
-        error: error.message
+        error: error?.message || "Unknown error"
       });
+    }
+  });
+
+  // ===== TAX MANAGEMENT ROUTES =====
+  app.get("/api/tax-items", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const taxItems = await storage.getTaxItems(userId);
+      return res.json(taxItems);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.get("/api/tax-items/year/:year", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const year = parseInt(req.params.year);
+      
+      if (isNaN(year)) {
+        return res.status(400).json({ message: "Invalid year parameter" });
+      }
+      
+      const taxItems = await storage.getTaxItemsByYear(userId, year);
+      return res.json(taxItems);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.post("/api/tax-items", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const taxItemData = insertTaxItemSchema.parse({
+        ...req.body,
+        userId
+      });
+      
+      const taxItem = await storage.createTaxItem(taxItemData);
+      return res.status(201).json(taxItem);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).message });
+      }
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.patch("/api/tax-items/:id", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const taxItemId = parseInt(req.params.id);
+      
+      const existingTaxItem = await storage.getTaxItemById(taxItemId);
+      if (!existingTaxItem || existingTaxItem.userId !== userId) {
+        return res.status(404).json({ message: "Tax item not found" });
+      }
+      
+      const updatedTaxItem = await storage.updateTaxItem(taxItemId, req.body);
+      return res.json(updatedTaxItem);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // ===== PAYROLL PROCESSING ROUTES =====
+  app.get("/api/payroll", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const payrollItems = await storage.getPayrollItems(userId);
+      return res.json(payrollItems);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.get("/api/payroll/employee/:employeeId", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const employeeId = req.params.employeeId;
+      
+      const payrollItems = await storage.getPayrollItemsByEmployee(userId, employeeId);
+      return res.json(payrollItems);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.get("/api/payroll/date-range", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const { startDate, endDate } = req.query;
+      
+      if (!startDate || !endDate) {
+        return res.status(400).json({ message: "Start and end dates are required" });
+      }
+      
+      const start = new Date(startDate as string);
+      const end = new Date(endDate as string);
+      
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        return res.status(400).json({ message: "Invalid date format" });
+      }
+      
+      const payrollItems = await storage.getPayrollItemsByDateRange(userId, start, end);
+      return res.json(payrollItems);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.post("/api/payroll", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      
+      // Process dates
+      const payPeriodStart = new Date(req.body.payPeriodStart);
+      const payPeriodEnd = new Date(req.body.payPeriodEnd);
+      const paymentDate = new Date(req.body.paymentDate);
+      
+      const payrollItemData = insertPayrollItemSchema.parse({
+        ...req.body,
+        userId,
+        payPeriodStart,
+        payPeriodEnd,
+        paymentDate
+      });
+      
+      const payrollItem = await storage.createPayrollItem(payrollItemData);
+      return res.status(201).json(payrollItem);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).message });
+      }
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.patch("/api/payroll/:id", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const payrollItemId = parseInt(req.params.id);
+      
+      const existingPayrollItem = await storage.getPayrollItemById(payrollItemId);
+      if (!existingPayrollItem || existingPayrollItem.userId !== userId) {
+        return res.status(404).json({ message: "Payroll item not found" });
+      }
+      
+      // Process dates if present
+      const updateData = { ...req.body };
+      if (updateData.payPeriodStart) {
+        updateData.payPeriodStart = new Date(updateData.payPeriodStart);
+      }
+      if (updateData.payPeriodEnd) {
+        updateData.payPeriodEnd = new Date(updateData.payPeriodEnd);
+      }
+      if (updateData.paymentDate) {
+        updateData.paymentDate = new Date(updateData.paymentDate);
+      }
+      
+      const updatedPayrollItem = await storage.updatePayrollItem(payrollItemId, updateData);
+      return res.json(updatedPayrollItem);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // ===== TIME TRACKING ROUTES =====
+  app.get("/api/time-entries", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const timeEntries = await storage.getTimeEntries(userId);
+      return res.json(timeEntries);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.get("/api/time-entries/project/:projectId", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const projectId = req.params.projectId;
+      
+      const timeEntries = await storage.getTimeEntriesByProject(userId, projectId);
+      return res.json(timeEntries);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.get("/api/time-entries/date-range", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const { startDate, endDate } = req.query;
+      
+      if (!startDate || !endDate) {
+        return res.status(400).json({ message: "Start and end dates are required" });
+      }
+      
+      const start = new Date(startDate as string);
+      const end = new Date(endDate as string);
+      
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        return res.status(400).json({ message: "Invalid date format" });
+      }
+      
+      const timeEntries = await storage.getTimeEntriesByDateRange(userId, start, end);
+      return res.json(timeEntries);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.post("/api/time-entries", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      
+      // Process dates
+      const startTime = new Date(req.body.startTime);
+      let endTime = null;
+      if (req.body.endTime) {
+        endTime = new Date(req.body.endTime);
+      }
+      
+      const timeEntryData = insertTimeEntrySchema.parse({
+        ...req.body,
+        userId,
+        startTime,
+        endTime
+      });
+      
+      const timeEntry = await storage.createTimeEntry(timeEntryData);
+      return res.status(201).json(timeEntry);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).message });
+      }
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.patch("/api/time-entries/:id", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const timeEntryId = parseInt(req.params.id);
+      
+      const existingTimeEntry = await storage.getTimeEntryById(timeEntryId);
+      if (!existingTimeEntry || existingTimeEntry.userId !== userId) {
+        return res.status(404).json({ message: "Time entry not found" });
+      }
+      
+      // Process dates if present
+      const updateData = { ...req.body };
+      if (updateData.startTime) {
+        updateData.startTime = new Date(updateData.startTime);
+      }
+      if (updateData.endTime) {
+        updateData.endTime = new Date(updateData.endTime);
+      }
+      
+      const updatedTimeEntry = await storage.updateTimeEntry(timeEntryId, updateData);
+      return res.json(updatedTimeEntry);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // ===== BANK RECONCILIATION ROUTES =====
+  app.get("/api/bank-accounts", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const bankAccounts = await storage.getBankAccounts(userId);
+      return res.json(bankAccounts);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.post("/api/bank-accounts", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      
+      // Process dates if present
+      let lastReconciled = null;
+      if (req.body.lastReconciled) {
+        lastReconciled = new Date(req.body.lastReconciled);
+      }
+      
+      const bankAccountData = insertBankAccountSchema.parse({
+        ...req.body,
+        userId,
+        lastReconciled
+      });
+      
+      const bankAccount = await storage.createBankAccount(bankAccountData);
+      return res.status(201).json(bankAccount);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).message });
+      }
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.patch("/api/bank-accounts/:id", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const bankAccountId = parseInt(req.params.id);
+      
+      const existingBankAccount = await storage.getBankAccountById(bankAccountId);
+      if (!existingBankAccount || existingBankAccount.userId !== userId) {
+        return res.status(404).json({ message: "Bank account not found" });
+      }
+      
+      // Process dates if present
+      const updateData = { ...req.body };
+      if (updateData.lastReconciled) {
+        updateData.lastReconciled = new Date(updateData.lastReconciled);
+      }
+      
+      const updatedBankAccount = await storage.updateBankAccount(bankAccountId, updateData);
+      return res.json(updatedBankAccount);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.get("/api/bank-accounts/:accountId/transactions", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const bankAccountId = parseInt(req.params.accountId);
+      
+      const existingBankAccount = await storage.getBankAccountById(bankAccountId);
+      if (!existingBankAccount || existingBankAccount.userId !== userId) {
+        return res.status(404).json({ message: "Bank account not found" });
+      }
+      
+      const bankTransactions = await storage.getBankTransactions(userId, bankAccountId);
+      return res.json(bankTransactions);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.post("/api/bank-accounts/:accountId/transactions", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const bankAccountId = parseInt(req.params.accountId);
+      
+      const existingBankAccount = await storage.getBankAccountById(bankAccountId);
+      if (!existingBankAccount || existingBankAccount.userId !== userId) {
+        return res.status(404).json({ message: "Bank account not found" });
+      }
+      
+      // Process date
+      const transactionDate = new Date(req.body.transactionDate);
+      
+      const bankTransactionData = insertBankTransactionSchema.parse({
+        ...req.body,
+        userId,
+        bankAccountId,
+        transactionDate
+      });
+      
+      const bankTransaction = await storage.createBankTransaction(bankTransactionData);
+      return res.status(201).json(bankTransaction);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).message });
+      }
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.patch("/api/bank-transactions/:id", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const bankTransactionId = parseInt(req.params.id);
+      
+      const existingBankTransaction = await storage.getBankTransactionById(bankTransactionId);
+      if (!existingBankTransaction || existingBankTransaction.userId !== userId) {
+        return res.status(404).json({ message: "Bank transaction not found" });
+      }
+      
+      // Process dates if present
+      const updateData = { ...req.body };
+      if (updateData.transactionDate) {
+        updateData.transactionDate = new Date(updateData.transactionDate);
+      }
+      
+      const updatedBankTransaction = await storage.updateBankTransaction(bankTransactionId, updateData);
+      return res.json(updatedBankTransaction);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.post("/api/bank-transactions/:id/reconcile", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const bankTransactionId = parseInt(req.params.id);
+      const { matchedTransactionId } = req.body;
+      
+      const existingBankTransaction = await storage.getBankTransactionById(bankTransactionId);
+      if (!existingBankTransaction || existingBankTransaction.userId !== userId) {
+        return res.status(404).json({ message: "Bank transaction not found" });
+      }
+      
+      const reconciledTransaction = await storage.markTransactionReconciled(
+        bankTransactionId, 
+        matchedTransactionId ? parseInt(matchedTransactionId) : undefined
+      );
+      
+      return res.json(reconciledTransaction);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // ===== BUDGET PLANNING ROUTES =====
+  app.get("/api/budgets", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const budgets = await storage.getBudgets(userId);
+      return res.json(budgets);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.post("/api/budgets", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      
+      // Process dates
+      const startDate = new Date(req.body.startDate);
+      const endDate = new Date(req.body.endDate);
+      
+      const budgetData = insertBudgetSchema.parse({
+        ...req.body,
+        userId,
+        startDate,
+        endDate
+      });
+      
+      const budget = await storage.createBudget(budgetData);
+      return res.status(201).json(budget);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).message });
+      }
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.patch("/api/budgets/:id", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const budgetId = parseInt(req.params.id);
+      
+      const existingBudget = await storage.getBudgetById(budgetId);
+      if (!existingBudget || existingBudget.userId !== userId) {
+        return res.status(404).json({ message: "Budget not found" });
+      }
+      
+      // Process dates if present
+      const updateData = { ...req.body };
+      if (updateData.startDate) {
+        updateData.startDate = new Date(updateData.startDate);
+      }
+      if (updateData.endDate) {
+        updateData.endDate = new Date(updateData.endDate);
+      }
+      
+      const updatedBudget = await storage.updateBudget(budgetId, updateData);
+      return res.json(updatedBudget);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.get("/api/budgets/:budgetId/categories", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const budgetId = parseInt(req.params.budgetId);
+      
+      const existingBudget = await storage.getBudgetById(budgetId);
+      if (!existingBudget || existingBudget.userId !== userId) {
+        return res.status(404).json({ message: "Budget not found" });
+      }
+      
+      const budgetCategories = await storage.getBudgetCategories(budgetId);
+      return res.json(budgetCategories);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.post("/api/budgets/:budgetId/categories", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const budgetId = parseInt(req.params.budgetId);
+      
+      const existingBudget = await storage.getBudgetById(budgetId);
+      if (!existingBudget || existingBudget.userId !== userId) {
+        return res.status(404).json({ message: "Budget not found" });
+      }
+      
+      const budgetCategoryData = insertBudgetCategorySchema.parse({
+        ...req.body,
+        userId,
+        budgetId
+      });
+      
+      const budgetCategory = await storage.createBudgetCategory(budgetCategoryData);
+      return res.status(201).json(budgetCategory);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).message });
+      }
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.patch("/api/budget-categories/:id", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const categoryId = parseInt(req.params.id);
+      
+      const existingCategory = await storage.getBudgetCategoryById(categoryId);
+      if (!existingCategory || existingCategory.userId !== userId) {
+        return res.status(404).json({ message: "Budget category not found" });
+      }
+      
+      const updatedCategory = await storage.updateBudgetCategory(categoryId, req.body);
+      return res.json(updatedCategory);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // ===== INVENTORY COST ANALYSIS ROUTES =====
+  app.get("/api/inventory-costs", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const inventoryCosts = await storage.getInventoryCosts(userId);
+      return res.json(inventoryCosts);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.get("/api/inventory/:itemId/costs", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const itemId = parseInt(req.params.itemId);
+      
+      const existingItem = await storage.getInventoryItemById(itemId);
+      if (!existingItem || existingItem.userId !== userId) {
+        return res.status(404).json({ message: "Inventory item not found" });
+      }
+      
+      const inventoryCosts = await storage.getInventoryCostsByItem(userId, itemId);
+      return res.json(inventoryCosts);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.post("/api/inventory-costs", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      
+      // Process date
+      const purchaseDate = new Date(req.body.purchaseDate);
+      
+      // Verify inventory item exists
+      const inventoryItemId = parseInt(req.body.inventoryItemId);
+      const existingItem = await storage.getInventoryItemById(inventoryItemId);
+      if (!existingItem || existingItem.userId !== userId) {
+        return res.status(404).json({ message: "Inventory item not found" });
+      }
+      
+      const inventoryCostData = insertInventoryCostSchema.parse({
+        ...req.body,
+        userId,
+        purchaseDate
+      });
+      
+      const inventoryCost = await storage.createInventoryCost(inventoryCostData);
+      return res.status(201).json(inventoryCost);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).message });
+      }
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.patch("/api/inventory-costs/:id", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const inventoryCostId = parseInt(req.params.id);
+      
+      const existingCost = await storage.getInventoryCostById(inventoryCostId);
+      if (!existingCost || existingCost.userId !== userId) {
+        return res.status(404).json({ message: "Inventory cost record not found" });
+      }
+      
+      // Process dates if present
+      const updateData = { ...req.body };
+      if (updateData.purchaseDate) {
+        updateData.purchaseDate = new Date(updateData.purchaseDate);
+      }
+      
+      const updatedCost = await storage.updateInventoryCost(inventoryCostId, updateData);
+      return res.json(updatedCost);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
     }
   });
 
