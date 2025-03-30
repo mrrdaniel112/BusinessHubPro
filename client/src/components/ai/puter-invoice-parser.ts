@@ -1,4 +1,5 @@
 import { ParsedInvoiceItem } from "../forms/enhanced-invoice-form";
+import { v4 as uuidv4 } from 'uuid';
 
 export interface ParsedInvoiceItem {
   id: string;
@@ -7,11 +8,6 @@ export interface ParsedInvoiceItem {
   price: number;
 }
 
-/**
- * Parse invoice text into structured line items using Puter AI
- * @param text The text containing invoice line items
- * @returns Promise<ParsedInvoiceItem[]> Array of parsed line items
- */
 export async function parseLinesWithPuter(text: string): Promise<ParsedInvoiceItem[]> {
   // Check if Puter API is available
   if (typeof window === 'undefined' || !window.puter?.ai?.chat) {
@@ -156,59 +152,53 @@ function parseLinesFallback(text: string): ParsedInvoiceItem[] {
   })).filter(item => item.price > 0);
 }
 
-/**
- * Parse invoice text into structured line items
- */
 export async function parseInvoiceLines(text: string): Promise<ParsedInvoiceItem[]> {
   try {
-    // Extract total amount from text
-    const contractMatch = text.match(/\$(\d{1,3}(?:,\d{3})*(?:\.\d{2})?|\d{1,3}(?:,\d{3})*)/);
-    if (!contractMatch) {
+    // Extract total amount from text (handles formats like $45,000 or $45,000.00)
+    const matches = text.match(/\$(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)/g);
+    if (!matches) {
       throw new Error("No total amount found in text");
     }
 
-    const totalAmount = parseFloat(contractMatch[1].replace(/,/g, ''));
+    // Get the last matched amount (usually the total)
+    const amountStr = matches[matches.length - 1].replace(/[$,]/g, '');
+    const totalAmount = parseFloat(amountStr);
+
     if (isNaN(totalAmount) || totalAmount <= 0) {
       throw new Error("Invalid total amount");
     }
 
-    // Calculate line items based on percentage breakdowns
-    const demolition = totalAmount * 0.10;  // 10%
-    const materials = totalAmount * 0.40;   // 40%
-    const labor = totalAmount * 0.33;       // 33%
-    const railings = totalAmount * 0.11;    // 11%
-    const permits = totalAmount * 0.06;     // 6%
-
+    // Standard breakdown percentages
     return [
       {
-        id: crypto.randomUUID(),
+        id: uuidv4(),
         description: "Demolition and Site Preparation",
         quantity: 1,
-        price: Math.round(demolition)
+        price: totalAmount * 0.10 // 10%
       },
       {
-        id: crypto.randomUUID(),
+        id: uuidv4(),
         description: "Materials - Pressure-treated lumber and composite decking",
         quantity: 1,
-        price: Math.round(materials)
+        price: totalAmount * 0.40 // 40%
       },
       {
-        id: crypto.randomUUID(),
+        id: uuidv4(),
         description: "Labor - Construction and Installation",
         quantity: 1,
-        price: Math.round(labor)
+        price: totalAmount * 0.33 // 33%
       },
       {
-        id: crypto.randomUUID(),
+        id: uuidv4(),
         description: "Railings and LED Lighting",
         quantity: 1,
-        price: Math.round(railings)
+        price: totalAmount * 0.11 // 11%
       },
       {
-        id: crypto.randomUUID(),
+        id: uuidv4(),
         description: "Permits and Project Management",
         quantity: 1,
-        price: Math.round(permits)
+        price: totalAmount * 0.06 // 6%
       }
     ];
   } catch (error) {
