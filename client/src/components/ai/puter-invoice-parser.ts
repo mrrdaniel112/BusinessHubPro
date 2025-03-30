@@ -161,41 +161,51 @@ function parseLinesFallback(text: string): ParsedInvoiceItem[] {
  */
 export async function parseInvoiceLines(text: string): Promise<ParsedInvoiceItem[]> {
   try {
-    // Extract total amount
+    // Extract total amount from text
     const contractMatch = text.match(/\$(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)/);
-    const totalAmount = contractMatch ? parseFloat(contractMatch[1].replace(/,/g, '')) : 45000;
+    if (!contractMatch) {
+      throw new Error("No total amount found in text");
+    }
 
-    // Break down into logical components for a deck project
+    const totalAmount = parseFloat(contractMatch[1].replace(/,/g, ''));
+
+    // Calculate percentages of total for each component
+    const demolition = totalAmount * 0.10;  // 10%
+    const materials = totalAmount * 0.40;   // 40%
+    const labor = totalAmount * 0.33;       // 33%
+    const railings = totalAmount * 0.11;    // 11%
+    const permits = totalAmount * 0.06;     // 6%
+
     return [
       {
-        id: Math.random().toString(36).substr(2, 9),
+        id: crypto.randomUUID(),
         description: "Demolition and Site Preparation",
         quantity: 1,
-        price: 4500
+        price: Math.round(demolition)
       },
       {
-        id: Math.random().toString(36).substr(2, 9),
+        id: crypto.randomUUID(),
         description: "Materials - Pressure-treated lumber and composite decking",
         quantity: 1,
-        price: 18000
+        price: Math.round(materials)
       },
       {
-        id: Math.random().toString(36).substr(2, 9),
+        id: crypto.randomUUID(),
         description: "Labor - Construction and Installation",
         quantity: 1,
-        price: 15000
+        price: Math.round(labor)
       },
       {
-        id: Math.random().toString(36).substr(2, 9),
+        id: crypto.randomUUID(),
         description: "Railings and LED Lighting",
         quantity: 1,
-        price: 5000
+        price: Math.round(railings)
       },
       {
-        id: Math.random().toString(36).substr(2, 9),
+        id: crypto.randomUUID(),
         description: "Permits and Project Management",
         quantity: 1,
-        price: 2500
+        price: Math.round(permits)
       }
     ];
   } catch (error) {
