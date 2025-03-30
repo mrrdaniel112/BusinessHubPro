@@ -90,16 +90,17 @@ export async function parseLinesWithPuter(text: string): Promise<ParsedInvoiceIt
           const description = parts[0];
           const quantity = parseFloat(parts[1]) || 1;
 
-          // Enhanced price parsing
+          // Enhanced price parsing with reasonable limits
           let price = 0;
           const priceText = parts[2].replace(/[^\d.-]/g, '');
           price = parseFloat(priceText);
 
-          if (!isNaN(price) && price > 0) {
+          // Validate price is within reasonable range (max $100,000 per item)
+          if (!isNaN(price) && price > 0 && price <= 100000) {
             items.push({
               id: Math.random().toString(36).substr(2, 7),
               description,
-              quantity,
+              quantity: quantity <= 1000 ? quantity : 1, // Limit quantity
               price: Number(price.toFixed(2))
             });
           }
