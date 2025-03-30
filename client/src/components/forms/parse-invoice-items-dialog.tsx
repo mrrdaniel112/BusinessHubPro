@@ -132,7 +132,8 @@ export function ParseInvoiceItemsDialog({
       
       let useDefaultItems = false;
       
-      if (typeof window !== 'undefined' && 'puter' in window && 'ai' in window.puter && 'chat' in window.puter.ai) {
+      // Most reliable check for Puter AI availability
+      if (typeof window !== 'undefined' && typeof window.puter?.ai?.chat === 'function') {
         try {
           // Enhanced prompt for better results
           const prompt = `
@@ -188,21 +189,38 @@ export function ParseInvoiceItemsDialog({
           
           try {
             // Use Puter's streaming chat with improved response handling and a timeout
+            // Use a safer approach to invoking Puter AI
             const streamingPromise = new Promise(async (resolve, reject) => {
               try {
-                await window.puter.ai.chat(prompt, {
+                console.log("Attempting to use Puter AI streaming...");
+                
+                // Create a safe reference to the chat function
+                const chatFn = window.puter?.ai?.chat;
+                if (typeof chatFn !== 'function') {
+                  throw new Error("Puter AI chat function not available");
+                }
+                
+                await chatFn(prompt, {
                   onPartialResponse: (partialResponse: string) => {
                     // Show streaming responses once we start getting real content
-                    fullResponse += partialResponse;
-                    if (fullResponse.includes("|")) {
-                      // Clear the interval once we get actual content
-                      clearInterval(messageInterval);
-                      setResponseMessages([fullResponse]);
+                    if (typeof partialResponse === 'string') {
+                      fullResponse += partialResponse;
+                      if (fullResponse.includes("|")) {
+                        // Clear the interval once we get actual content
+                        clearInterval(messageInterval);
+                        setResponseMessages([fullResponse]);
+                      }
                     }
                   }
                 });
+                
+                if (!fullResponse || fullResponse.trim() === '') {
+                  throw new Error("Empty response from Puter AI");
+                }
+                
                 resolve(fullResponse);
               } catch (err) {
+                console.error("Error in streaming Puter AI:", err);
                 reject(err);
               }
             });
@@ -232,9 +250,25 @@ export function ParseInvoiceItemsDialog({
             setResponseMessages(prev => [...prev, "Streaming response failed, using standard parser..."]);
             clearInterval(messageInterval);
             
-            // If streaming fails, try the non-streaming approach
-            fullResponse = await window.puter.ai.chat(prompt);
-            parsedItems = parseStreamedResponse(fullResponse);
+            // If streaming fails, try the non-streaming approach with safer execution
+            console.log("Trying non-streaming Puter AI approach...");
+            
+            // Create a safe reference to the chat function
+            const chatFn = window.puter?.ai?.chat;
+            if (typeof chatFn !== 'function') {
+              throw new Error("Puter AI chat function not available");
+            }
+            
+            fullResponse = await chatFn(prompt);
+            
+            // Validate response before parsing
+            if (typeof fullResponse === 'string' && fullResponse.trim() !== '') {
+              console.log("Non-streaming response received, length:", fullResponse.length);
+              parsedItems = parseStreamedResponse(fullResponse);
+            } else {
+              console.error("Invalid or empty response from non-streaming Puter AI");
+              throw new Error("Invalid AI response");
+            }
             
             // If that also fails, use the regular parser
             if (parsedItems.length === 0) {
@@ -307,7 +341,13 @@ export function ParseInvoiceItemsDialog({
     }
   };
 
+  // Enhanced parser with better error logging and recovery
   const parseStreamedResponse = (text: string): ParsedInvoiceItem[] => {
+    // Safety check for invalid input
+    if (!text || typeof text !== 'string') {
+      console.error("Invalid input to parseStreamedResponse:", text);
+      return [];
+    }
     // Clean and prepare the text - remove extra spaces, normalize line breaks
     const cleanText = text.trim()
       .replace(/\r\n/g, '\n')  // Normalize line breaks
