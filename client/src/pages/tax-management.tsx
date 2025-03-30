@@ -248,11 +248,8 @@ export default function TaxManagement() {
   };
 
   // Get available years for filtering
-  const years = Array.from(
-    new Set(
-      taxItems?.map((item: TaxItem) => item.taxYear) || [new Date().getFullYear()]
-    )
-  ).sort((a, b) => b - a);
+  const availableYears: number[] = taxItems?.map((item: TaxItem) => item.taxYear) || [new Date().getFullYear()];
+  const years = [...new Set(availableYears)].sort((a: number, b: number) => b - a);
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -311,9 +308,9 @@ export default function TaxManagement() {
                   <SelectValue placeholder="Select Year" />
                 </SelectTrigger>
                 <SelectContent>
-                  {years.map((year) => (
-                    <SelectItem key={year} value={year.toString()}>
-                      {year}
+                  {years.map((year: number) => (
+                    <SelectItem key={year.toString()} value={year.toString()}>
+                      {year.toString()}
                     </SelectItem>
                   ))}
                 </SelectContent>

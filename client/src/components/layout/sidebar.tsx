@@ -44,13 +44,13 @@ const NavItem = ({ href, icon, label, active, onClick }: NavItemProps & { onClic
       <div
         onClick={onClick}
         className={cn(
-          "flex items-center px-2 py-2 text-sm font-medium rounded-md group cursor-pointer",
+          "flex items-center px-3 py-2.5 text-sm font-medium rounded-md group cursor-pointer border",
           active
-            ? "text-white bg-primary-600"
-            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+            ? "text-white bg-primary-600 border-primary-700 shadow-sm"
+            : "text-gray-700 hover:bg-gray-100 hover:text-gray-900 border-transparent hover:border-gray-200"
         )}
       >
-        <Icon className={cn("mr-3 h-5 w-5", active ? "text-white" : "text-gray-400")} />
+        <Icon className={cn("mr-3 h-5 w-5", active ? "text-white" : "text-gray-500")} />
         {label}
       </div>
     );
@@ -60,13 +60,13 @@ const NavItem = ({ href, icon, label, active, onClick }: NavItemProps & { onClic
     <Link href={href}>
       <div
         className={cn(
-          "flex items-center px-2 py-2 text-sm font-medium rounded-md group cursor-pointer",
+          "flex items-center px-3 py-2.5 text-sm font-medium rounded-md group cursor-pointer border",
           active
-            ? "text-white bg-primary-600"
-            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+            ? "text-white bg-primary-600 border-primary-700 shadow-sm"
+            : "text-gray-700 hover:bg-gray-100 hover:text-gray-900 border-transparent hover:border-gray-200"
         )}
       >
-        <Icon className={cn("mr-3 h-5 w-5", active ? "text-white" : "text-gray-400")} />
+        <Icon className={cn("mr-3 h-5 w-5", active ? "text-white" : "text-gray-500")} />
         {label}
       </div>
     </Link>
