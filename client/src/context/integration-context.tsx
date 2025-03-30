@@ -143,6 +143,7 @@ export const IntegrationProvider: React.FC<{ children: React.ReactNode }> = ({ c
       userId: user?.id
     };
     
+    console.log('IntegrationContext: Emitting event', event, fullPayload);
     integrationService.emit(event, fullPayload as IntegrationEventPayload);
   };
   
