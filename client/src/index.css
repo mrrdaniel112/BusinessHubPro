@@ -188,12 +188,24 @@
     padding-bottom: env(safe-area-inset-bottom, 20px);
   }
   
+  /* Help GPU acceleration on iOS */
+  .transform-gpu {
+    transform: translateZ(0); /* Force GPU acceleration */
+    backface-visibility: hidden; /* Prevent flickering */
+    -webkit-perspective: 1000; /* Optimize performance */
+    perspective: 1000;
+    will-change: transform; /* Signal to browser that transform will change */
+  }
+  
   /* Prevent overscroll bounce effect on iOS */
   .prevent-overscroll {
     height: 100%;
     overflow: hidden;
     position: fixed;
     width: 100%;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: auto;
+    touch-action: none; /* Disable all touch actions */
   }
   
   /* Dialog style fixes for iOS */
@@ -202,6 +214,8 @@
     z-index: 100; /* Ensure dialogs appear above other content */
     max-height: 95%; /* Ensure dialog doesn't extend beyond screen */
     max-width: 95vw; /* Ensure dialog doesn't extend beyond screen width */
+    will-change: transform; /* Better performance for animations */
+    backface-visibility: hidden;
   }
   
   /* Make iOS dialogs scroll properly */
@@ -211,6 +225,15 @@
     -webkit-overflow-scrolling: touch; /* Smooth scrolling for iOS */
     height: auto; /* Let content determine height */
     max-height: 70vh; /* Maximum height to prevent overflow */
+    transform: translateZ(0); /* Force GPU acceleration */
+  }
+  
+  /* Improved iOS modal backdrop */
+  [data-radix-popper-content-wrapper] {
+    -webkit-backdrop-filter: blur(4px); /* iOS blur effect */
+    backdrop-filter: blur(4px);
+    will-change: opacity, backdrop-filter;
+    transform: translateZ(0);
   }
   
   /* Fix for iOS input fields in dialogs */
@@ -218,6 +241,8 @@
   [role="dialog"] textarea {
     font-size: 16px !important; /* Prevent iOS zooming on focus */
     transform: translateZ(0); /* iOS rendering fix */
+    -webkit-appearance: none; /* Remove default iOS styling */
+    appearance: none;
   }
   
   /* Enhanced scrolling for iOS textareas */
@@ -240,6 +265,8 @@
     background-repeat: no-repeat;
     background-size: 1rem;
     padding-right: 2rem !important;
+    -webkit-appearance: none; /* Remove default iOS styling */
+    appearance: none;
   }
   
   /* Fix for iOS buttons in dialogs */
@@ -247,11 +274,48 @@
     cursor: pointer;
     transform: translateZ(0); /* iOS rendering fix */
     -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none; /* Prevent callout to copy image */
+    user-select: none; /* Prevent text selection */
+    -webkit-user-select: none;
   }
   
   /* Fix for iOS scrolling inside dialogs */
   [role="dialog"] [data-radix-scroll-area-viewport] {
     -webkit-overflow-scrolling: touch !important;
+  }
+  
+  /* Fix for iOS form submits */
+  button[type="submit"] {
+    -webkit-appearance: none;
+    appearance: none;
+    will-change: transform;
+  }
+  
+  /* Fix iOS click delays */
+  a, button, input[type="button"], input[type="submit"] {
+    touch-action: manipulation;
+  }
+  
+  /* Fix iOS elastic scrolling at boundaries */
+  html, body {
+    overscroll-behavior-y: none;
+    position: fixed;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+  }
+  
+  /* Main content scrolling */
+  main {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    height: 100%;
+    width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
   }
 }
 

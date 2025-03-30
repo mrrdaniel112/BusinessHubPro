@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogOverlay } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/auth-context";
 
@@ -46,9 +46,39 @@ export default function MobileNav({ opened, onClose, location }: MobileNavProps)
     return location === path;
   };
 
+  // Add effect to prevent body scrolling when the menu is open
+  useEffect(() => {
+    if (opened) {
+      // Prevent body scrolling when menu is open
+      document.body.style.overflow = 'hidden';
+      // For iOS to prevent overscrolling
+      document.body.classList.add('prevent-overscroll');
+    } else {
+      // Restore scrolling when menu is closed
+      document.body.style.overflow = '';
+      document.body.classList.remove('prevent-overscroll');
+    }
+    
+    return () => {
+      // Cleanup when component unmounts
+      document.body.style.overflow = '';
+      document.body.classList.remove('prevent-overscroll');
+    };
+  }, [opened]);
+
+  // Handle touch event inside the menu to prevent propagation
+  const handleTouchStart = (e: React.TouchEvent) => {
+    // Stop propagation to prevent underlying page scroll
+    e.stopPropagation();
+  };
+
   return (
     <Dialog open={opened} onOpenChange={() => onClose()}>
-      <DialogContent className="sm:max-w-[425px] p-0 max-h-[100dvh] inset-0 overflow-hidden pt-safe">
+      <DialogContent 
+        onTouchStart={handleTouchStart}
+        className="sm:max-w-[425px] p-0 max-h-[100dvh] inset-0 overflow-hidden pt-safe ios-specific transform-gpu"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
         <div className="flex flex-col h-full bg-white">
           <div className="flex items-center justify-between px-4 pt-5 pb-4 border-b">
             <div className="flex items-center flex-shrink-0">
@@ -63,7 +93,9 @@ export default function MobileNav({ opened, onClose, location }: MobileNavProps)
               <i className="ri-close-line text-xl"></i>
             </button>
           </div>
-          <div className="flex-1 overflow-y-auto px-2 py-4 space-y-1 pb-safe">
+          <div 
+            className="flex-1 overflow-y-auto px-2 py-4 space-y-1 pb-safe touch-scroll-content"
+            style={{ WebkitOverflowScrolling: 'touch' }}>
             <MobileNavItem
               href="/"
               icon="dashboard-line"

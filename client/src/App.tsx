@@ -19,7 +19,9 @@ import TaxManagement from "@/pages/tax-management";
 import MainLayout from "@/components/layout/main-layout";
 import { AuthProvider } from "@/context/auth-context";
 import { ProtectedRoute } from "@/components/auth/protected-route";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
+
+// No need to declare global types when we use a proper debounce approach
 
 // Import the new components
 import BankReconciliation from "./pages/bank-reconciliation";
@@ -219,7 +221,61 @@ function Router() {
   );
 }
 
+// Fix for iOS Safari 100vh viewport height issue
+const setViewportHeight = () => {
+  // First we get the viewport height and we multiply it by 1% to get a value for a vh unit
+  const vh = window.innerHeight * 0.01;
+  // Then we set the value in the --vh custom property to the root of the document
+  document.documentElement.style.setProperty('--vh', `${vh}px`);
+
+  // For debugging iOS issues - add a class to the body if on iOS
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  
+  if (isIOS) {
+    document.body.classList.add('ios-device');
+  } else {
+    document.body.classList.remove('ios-device');
+  }
+};
+
 function App() {
+  // Set up viewport height fix for iOS
+  useEffect(() => {
+    // Set the height initially
+    setViewportHeight();
+    
+    // Add event listeners to update on resize and orientation change
+    window.addEventListener('resize', setViewportHeight);
+    window.addEventListener('orientationchange', setViewportHeight);
+    
+    // iOS-specific event for when the address bar appears/disappears
+    let scrollTimeout: ReturnType<typeof setTimeout>;
+    const handleScroll = () => {
+      // Debounce the event to prevent too many calls
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(setViewportHeight, 250);
+    };
+    window.addEventListener('scroll', handleScroll);
+
+    // Handle iOS fullscreen issues on navigation
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        setViewportHeight();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      // Clean up event listeners on component unmount
+      window.removeEventListener('resize', setViewportHeight);
+      window.removeEventListener('orientationchange', setViewportHeight);
+      window.removeEventListener('scroll', handleScroll);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearTimeout(scrollTimeout); // Clear any pending timeouts
+    };
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>

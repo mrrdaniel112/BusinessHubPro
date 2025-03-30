@@ -12,6 +12,17 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [location] = useLocation();
 
+  // Function to detect iOS
+  const isIOS = () => {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  };
+  
+  // Handle touch events for iOS
+  const handleTouchStart = (e: React.TouchEvent) => {
+    // Allowing default behavior but ensuring it works on iOS
+  };
+  
   return (
     <div className="flex h-screen w-screen overflow-hidden">
       {/* Sidebar - hidden on mobile */}
@@ -31,7 +42,9 @@ export default function MainLayout({ children }: MainLayoutProps) {
             type="button"
             className="px-4 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500 touch-target"
             onClick={() => setMobileMenuOpen(true)}
+            onTouchStart={handleTouchStart}
             aria-label="Open menu"
+            style={{ minHeight: '44px', minWidth: '44px' }} /* iOS accessibility standards */
           >
             <i className="ri-menu-line text-2xl"></i>
           </button>
@@ -46,7 +59,9 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 <button
                   type="button"
                   className="touch-target max-w-xs rounded-full flex items-center text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                  onTouchStart={handleTouchStart}
                   aria-label="Profile menu"
+                  style={{ minHeight: '44px', minWidth: '44px' }} /* iOS accessibility standards */
                 >
                   <img
                     className="h-8 w-8 rounded-full"
@@ -60,8 +75,12 @@ export default function MainLayout({ children }: MainLayoutProps) {
         </div>
 
         {/* Main content - with iOS and Android specific optimizations */}
-        <main className="flex-1 relative overflow-y-auto focus:outline-none pb-safe">
-          <div className="min-h-screen ios-specific android-specific">
+        <main 
+          className="flex-1 relative overflow-y-auto focus:outline-none pb-safe touch-scroll-content"
+          onTouchStart={handleTouchStart}
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
+          <div className={`min-h-screen ios-specific android-specific ${isIOS() ? 'transform-gpu' : ''}`}>
             {children}
           </div>
         </main>
