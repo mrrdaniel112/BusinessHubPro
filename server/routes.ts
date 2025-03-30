@@ -346,6 +346,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: "Server error" });
     }
   });
+  
+  // New endpoint to generate invoice items with OpenAI
+  app.post("/api/generate-invoice-items", requireAuth, async (req, res) => {
+    try {
+      const { jobDescription } = req.body;
+      
+      if (!jobDescription) {
+        return res.status(400).json({ message: "Job description is required" });
+      }
+      
+      try {
+        // Call OpenAI to generate invoice details
+        const invoiceDetails = await generateInvoiceDetails(
+          jobDescription,
+          req.body.clientName || "Client"
+        );
+        
+        return res.json(invoiceDetails);
+      } catch (aiError) {
+        console.error("Error generating invoice items with AI:", aiError);
+        return res.status(500).json({ 
+          message: "Failed to generate invoice items", 
+          error: aiError.message 
+        });
+      }
+    } catch (error) {
+      console.error("Server error in generate-invoice-items:", error);
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
 
   app.post("/api/invoices", requireAuth, async (req, res) => {
     try {
