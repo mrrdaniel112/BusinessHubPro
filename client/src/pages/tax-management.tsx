@@ -249,7 +249,8 @@ export default function TaxManagement() {
 
   // Get available years for filtering
   const availableYears: number[] = taxItems?.map((item: TaxItem) => item.taxYear) || [new Date().getFullYear()];
-  const years = [...new Set(availableYears)].sort((a: number, b: number) => b - a);
+  const uniqueYears = Array.from(new Set(availableYears)); // Convert Set to Array explicitly
+  const years = uniqueYears.sort((a: number, b: number) => b - a);
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">

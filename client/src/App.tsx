@@ -15,9 +15,18 @@ import AdminDashboard from "@/pages/admin-dashboard";
 import Login from "@/pages/login";
 import Calendar from "@/pages/calendar";
 import Profile from "@/pages/profile";
+import TaxManagement from "@/pages/tax-management";
 import MainLayout from "@/components/layout/main-layout";
 import { AuthProvider } from "@/context/auth-context";
 import { ProtectedRoute } from "@/components/auth/protected-route";
+import { lazy, Suspense } from "react";
+
+// Import the new components
+import BankReconciliation from "./pages/bank-reconciliation";
+import BudgetPlanning from "./pages/budget-planning";
+import InventoryCostAnalysis from "./pages/inventory-cost-analysis";
+import PayrollProcessing from "./pages/payroll-processing";
+import TimeTracking from "./pages/time-tracking";
 
 function ProtectedRouteWithLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -116,6 +125,55 @@ function Router() {
         {() => (
           <ProtectedRouteWithLayout>
             <Profile />
+          </ProtectedRouteWithLayout>
+        )}
+      </Route>
+      
+      {/* New Feature Routes */}
+      <Route path="/tax-management">
+        {() => (
+          <ProtectedRouteWithLayout>
+            <TaxManagement />
+          </ProtectedRouteWithLayout>
+        )}
+      </Route>
+      
+      <Route path="/bank-reconciliation">
+        {() => (
+          <ProtectedRouteWithLayout>
+            <BankReconciliation />
+          </ProtectedRouteWithLayout>
+        )}
+      </Route>
+      
+      <Route path="/budget-planning">
+        {() => (
+          <ProtectedRouteWithLayout>
+            <BudgetPlanning />
+          </ProtectedRouteWithLayout>
+        )}
+      </Route>
+      
+      <Route path="/inventory-cost-analysis">
+        {() => (
+          <ProtectedRouteWithLayout>
+            <InventoryCostAnalysis />
+          </ProtectedRouteWithLayout>
+        )}
+      </Route>
+      
+      <Route path="/payroll-processing">
+        {() => (
+          <ProtectedRouteWithLayout>
+            <PayrollProcessing />
+          </ProtectedRouteWithLayout>
+        )}
+      </Route>
+      
+      <Route path="/time-tracking">
+        {() => (
+          <ProtectedRouteWithLayout>
+            <TimeTracking />
           </ProtectedRouteWithLayout>
         )}
       </Route>
