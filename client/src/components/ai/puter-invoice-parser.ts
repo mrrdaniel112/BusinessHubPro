@@ -213,32 +213,89 @@ export function parseLinesFallback(text: string): ParsedInvoiceItem[] {
       // Analyze the description to estimate a reasonable price
       const lowerDesc = description.toLowerCase();
       
-      // Web development and digital services
-      if (lowerDesc.includes('website') || lowerDesc.includes('web') || lowerDesc.includes('site')) {
-        price = 3500;
+      // CONSTRUCTION SERVICES - significantly higher pricing for construction work
+      if (lowerDesc.includes('deck') || lowerDesc.includes('patio') || lowerDesc.includes('porch')) {
+        // Deck construction pricing - typically $100-200 per sq ft for quality work
+        if (lowerDesc.includes('demolition') || lowerDesc.includes('demo') || lowerDesc.includes('removal')) {
+          price = 8500; // Demolition component
+        } else if (lowerDesc.includes('footings') || lowerDesc.includes('foundation') || lowerDesc.includes('post')) {
+          price = 9500; // Structural foundation work
+        } else if (lowerDesc.includes('railing') || lowerDesc.includes('baluster')) {
+          price = 6500; // Railing systems
+        } else if (lowerDesc.includes('stair') || lowerDesc.includes('step')) {
+          price = 5500; // Stair construction
+        } else if (lowerDesc.includes('composite') || lowerDesc.includes('trex') || lowerDesc.includes('azek')) {
+          price = 12000; // Premium decking materials
+        } else if (lowerDesc.includes('pressure') || lowerDesc.includes('treated')) {
+          price = 7500; // Standard pressure-treated construction
+        } else if (lowerDesc.includes('permit') || lowerDesc.includes('inspection')) {
+          price = 2500; // Permitting and inspections
+        } else if (lowerDesc.includes('design') || lowerDesc.includes('plan')) {
+          price = 4500; // Design services
+        } else {
+          price = 9500; // General deck construction (fallback for deck-related work)
+        }
+      } else if (lowerDesc.includes('renovate') || lowerDesc.includes('remodel') || lowerDesc.includes('construction')) {
+        // General construction/renovation pricing
+        if (lowerDesc.includes('bathroom')) {
+          price = 15000; // Bathroom renovation component
+        } else if (lowerDesc.includes('kitchen')) {
+          price = 25000; // Kitchen renovation component
+        } else if (lowerDesc.includes('basement')) {
+          price = 18500; // Basement renovation
+        } else if (lowerDesc.includes('addition')) {
+          price = 35000; // Home addition
+        } else {
+          price = 12500; // General construction pricing
+        }
+      } else if (lowerDesc.includes('roof') || lowerDesc.includes('roofing')) {
+        price = 14500; // Roofing services
+      } else if (lowerDesc.includes('electric') || lowerDesc.includes('wiring') || lowerDesc.includes('lighting')) {
+        price = 4500; // Electrical work
+      } else if (lowerDesc.includes('plumb') || lowerDesc.includes('pipe') || lowerDesc.includes('water')) {
+        price = 5500; // Plumbing work
+      } else if (lowerDesc.includes('hvac') || lowerDesc.includes('heating') || lowerDesc.includes('cooling')) {
+        price = 6500; // HVAC services
+      } else if (lowerDesc.includes('landscape') || lowerDesc.includes('garden') || lowerDesc.includes('outdoor')) {
+        price = 7500; // Landscaping services
+      } else if (lowerDesc.includes('paint') || lowerDesc.includes('finish') || lowerDesc.includes('stain')) {
+        price = 3500; // Painting/finishing services
+      
+      // WEB DEVELOPMENT AND DIGITAL SERVICES
+      } else if (lowerDesc.includes('website') || lowerDesc.includes('web') || lowerDesc.includes('site')) {
+        price = 4500;
       } else if (lowerDesc.includes('app') || lowerDesc.includes('application') || lowerDesc.includes('software')) {
-        price = 5000;
+        price = 5500;
       } else if (lowerDesc.includes('logo') || lowerDesc.includes('brand')) {
-        price = 1200;
-      } else if (lowerDesc.includes('design') || lowerDesc.includes('graphic')) {
         price = 1500;
-      } else if (lowerDesc.includes('consult') || lowerDesc.includes('advisory')) {
+      } else if (lowerDesc.includes('design') || lowerDesc.includes('graphic')) {
         price = 2000;
+      } else if (lowerDesc.includes('consult') || lowerDesc.includes('advisory')) {
+        price = 2500;
       } else if (lowerDesc.includes('seo') || lowerDesc.includes('marketing')) {
-        price = 1800;
+        price = 2000;
       } else if (lowerDesc.includes('content') || lowerDesc.includes('writing')) {
-        price = 1200;
-      // Construction/Physical Work
+        price = 1800;
+        
+      // MAINTENANCE AND INSTALLATION SERVICES
       } else if (lowerDesc.includes('install') || lowerDesc.includes('setup')) {
-        price = 850;
+        // Check if construction/hardware related installation
+        if (lowerDesc.includes('appliance') || lowerDesc.includes('fixture') || lowerDesc.includes('hardware')) {
+          price = 2500; // Hardware installation
+        } else {
+          price = 1200; // General installation
+        }
       } else if (lowerDesc.includes('repair') || lowerDesc.includes('fix')) {
-        price = 450;
-      // Maintenance services
+        if (lowerDesc.includes('structural') || lowerDesc.includes('major')) {
+          price = 3500; // Major repairs
+        } else {
+          price = 1200; // General repairs
+        }
       } else if (lowerDesc.includes('maintain') || lowerDesc.includes('support')) {
-        price = 750;
+        price = 950;
       // Default for unrecognized services
       } else {
-        price = 1500;
+        price = 2500;
       }
     }
     

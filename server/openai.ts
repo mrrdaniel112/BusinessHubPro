@@ -55,6 +55,28 @@ const handleAiError = (error: any, errorSource: string) => {
 
 // Enhanced smart templates with project stories and cost breakdowns
 const invoiceTemplates = {
+  // Construction and Renovation template
+  construction: {
+    items: [
+      { description: "Professional site evaluation, code compliance assessment, and detailed project planning (400 sq. ft.)", quantity: 1, price: 5200 },
+      { description: "Complete demolition of existing structure with material sorting, waste management, and site preparation", quantity: 1, price: 6800 },
+      { description: "Premium-grade lumber structural framing with engineered load calculations for code-compliant support system", quantity: 1, price: 9500 },
+      { description: "High-performance composite decking material installation with concealed fastening system (400 sq. ft.)", quantity: 1, price: 12500 },
+      { description: "Professional-grade railing system with powder-coated aluminum posts and tempered glass inserts", quantity: 1, price: 7500 },
+      { description: "Custom-designed staircase with anti-slip treads and integrated lighting system", quantity: 1, price: 6800 },
+      { description: "Durable waterproofing system with 15-year manufacturer warranty and drainage management", quantity: 1, price: 4200 },
+      { description: "Electrical rough-in and finishing with code-compliant outdoor-rated fixtures and smart controls", quantity: 1, price: 4800 }
+    ],
+    costBreakdown: [
+      { category: "Materials & Supplies", percentage: 45, description: "Premium-grade lumber, composite decking, railings, waterproofing, fasteners, concrete, and electrical components" },
+      { category: "Professional Labor", percentage: 35, description: "Skilled carpentry, masonry, electrical work, and finishing by licensed contractors" },
+      { category: "Permits & Inspections", percentage: 8, description: "Building permits, engineering approvals, and municipal inspections throughout project phases" },
+      { category: "Site Preparation", percentage: 7, description: "Demolition, debris removal, grading, and foundation preparation" },
+      { category: "Project Management", percentage: 5, description: "Coordination of trades, materials delivery, timeline management, and quality control" }
+    ],
+    projectStory: "Your outdoor living space transformation began with a comprehensive site assessment to identify structural requirements and code compliance needs. The existing deteriorated deck was carefully demolished with special attention to minimizing disruption to surrounding landscaping. Our team engineered a reinforced framing system using pressure-treated lumber rated for ground contact, with steel connectors exceeding code requirements for lateral and vertical loads. The premium composite decking material was installed using a proprietary hidden fastening system that ensures a clean appearance while preventing future popping or loosening. The custom railing system combines durability with modern aesthetics, featuring powder-coated aluminum posts with tempered glass inserts to maximize your view. Integrated LED lighting was installed in the stair risers and along perimeter posts, enhancing both safety and ambiance for evening enjoyment. Throughout construction, our team maintained rigorous quality standards, conducting daily inspections and addressing potential challenges before they impacted the project timeline or budget.",
+    notes: "Thank you for choosing our construction services! All workmanship is guaranteed for 5 years, and manufacturer warranties have been registered in your name. Final inspection passed on all permits. Payment is due within 15 days of invoice receipt. For warranty service or future project consultation, please contact our customer care team."
+  },
   // Website Development template
   website: {
     items: [
@@ -313,23 +335,38 @@ export async function generateInvoiceDetails(
     
     // Detect the type of project to use the most appropriate template
     let template;
-    if (description.includes('website') || description.includes('web') || description.includes('site') || 
+    
+    // Construction and renovation detection - check this first as highest priority
+    if (description.includes('construction') || description.includes('build') || 
+        description.includes('deck') || description.includes('patio') || description.includes('porch') || 
+        description.includes('renovation') || description.includes('remodel') || 
+        description.includes('contractor') || description.includes('carpentry') || 
+        description.includes('lumber') || description.includes('demolition') || 
+        description.includes('composite') || description.includes('footings') || 
+        description.includes('railing') || description.includes('stairs') || 
+        description.includes('permit')) {
+      template = invoiceTemplates.construction;
+    
+    // Web development detection
+    } else if (description.includes('website') || description.includes('web') || description.includes('site') || 
         description.includes('app') || description.includes('application') || description.includes('software') ||
         description.includes('development') || description.includes('coding')) {
       template = invoiceTemplates.website;
-      
+    
+    // Marketing detection
     } else if (description.includes('marketing') || description.includes('social media') || 
                description.includes('campaign') || description.includes('promotion') || 
                description.includes('content') || description.includes('advertising')) {
       template = invoiceTemplates.marketing;
-      
+    
+    // Consulting detection
     } else if (description.includes('consult') || description.includes('advice') || 
                description.includes('strategy') || description.includes('planning') || 
                description.includes('analysis')) {
       template = invoiceTemplates.consulting;
-      
+    
+    // Default template if we can't detect a clear pattern
     } else {
-      // Default template if we can't detect a clear pattern
       template = invoiceTemplates.default; 
     }
     
