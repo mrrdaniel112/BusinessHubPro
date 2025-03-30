@@ -23,6 +23,7 @@ const getIcon = (iconName: string) => {
     "logout-box-line": Icons.LogOut,
     "calendar-line": Icons.Calendar,
     "user-line": Icons.User,
+    "shield-line": Icons.Shield,
   };
   
   const Icon = IconMap[iconName] || Icons.CircleDot;

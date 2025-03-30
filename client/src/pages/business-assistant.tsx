@@ -34,12 +34,13 @@ export default function BusinessAssistant() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Left side - Suggested questions */}
-        <div className="lg:col-span-1 space-y-4">
+      {/* On mobile, show the elements in a different order to prevent overlap */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">{/* Changed to flex-col for mobile to stack properly */}
+        {/* Left side - Suggested questions - Fixed with z-index and better mobile layout */}
+        <div className="lg:col-span-1 space-y-4 z-10 relative">
           <div className="bg-white p-5 rounded-lg border shadow-sm">
             <h3 className="font-medium text-lg mb-3 text-primary-600">Example Questions</h3>
-            <div className="space-y-2">
+            <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
               {EXAMPLE_QUESTIONS.map((question, index) => (
                 <SuggestedQuestion key={index} question={question} />
               ))}

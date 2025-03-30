@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/auth-context";
 
 type MobileNavProps = {
   opened: boolean;
@@ -33,6 +34,7 @@ const MobileNavItem = ({ href, icon, label, active, onClick }: {
 );
 
 export default function MobileNav({ opened, onClose, location }: MobileNavProps) {
+  const { logout } = useAuth();
   const isActive = (path: string) => {
     return location === path;
   };
@@ -111,6 +113,34 @@ export default function MobileNav({ opened, onClose, location }: MobileNavProps)
               active={isActive("/business-assistant")}
               onClick={onClose}
             />
+            
+            {/* User profile menu items with divider */}
+            <div className="border-t border-gray-200 mt-4 pt-4">
+              <MobileNavItem
+                href="#"
+                icon="calendar-line"
+                label="Calendar"
+                active={false}
+                onClick={onClose}
+              />
+              <MobileNavItem
+                href="#"
+                icon="user-line"
+                label="Profile"
+                active={false}
+                onClick={onClose}
+              />
+              <div 
+                className="flex items-center px-3 py-3 text-base font-medium rounded-md cursor-pointer touch-target text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                onClick={() => {
+                  logout();
+                  onClose();
+                }}
+              >
+                <i className="ri-logout-box-line mr-3 text-xl text-gray-400"></i>
+                <span className="mobile-text-adjust">Logout</span>
+              </div>
+            </div>
           </div>
         </div>
       </DialogContent>
