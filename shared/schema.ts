@@ -423,3 +423,114 @@ export type InsertBudgetCategory = z.infer<typeof insertBudgetCategorySchema>;
 
 export type InventoryCost = typeof inventoryCosts.$inferSelect;
 export type InsertInventoryCost = z.infer<typeof insertInventoryCostSchema>;
+
+// CRM Client schema
+export const clients = pgTable("clients", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  email: text("email"),
+  phone: text("phone"),
+  company: text("company"),
+  position: text("position"),
+  address: text("address"),
+  city: text("city"),
+  state: text("state"),
+  zipCode: text("zip_code"),
+  country: text("country"),
+  source: text("source"), // How the client was acquired (referral, website, etc.)
+  status: text("status").notNull(), // 'lead', 'prospect', 'active', 'inactive', 'lost'
+  leadScore: integer("lead_score"), // For lead qualification
+  notes: text("notes"),
+  tags: text("tags"), // Comma-separated tags
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  lastContact: timestamp("last_contact"),
+});
+
+export const insertClientSchema = createInsertSchema(clients).pick({
+  userId: true,
+  firstName: true,
+  lastName: true,
+  email: true,
+  phone: true,
+  company: true,
+  position: true,
+  address: true,
+  city: true,
+  state: true,
+  zipCode: true,
+  country: true,
+  source: true,
+  status: true,
+  leadScore: true,
+  notes: true,
+  tags: true,
+  lastContact: true,
+});
+
+// Client Interaction schema (for tracking communications with clients)
+export const clientInteractions = pgTable("client_interactions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  clientId: integer("client_id").notNull(),
+  type: text("type").notNull(), // 'email', 'call', 'meeting', 'note'
+  date: timestamp("date").notNull(),
+  subject: text("subject").notNull(),
+  content: text("content").notNull(),
+  followUpDate: timestamp("follow_up_date"),
+  followUpComplete: boolean("follow_up_complete").default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertClientInteractionSchema = createInsertSchema(clientInteractions).pick({
+  userId: true,
+  clientId: true,
+  type: true,
+  date: true,
+  subject: true,
+  content: true,
+  followUpDate: true,
+  followUpComplete: true,
+});
+
+// Client Deal schema (for opportunity/sales tracking)
+export const clientDeals = pgTable("client_deals", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  clientId: integer("client_id").notNull(),
+  name: text("name").notNull(),
+  value: numeric("value").notNull(),
+  currency: text("currency").notNull().default("USD"),
+  stage: text("stage").notNull(), // 'lead', 'prospect', 'proposal', 'negotiation', 'won', 'lost'
+  probability: integer("probability"), // 0-100%
+  expectedCloseDate: timestamp("expected_close_date"),
+  actualCloseDate: timestamp("actual_close_date"),
+  notes: text("notes"),
+  assignedTo: text("assigned_to"), // Person responsible for the deal
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertClientDealSchema = createInsertSchema(clientDeals).pick({
+  userId: true,
+  clientId: true,
+  name: true,
+  value: true,
+  currency: true,
+  stage: true,
+  probability: true,
+  expectedCloseDate: true,
+  actualCloseDate: true,
+  notes: true,
+  assignedTo: true,
+});
+
+// Type exports for CRM
+export type Client = typeof clients.$inferSelect;
+export type InsertClient = z.infer<typeof insertClientSchema>;
+
+export type ClientInteraction = typeof clientInteractions.$inferSelect;
+export type InsertClientInteraction = z.infer<typeof insertClientInteractionSchema>;
+
+export type ClientDeal = typeof clientDeals.$inferSelect;
+export type InsertClientDeal = z.infer<typeof insertClientDealSchema>;

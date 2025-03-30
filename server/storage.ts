@@ -14,7 +14,11 @@ import {
   bankTransactions, BankTransaction, InsertBankTransaction,
   budgets, Budget, InsertBudget,
   budgetCategories, BudgetCategory, InsertBudgetCategory,
-  inventoryCosts, InventoryCost, InsertInventoryCost
+  inventoryCosts, InventoryCost, InsertInventoryCost,
+  // CRM schemas
+  clients, Client, InsertClient,
+  clientInteractions, ClientInteraction, InsertClientInteraction,
+  clientDeals, ClientDeal, InsertClientDeal
 } from "@shared/schema";
 
 export interface IStorage {
@@ -108,6 +112,30 @@ export interface IStorage {
   createInventoryCost(cost: InsertInventoryCost): Promise<InventoryCost>;
   updateInventoryCost(id: number, cost: Partial<InsertInventoryCost>): Promise<InventoryCost | undefined>;
   getInventoryCostsByItem(userId: number, inventoryItemId: number): Promise<InventoryCost[]>;
+  
+  // CRM - Clients
+  getClients(userId: number): Promise<Client[]>;
+  getClientById(id: number): Promise<Client | undefined>;
+  createClient(client: InsertClient): Promise<Client>;
+  updateClient(id: number, client: Partial<InsertClient>): Promise<Client | undefined>;
+  searchClients(userId: number, query: string): Promise<Client[]>;
+  getClientsByStatus(userId: number, status: string): Promise<Client[]>;
+  
+  // CRM - Client Interactions
+  getClientInteractions(userId: number, clientId: number): Promise<ClientInteraction[]>;
+  getClientInteractionById(id: number): Promise<ClientInteraction | undefined>;
+  createClientInteraction(interaction: InsertClientInteraction): Promise<ClientInteraction>;
+  updateClientInteraction(id: number, interaction: Partial<InsertClientInteraction>): Promise<ClientInteraction | undefined>;
+  getClientInteractionsByDateRange(userId: number, startDate: Date, endDate: Date): Promise<ClientInteraction[]>;
+  getUpcomingFollowUps(userId: number): Promise<ClientInteraction[]>;
+  
+  // CRM - Client Deals
+  getClientDeals(userId: number, clientId?: number): Promise<ClientDeal[]>;
+  getClientDealById(id: number): Promise<ClientDeal | undefined>;
+  createClientDeal(deal: InsertClientDeal): Promise<ClientDeal>;
+  updateClientDeal(id: number, deal: Partial<InsertClientDeal>): Promise<ClientDeal | undefined>;
+  getClientDealsByStage(userId: number, stage: string): Promise<ClientDeal[]>;
+  getClientDealsForecast(userId: number): Promise<{ stage: string, count: number, value: number }[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -129,6 +157,11 @@ export class MemStorage implements IStorage {
   private budgetCategories: Map<number, BudgetCategory>;
   private inventoryCosts: Map<number, InventoryCost>;
   
+  // CRM collections
+  private clients: Map<number, Client>;
+  private clientInteractions: Map<number, ClientInteraction>;
+  private clientDeals: Map<number, ClientDeal>;
+  
   private userCurrentId: number;
   private transactionCurrentId: number;
   private inventoryItemCurrentId: number;
@@ -146,6 +179,11 @@ export class MemStorage implements IStorage {
   private budgetCurrentId: number;
   private budgetCategoryCurrentId: number;
   private inventoryCostCurrentId: number;
+  
+  // CRM IDs
+  private clientCurrentId: number;
+  private clientInteractionCurrentId: number;
+  private clientDealCurrentId: number;
 
   constructor() {
     // Initialize maps
@@ -167,6 +205,11 @@ export class MemStorage implements IStorage {
     this.budgetCategories = new Map();
     this.inventoryCosts = new Map();
     
+    // Initialize CRM maps
+    this.clients = new Map();
+    this.clientInteractions = new Map();
+    this.clientDeals = new Map();
+    
     // Initialize IDs
     this.userCurrentId = 1;
     this.transactionCurrentId = 1;
@@ -185,6 +228,11 @@ export class MemStorage implements IStorage {
     this.budgetCurrentId = 1;
     this.budgetCategoryCurrentId = 1;
     this.inventoryCostCurrentId = 1;
+    
+    // Initialize CRM IDs
+    this.clientCurrentId = 1;
+    this.clientInteractionCurrentId = 1;
+    this.clientDealCurrentId = 1;
     
     // No demo user or pre-seeded data - each user will get their own data when created
   }
@@ -853,6 +901,268 @@ export class MemStorage implements IStorage {
         }
       });
     }
+
+    // ==== Add CRM Sample Data ====
+    // Create some sample clients
+    const clients: InsertClient[] = [
+      {
+        userId,
+        firstName: "John",
+        lastName: "Doe",
+        email: "john.doe@example.com",
+        phone: "555-123-4567",
+        company: `${currentUserName} Corp`,
+        position: "CEO",
+        address: "123 Main St",
+        city: "New York",
+        state: "NY",
+        zipCode: "10001",
+        country: "USA",
+        source: "referral",
+        status: "active",
+        leadScore: 85,
+        notes: "Long-term client with excellent payment history",
+        tags: "VIP,retail,construction"
+      },
+      {
+        userId,
+        firstName: "Jane",
+        lastName: "Smith",
+        email: "jane.smith@example.com",
+        phone: "555-987-6543",
+        company: `${currentUserName} Ltd`,
+        position: "CTO",
+        address: "456 Park Ave",
+        city: "Boston",
+        state: "MA",
+        zipCode: "02108",
+        country: "USA",
+        source: "website",
+        status: "active",
+        leadScore: 70,
+        notes: "Tech-focused client, interested in new software solutions",
+        tags: "tech,software,monthly"
+      },
+      {
+        userId,
+        firstName: "Robert",
+        lastName: "Johnson",
+        email: "robert.johnson@example.com",
+        phone: "555-555-5555",
+        company: `${currentUserName} Industries`,
+        position: "Purchasing Manager",
+        address: "789 Broadway",
+        city: "Chicago",
+        state: "IL",
+        zipCode: "60601",
+        country: "USA",
+        source: "conference",
+        status: "prospect",
+        leadScore: 50,
+        notes: "Met at industry conference, needs follow-up",
+        tags: "manufacturing,potential,quarterly"
+      },
+      {
+        userId,
+        firstName: "Sarah",
+        lastName: "Williams",
+        email: "sarah.williams@example.com",
+        phone: "555-222-3333",
+        company: "New Venture Startup",
+        position: "Founder",
+        address: "101 Tech Blvd",
+        city: "San Francisco",
+        state: "CA",
+        zipCode: "94107",
+        country: "USA",
+        source: "networking",
+        status: "lead",
+        leadScore: 30,
+        notes: "Early-stage startup, limited budget but high growth potential",
+        tags: "startup,tech,new"
+      }
+    ];
+    
+    const createdClients: Client[] = [];
+    clients.forEach(client => {
+      const newClient: Client = {
+        id: this.clientCurrentId++,
+        userId: client.userId,
+        firstName: client.firstName,
+        lastName: client.lastName,
+        email: client.email || null,
+        phone: client.phone || null,
+        company: client.company || null,
+        position: client.position || null,
+        address: client.address || null,
+        city: client.city || null,
+        state: client.state || null,
+        zipCode: client.zipCode || null,
+        country: client.country || null,
+        source: client.source || null,
+        status: client.status,
+        leadScore: client.leadScore || null,
+        notes: client.notes || null,
+        tags: client.tags || null,
+        createdAt: new Date(),
+        lastContact: new Date(new Date().setDate(new Date().getDate() - Math.floor(Math.random() * 30)))
+      };
+      
+      this.clients.set(newClient.id, newClient);
+      createdClients.push(newClient);
+    });
+    
+    // Create client interactions
+    if (createdClients.length > 0) {
+      createdClients.forEach(client => {
+        // Add 2-3 interactions per client
+        const interactionCount = 2 + Math.floor(Math.random() * 2);
+        
+        for (let i = 0; i < interactionCount; i++) {
+          const interactionDate = new Date();
+          interactionDate.setDate(interactionDate.getDate() - (i * 5 + Math.floor(Math.random() * 5)));
+          
+          const types = ["email", "call", "meeting", "note"];
+          const type = types[Math.floor(Math.random() * types.length)];
+          
+          const subjects = [
+            "Project Discussion",
+            "Follow-up Call",
+            "Proposal Review",
+            "Service Inquiry",
+            "Contract Renewal"
+          ];
+          const subject = subjects[Math.floor(Math.random() * subjects.length)];
+          
+          // Create a random content based on the interaction type
+          let content = "";
+          switch (type) {
+            case "email":
+              content = `Sent an email regarding ${subject.toLowerCase()}. Waiting for response.`;
+              break;
+            case "call":
+              content = `Discussed ${subject.toLowerCase()} and next steps. Client was ${Math.random() > 0.5 ? "very interested" : "considering options"}.`;
+              break;
+            case "meeting":
+              content = `In-person meeting about ${subject.toLowerCase()}. Presented options and received positive feedback.`;
+              break;
+            case "note":
+              content = `Internal note about ${client.company}: ${subject.toLowerCase()} should be prioritized for this client.`;
+              break;
+          }
+          
+          // Add a follow-up for the most recent interaction if appropriate
+          const needsFollowUp = i === 0 && Math.random() > 0.3;
+          const followUpDate = needsFollowUp ? new Date(interactionDate.getTime() + (3 + Math.floor(Math.random() * 7)) * 24 * 60 * 60 * 1000) : null;
+          
+          const interaction: ClientInteraction = {
+            id: this.clientInteractionCurrentId++,
+            userId,
+            clientId: client.id,
+            type,
+            date: interactionDate,
+            subject,
+            content,
+            followUpDate,
+            followUpComplete: false,
+            createdAt: new Date()
+          };
+          
+          this.clientInteractions.set(interaction.id, interaction);
+          
+          // Update the client's last contact if this is the most recent interaction
+          if (i === 0) {
+            const updatedClient = {
+              ...client,
+              lastContact: interactionDate
+            };
+            this.clients.set(client.id, updatedClient);
+          }
+        }
+      });
+      
+      // Create deals for active clients
+      const activeClients = createdClients.filter(client => client.status === "active" || client.status === "prospect");
+      
+      if (activeClients.length > 0) {
+        activeClients.forEach(client => {
+          // Each active client gets 1-2 deals
+          const dealCount = 1 + Math.floor(Math.random() * 2);
+          
+          for (let i = 0; i < dealCount; i++) {
+            const stages = ["lead", "prospect", "proposal", "negotiation", "won", "lost"];
+            let stage = stages[Math.floor(Math.random() * (stages.length - 2))]; // Avoid won/lost for most
+            
+            // For the second deal of a client, possibly make it a closed deal (won/lost)
+            if (i > 0 && Math.random() > 0.7) {
+              stage = Math.random() > 0.6 ? "won" : "lost";
+            }
+            
+            const dealNames = [
+              `${client.company} Project`,
+              `${client.company} Service Contract`,
+              `${client.company} Annual Maintenance`,
+              `${client.company} Software Implementation`,
+              `${client.company} Consulting Services`
+            ];
+            const name = dealNames[Math.floor(Math.random() * dealNames.length)];
+            
+            // Deal value - make it significant
+            const baseValue = 5000 + Math.floor(Math.random() * 20000);
+            const value = `${baseValue}`;
+            
+            // Probability based on stage
+            let probability = null;
+            switch (stage) {
+              case "lead":
+                probability = 10 + Math.floor(Math.random() * 20);
+                break;
+              case "prospect":
+                probability = 30 + Math.floor(Math.random() * 20);
+                break;
+              case "proposal":
+                probability = 50 + Math.floor(Math.random() * 20);
+                break;
+              case "negotiation":
+                probability = 70 + Math.floor(Math.random() * 20);
+                break;
+              case "won":
+                probability = 100;
+                break;
+              case "lost":
+                probability = 0;
+                break;
+            }
+            
+            // Expected close date
+            const expectedCloseDate = new Date();
+            expectedCloseDate.setDate(expectedCloseDate.getDate() + (30 + Math.floor(Math.random() * 60)));
+            
+            // Actual close date only for won/lost deals
+            const actualCloseDate = (stage === "won" || stage === "lost") ? 
+              new Date(expectedCloseDate.getTime() - Math.floor(Math.random() * 15) * 24 * 60 * 60 * 1000) : null;
+            
+            const deal: ClientDeal = {
+              id: this.clientDealCurrentId++,
+              userId,
+              clientId: client.id,
+              name,
+              value,
+              currency: "USD",
+              stage,
+              probability,
+              expectedCloseDate,
+              actualCloseDate,
+              notes: `Deal with ${client.firstName} ${client.lastName} from ${client.company}`,
+              assignedTo: null,
+              createdAt: new Date()
+            };
+            
+            this.clientDeals.set(deal.id, deal);
+          }
+        });
+      }
+    }
   }
 
   // Users
@@ -1489,6 +1799,227 @@ export class MemStorage implements IStorage {
     return Array.from(this.inventoryCosts.values()).filter(
       (cost) => cost.userId === userId && cost.inventoryItemId === inventoryItemId
     );
+  }
+
+  // CRM - Clients methods
+  async getClients(userId: number): Promise<Client[]> {
+    return Array.from(this.clients.values()).filter(
+      (client) => client.userId === userId
+    );
+  }
+
+  async getClientById(id: number): Promise<Client | undefined> {
+    return this.clients.get(id);
+  }
+
+  async createClient(client: InsertClient): Promise<Client> {
+    const newClient: Client = {
+      id: this.clientCurrentId++,
+      userId: client.userId,
+      firstName: client.firstName,
+      lastName: client.lastName,
+      email: client.email || null,
+      phone: client.phone || null,
+      company: client.company || null,
+      position: client.position || null,
+      address: client.address || null,
+      city: client.city || null,
+      state: client.state || null,
+      zipCode: client.zipCode || null,
+      country: client.country || null,
+      source: client.source || null,
+      status: client.status,
+      leadScore: client.leadScore || null,
+      notes: client.notes || null,
+      tags: client.tags || null,
+      createdAt: new Date(),
+      lastContact: client.lastContact || null
+    };
+    
+    this.clients.set(newClient.id, newClient);
+    return newClient;
+  }
+
+  async updateClient(id: number, client: Partial<InsertClient>): Promise<Client | undefined> {
+    const existingClient = this.clients.get(id);
+    if (!existingClient) return undefined;
+
+    const updatedClient: Client = {
+      ...existingClient,
+      ...client,
+    };
+
+    this.clients.set(id, updatedClient);
+    return updatedClient;
+  }
+
+  async searchClients(userId: number, query: string): Promise<Client[]> {
+    const lowerQuery = query.toLowerCase();
+    return Array.from(this.clients.values()).filter(
+      (client) => client.userId === userId && (
+        client.firstName.toLowerCase().includes(lowerQuery) ||
+        client.lastName.toLowerCase().includes(lowerQuery) ||
+        (client.email && client.email.toLowerCase().includes(lowerQuery)) ||
+        (client.company && client.company.toLowerCase().includes(lowerQuery)) ||
+        (client.phone && client.phone.includes(lowerQuery))
+      )
+    );
+  }
+
+  async getClientsByStatus(userId: number, status: string): Promise<Client[]> {
+    return Array.from(this.clients.values()).filter(
+      (client) => client.userId === userId && client.status === status
+    );
+  }
+
+  // CRM - Client Interactions methods
+  async getClientInteractions(userId: number, clientId: number): Promise<ClientInteraction[]> {
+    return Array.from(this.clientInteractions.values()).filter(
+      (interaction) => interaction.userId === userId && interaction.clientId === clientId
+    );
+  }
+
+  async getClientInteractionById(id: number): Promise<ClientInteraction | undefined> {
+    return this.clientInteractions.get(id);
+  }
+
+  async createClientInteraction(interaction: InsertClientInteraction): Promise<ClientInteraction> {
+    const newInteraction: ClientInteraction = {
+      id: this.clientInteractionCurrentId++,
+      userId: interaction.userId,
+      clientId: interaction.clientId,
+      type: interaction.type,
+      date: interaction.date,
+      subject: interaction.subject,
+      content: interaction.content,
+      followUpDate: interaction.followUpDate || null,
+      followUpComplete: interaction.followUpComplete || false,
+      createdAt: new Date()
+    };
+    
+    this.clientInteractions.set(newInteraction.id, newInteraction);
+    
+    // Update the client's last contact date
+    const client = this.clients.get(interaction.clientId);
+    if (client) {
+      const updatedClient = {
+        ...client,
+        lastContact: interaction.date
+      };
+      this.clients.set(client.id, updatedClient);
+    }
+    
+    return newInteraction;
+  }
+
+  async updateClientInteraction(id: number, interaction: Partial<InsertClientInteraction>): Promise<ClientInteraction | undefined> {
+    const existingInteraction = this.clientInteractions.get(id);
+    if (!existingInteraction) return undefined;
+
+    const updatedInteraction: ClientInteraction = {
+      ...existingInteraction,
+      ...interaction,
+    };
+
+    this.clientInteractions.set(id, updatedInteraction);
+    return updatedInteraction;
+  }
+
+  async getClientInteractionsByDateRange(userId: number, startDate: Date, endDate: Date): Promise<ClientInteraction[]> {
+    return Array.from(this.clientInteractions.values()).filter(
+      (interaction) => 
+        interaction.userId === userId && 
+        interaction.date >= startDate && 
+        interaction.date <= endDate
+    );
+  }
+
+  async getUpcomingFollowUps(userId: number): Promise<ClientInteraction[]> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    return Array.from(this.clientInteractions.values()).filter(
+      (interaction) => 
+        interaction.userId === userId && 
+        interaction.followUpDate && 
+        interaction.followUpDate >= today && 
+        !interaction.followUpComplete
+    ).sort((a, b) => {
+      if (a.followUpDate && b.followUpDate) {
+        return a.followUpDate.getTime() - b.followUpDate.getTime();
+      }
+      return 0;
+    });
+  }
+
+  // CRM - Client Deals methods
+  async getClientDeals(userId: number, clientId?: number): Promise<ClientDeal[]> {
+    return Array.from(this.clientDeals.values()).filter(
+      (deal) => deal.userId === userId && (clientId ? deal.clientId === clientId : true)
+    );
+  }
+
+  async getClientDealById(id: number): Promise<ClientDeal | undefined> {
+    return this.clientDeals.get(id);
+  }
+
+  async createClientDeal(deal: InsertClientDeal): Promise<ClientDeal> {
+    const newDeal: ClientDeal = {
+      id: this.clientDealCurrentId++,
+      userId: deal.userId,
+      clientId: deal.clientId,
+      name: deal.name,
+      value: deal.value,
+      currency: deal.currency,
+      stage: deal.stage,
+      probability: deal.probability || null,
+      expectedCloseDate: deal.expectedCloseDate || null,
+      actualCloseDate: deal.actualCloseDate || null,
+      notes: deal.notes || null,
+      assignedTo: deal.assignedTo || null,
+      createdAt: new Date()
+    };
+    
+    this.clientDeals.set(newDeal.id, newDeal);
+    return newDeal;
+  }
+
+  async updateClientDeal(id: number, deal: Partial<InsertClientDeal>): Promise<ClientDeal | undefined> {
+    const existingDeal = this.clientDeals.get(id);
+    if (!existingDeal) return undefined;
+
+    const updatedDeal: ClientDeal = {
+      ...existingDeal,
+      ...deal,
+    };
+
+    this.clientDeals.set(id, updatedDeal);
+    return updatedDeal;
+  }
+
+  async getClientDealsByStage(userId: number, stage: string): Promise<ClientDeal[]> {
+    return Array.from(this.clientDeals.values()).filter(
+      (deal) => deal.userId === userId && deal.stage === stage
+    );
+  }
+
+  async getClientDealsForecast(userId: number): Promise<{ stage: string, count: number, value: number }[]> {
+    const deals = Array.from(this.clientDeals.values()).filter(
+      (deal) => deal.userId === userId
+    );
+    
+    const stages = [...new Set(deals.map(deal => deal.stage))];
+    
+    return stages.map(stage => {
+      const stageDeals = deals.filter(deal => deal.stage === stage);
+      const count = stageDeals.length;
+      const value = stageDeals.reduce((total, deal) => {
+        const dealValue = typeof deal.value === 'string' ? parseFloat(deal.value) : deal.value;
+        return total + dealValue;
+      }, 0);
+      
+      return { stage, count, value };
+    });
   }
 }
 

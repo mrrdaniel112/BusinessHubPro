@@ -1488,6 +1488,305 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ===== CRM ROUTES =====
+  // Client Routes
+  app.get("/api/clients", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const clients = await storage.getClients(userId);
+      return res.json(clients);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.get("/api/clients/:id", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const clientId = parseInt(req.params.id);
+      
+      if (isNaN(clientId)) {
+        return res.status(400).json({ message: "Invalid client ID" });
+      }
+      
+      const client = await storage.getClientById(clientId);
+      
+      if (!client || client.userId !== userId) {
+        return res.status(404).json({ message: "Client not found" });
+      }
+      
+      return res.json(client);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.get("/api/clients/status/:status", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const status = req.params.status;
+      
+      const clients = await storage.getClientsByStatus(userId, status);
+      return res.json(clients);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.post("/api/clients", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      
+      const newClient = {
+        ...req.body,
+        userId
+      };
+      
+      const client = await storage.createClient(newClient);
+      return res.status(201).json(client);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.put("/api/clients/:id", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const clientId = parseInt(req.params.id);
+      
+      if (isNaN(clientId)) {
+        return res.status(400).json({ message: "Invalid client ID" });
+      }
+      
+      const existingClient = await storage.getClientById(clientId);
+      
+      if (!existingClient || existingClient.userId !== userId) {
+        return res.status(404).json({ message: "Client not found" });
+      }
+      
+      const updatedClient = await storage.updateClient(clientId, req.body);
+      return res.json(updatedClient);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Client Interactions Routes
+  app.get("/api/clients/:clientId/interactions", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const clientId = parseInt(req.params.clientId);
+      
+      if (isNaN(clientId)) {
+        return res.status(400).json({ message: "Invalid client ID" });
+      }
+      
+      const client = await storage.getClientById(clientId);
+      
+      if (!client || client.userId !== userId) {
+        return res.status(404).json({ message: "Client not found" });
+      }
+      
+      const interactions = await storage.getClientInteractions(userId, clientId);
+      return res.json(interactions);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.get("/api/interactions/:id", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const interactionId = parseInt(req.params.id);
+      
+      if (isNaN(interactionId)) {
+        return res.status(400).json({ message: "Invalid interaction ID" });
+      }
+      
+      const interaction = await storage.getClientInteractionById(interactionId);
+      
+      if (!interaction || interaction.userId !== userId) {
+        return res.status(404).json({ message: "Interaction not found" });
+      }
+      
+      return res.json(interaction);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.post("/api/interactions", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      
+      // Process date fields
+      const date = new Date(req.body.date);
+      const followUpDate = req.body.followUpDate ? new Date(req.body.followUpDate) : null;
+      
+      // Check if client exists and belongs to user
+      const clientId = parseInt(req.body.clientId);
+      const client = await storage.getClientById(clientId);
+      
+      if (!client || client.userId !== userId) {
+        return res.status(404).json({ message: "Client not found" });
+      }
+      
+      const newInteraction = {
+        ...req.body,
+        userId,
+        date,
+        followUpDate
+      };
+      
+      const interaction = await storage.createClientInteraction(newInteraction);
+      return res.status(201).json(interaction);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.put("/api/interactions/:id", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const interactionId = parseInt(req.params.id);
+      
+      if (isNaN(interactionId)) {
+        return res.status(400).json({ message: "Invalid interaction ID" });
+      }
+      
+      const existingInteraction = await storage.getClientInteractionById(interactionId);
+      
+      if (!existingInteraction || existingInteraction.userId !== userId) {
+        return res.status(404).json({ message: "Interaction not found" });
+      }
+      
+      // Process date fields if they exist
+      const updateData: any = { ...req.body };
+      
+      if (req.body.date) {
+        updateData.date = new Date(req.body.date);
+      }
+      
+      if (req.body.followUpDate) {
+        updateData.followUpDate = new Date(req.body.followUpDate);
+      }
+      
+      const updatedInteraction = await storage.updateClientInteraction(interactionId, updateData);
+      return res.json(updatedInteraction);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Client Deals Routes
+  app.get("/api/deals", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const clientId = req.query.clientId ? parseInt(req.query.clientId as string) : undefined;
+      
+      const deals = await storage.getClientDeals(userId, clientId);
+      return res.json(deals);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.get("/api/deals/:id", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const dealId = parseInt(req.params.id);
+      
+      if (isNaN(dealId)) {
+        return res.status(400).json({ message: "Invalid deal ID" });
+      }
+      
+      const deal = await storage.getClientDealById(dealId);
+      
+      if (!deal || deal.userId !== userId) {
+        return res.status(404).json({ message: "Deal not found" });
+      }
+      
+      return res.json(deal);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.get("/api/deals/stage/:stage", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const stage = req.params.stage;
+      
+      const deals = await storage.getClientDealsByStage(userId, stage);
+      return res.json(deals);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.post("/api/deals", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      
+      // Process date fields
+      const expectedCloseDate = req.body.expectedCloseDate ? new Date(req.body.expectedCloseDate) : null;
+      const actualCloseDate = req.body.actualCloseDate ? new Date(req.body.actualCloseDate) : null;
+      
+      // Check if client exists and belongs to user
+      const clientId = parseInt(req.body.clientId);
+      const client = await storage.getClientById(clientId);
+      
+      if (!client || client.userId !== userId) {
+        return res.status(404).json({ message: "Client not found" });
+      }
+      
+      const newDeal = {
+        ...req.body,
+        userId,
+        expectedCloseDate,
+        actualCloseDate
+      };
+      
+      const deal = await storage.createClientDeal(newDeal);
+      return res.status(201).json(deal);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.put("/api/deals/:id", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const dealId = parseInt(req.params.id);
+      
+      if (isNaN(dealId)) {
+        return res.status(400).json({ message: "Invalid deal ID" });
+      }
+      
+      const existingDeal = await storage.getClientDealById(dealId);
+      
+      if (!existingDeal || existingDeal.userId !== userId) {
+        return res.status(404).json({ message: "Deal not found" });
+      }
+      
+      // Process date fields if they exist
+      const updateData: any = { ...req.body };
+      
+      if (req.body.expectedCloseDate) {
+        updateData.expectedCloseDate = new Date(req.body.expectedCloseDate);
+      }
+      
+      if (req.body.actualCloseDate) {
+        updateData.actualCloseDate = new Date(req.body.actualCloseDate);
+      }
+      
+      const updatedDeal = await storage.updateClientDeal(dealId, updateData);
+      return res.json(updatedDeal);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
