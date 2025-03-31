@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import {
   Card,
@@ -10,38 +10,102 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { 
-  AlertCircle, 
-  Check, 
-  ArrowUpDown, 
-  Plus, 
-  Upload, 
-  Download, 
-  RefreshCw, 
+import {
+  AlertCircle,
+  Check,
+  ArrowUpDown,
+  Plus,
+  Upload,
+  Download,
+  RefreshCw,
   Link as LinkIcon,
   Search,
   FileText,
-  ShieldCheck
+  ShieldCheck,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+
+interface Transaction {
+  id: number;
+  date: string;
+  description: string;
+  amount: number;
+  reconciled: boolean;
+}
 
 export default function BankReconciliation() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("accounts");
-  const [isAddBankModalOpen, setIsAddBankModalOpen] = useState(false);
-  const [isImportTransactionsOpen, setIsImportTransactionsOpen] = useState(false);
   const [selectedBankAccountId, setSelectedBankAccountId] = useState<number | null>(null);
-  const [connectionMethod, setConnectionMethod] = useState<'direct' | 'import'>('direct');
-  const [csvFile, setCsvFile] = useState<File | null>(null);
-  
-  // Bank accounts data
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [bankBalance, setBankBalance] = useState<string>('');
+  const [bookBalance, setBookBalance] = useState<string>('');
+
+  useEffect(() => {
+    // Fetch transactions from API
+    fetchTransactions();
+  }, []);
+
+  const fetchTransactions = async () => {
+    try {
+      const response = await fetch('/api/bank-transactions');
+      if (response.ok) {
+        const data = await response.json();
+        setTransactions(data);
+      }
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+    }
+  };
+
+  const handleReconcile = async (transactionId: number) => {
+    try {
+      const response = await fetch(`/api/bank-transactions/${transactionId}/reconcile`, {
+        method: 'POST'
+      });
+      if (response.ok) {
+        fetchTransactions(); // Refresh transactions
+      }
+    } catch (error) {
+      console.error('Error reconciling transaction:', error);
+    }
+  };
+
+  const calculateDifference = () => {
+    const bankNum = parseFloat(bankBalance) || 0;
+    const bookNum = parseFloat(bookBalance) || 0;
+    return (bankNum - bookNum).toFixed(2);
+  };
+
+  // Bank accounts data (unchanged from original)
   const { data: bankAccounts, isLoading: isLoadingAccounts } = useQuery({
     queryKey: ["/api/bank-accounts"],
     queryFn: async () => {
@@ -59,113 +123,12 @@ export default function BankReconciliation() {
       }
     },
   });
-  
-  // Bank transactions data
-  const { data: bankTransactions, isLoading: isLoadingTransactions } = useQuery({
-    queryKey: ["/api/bank-transactions"],
-    queryFn: async () => {
-      try {
-        const res = await fetch("/api/bank-transactions");
-        if (!res.ok) throw new Error("Failed to fetch bank transactions");
-        return res.json();
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Could not load bank transactions. Please try again later.",
-          variant: "destructive",
-        });
-        return [];
-      }
-    },
-  });
-  
-  // Add bank account mutation
-  const addBankAccountMutation = useMutation({
-    mutationFn: async (bankAccount: any) => {
-      const res = await apiRequest("POST", "/api/bank-accounts", bankAccount);
-      return await res.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Bank account added successfully.",
-      });
-      setIsAddBankModalOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["/api/bank-accounts"] });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to add bank account. Please try again.",
-        variant: "destructive",
-      });
-    }
-  });
-  
-  // Import transactions mutation
-  const importTransactionsMutation = useMutation({
-    mutationFn: async (data: FormData) => {
-      const res = await fetch("/api/bank-transactions/import", {
-        method: "POST",
-        body: data,
-      });
-      if (!res.ok) throw new Error("Failed to import transactions");
-      return res.json();
-    },
-    onSuccess: (data) => {
-      toast({
-        title: "Success",
-        description: `${data.count} transactions imported successfully.`,
-      });
-      setIsImportTransactionsOpen(false);
-      setCsvFile(null);
-      queryClient.invalidateQueries({ queryKey: ["/api/bank-transactions"] });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to import transactions. Please check your file format and try again.",
-        variant: "destructive",
-      });
-    }
-  });
-  
-  // Handlers
-  const handleAddBankAccount = (data: any) => {
-    addBankAccountMutation.mutate(data);
-  };
-  
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setCsvFile(e.target.files[0]);
-    }
-  };
-  
-  const handleImportTransactions = () => {
-    if (!csvFile || !selectedBankAccountId) {
-      toast({
-        title: "Error",
-        description: "Please select a bank account and a CSV file.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    const formData = new FormData();
-    formData.append("file", csvFile);
-    formData.append("bankAccountId", selectedBankAccountId.toString());
-    
-    importTransactionsMutation.mutate(formData);
-  };
+
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Bank Reconciliation</h2>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Bank Account
-        </Button>
       </div>
 
       <Tabs defaultValue="accounts" className="space-y-4" onValueChange={setActiveTab}>
@@ -275,17 +238,42 @@ export default function BankReconciliation() {
           <Card>
             <CardHeader>
               <CardTitle>Recent Transactions</CardTitle>
-              <CardDescription>
-                View and reconcile recent bank transactions.
-              </CardDescription>
+              <CardDescription>View and reconcile recent bank transactions.</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-10">
-                <h3 className="mb-2 text-lg font-medium">Transactions Feature Coming Soon</h3>
-                <p className="text-muted-foreground">
-                  We're currently working on implementing the transactions view.
-                </p>
-              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {transactions.map((transaction) => (
+                    <TableRow key={transaction.id}>
+                      <TableCell>{transaction.date}</TableCell>
+                      <TableCell>{transaction.description}</TableCell>
+                      <TableCell>${transaction.amount.toFixed(2)}</TableCell>
+                      <TableCell>
+                        {transaction.reconciled ? 'Reconciled' : 'Pending'}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          onClick={() => handleReconcile(transaction.id)}
+                          disabled={transaction.reconciled}
+                          variant="outline"
+                          size="sm"
+                        >
+                          Reconcile
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </TabsContent>
@@ -294,16 +282,32 @@ export default function BankReconciliation() {
           <Card>
             <CardHeader>
               <CardTitle>Reconciliation</CardTitle>
-              <CardDescription>
-                Match and reconcile your bank transactions.
-              </CardDescription>
+              <CardDescription>Match and reconcile your bank transactions.</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="text-center py-10">
-                <h3 className="mb-2 text-lg font-medium">Reconciliation Feature Coming Soon</h3>
-                <p className="text-muted-foreground">
-                  We're currently working on implementing the reconciliation feature.
-                </p>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label>Bank Statement Balance</label>
+                  <Input
+                    type="number"
+                    value={bankBalance}
+                    onChange={(e) => setBankBalance(e.target.value)}
+                    placeholder="Enter bank balance"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label>Book Balance</label>
+                  <Input
+                    type="number"
+                    value={bookBalance}
+                    onChange={(e) => setBookBalance(e.target.value)}
+                    placeholder="Enter book balance"
+                  />
+                </div>
+              </div>
+              <div className="mt-4 p-4 bg-gray-100 rounded-lg">
+                <h3 className="font-medium">Difference</h3>
+                <p className="text-2xl font-bold">${calculateDifference()}</p>
               </div>
             </CardContent>
           </Card>

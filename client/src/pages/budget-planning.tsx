@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Card,
@@ -12,10 +12,24 @@ import { Button } from "@/components/ui/button";
 import { BarChart, DollarSign, TrendingUp, Plus, PieChart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
+import React from 'react';
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+
+interface BudgetCategory {
+  id: number;
+  name: string;
+  planned: number;
+  actual: number;
+}
 
 export default function BudgetPlanning() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
+  const [categories, setCategories] = useState<BudgetCategory[]>([]);
+  const [newCategory, setNewCategory] = useState({ name: '', planned: '' });
+  const [selectedPeriod, setSelectedPeriod] = useState('monthly');
 
   // Placeholder for budgets data
   const { data: budgets, isLoading: isLoadingBudgets } = useQuery({
@@ -36,12 +50,54 @@ export default function BudgetPlanning() {
     },
   });
 
+  useEffect(() => {
+    fetchBudgetData();
+  }, []);
+
+  const fetchBudgetData = async () => {
+    try {
+      const response = await fetch('/api/budgets/current');
+      if (response.ok) {
+        const data = await response.json();
+        setCategories(data.categories);
+      }
+    } catch (error) {
+      console.error('Error fetching budget data:', error);
+    }
+  };
+
   const handleCreateBudget = () => {
     toast({
       title: "Create Budget",
       description: "Budget creation feature is coming soon.",
     });
   };
+
+  const handleAddCategory = async () => {
+    try {
+      const response = await fetch('/api/budget-categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newCategory.name,
+          planned: parseFloat(newCategory.planned)
+        })
+      });
+
+      if (response.ok) {
+        fetchBudgetData();
+        setNewCategory({ name: '', planned: '' });
+      }
+    } catch (error) {
+      console.error('Error adding category:', error);
+    }
+  };
+
+  const chartData = categories.map(cat => ({
+    name: cat.name,
+    planned: cat.planned,
+    actual: cat.actual
+  }));
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -229,17 +285,50 @@ export default function BudgetPlanning() {
         <TabsContent value="planning" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Budget Planning</CardTitle>
-              <CardDescription>
-                Plan and allocate future budgets.
-              </CardDescription>
+              <CardTitle>Budget Categories</CardTitle>
+              <CardDescription>Add and manage budget categories</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-10">
-                <h3 className="mb-2 text-lg font-medium">Planning Feature Coming Soon</h3>
-                <p className="text-muted-foreground">
-                  We're currently working on implementing the budget planning tools.
-                </p>
+              <div className="space-y-4">
+                <div className="flex gap-4">
+                  <Input
+                    placeholder="Category name"
+                    value={newCategory.name}
+                    onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
+                  />
+                  <Input
+                    type="number"
+                    placeholder="Planned amount"
+                    value={newCategory.planned}
+                    onChange={(e) => setNewCategory({ ...newCategory, planned: e.target.value })}
+                  />
+                  <Button onClick={handleAddCategory}>Add Category</Button>
+                </div>
+
+                <div className="mt-6">
+                  <table className="w-full">
+                    <thead>
+                      <tr>
+                        <th className="text-left">Category</th>
+                        <th className="text-right">Planned</th>
+                        <th className="text-right">Actual</th>
+                        <th className="text-right">Variance</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {categories.map((category) => (
+                        <tr key={category.id}>
+                          <td>{category.name}</td>
+                          <td className="text-right">${category.planned.toFixed(2)}</td>
+                          <td className="text-right">${category.actual.toFixed(2)}</td>
+                          <td className="text-right">
+                            ${(category.planned - category.actual).toFixed(2)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -248,17 +337,21 @@ export default function BudgetPlanning() {
         <TabsContent value="reports" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Budget Reports</CardTitle>
-              <CardDescription>
-                Generate and view budget reports.
-              </CardDescription>
+              <CardTitle>Budget vs Actual</CardTitle>
+              <CardDescription>Compare planned budget with actual spending</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-10">
-                <h3 className="mb-2 text-lg font-medium">Reports Feature Coming Soon</h3>
-                <p className="text-muted-foreground">
-                  We're currently working on implementing budget reports.
-                </p>
+              <div className="h-[400px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Area type="monotone" dataKey="planned" stackId="1" stroke="#8884d8" fill="#8884d8" />
+                    <Area type="monotone" dataKey="actual" stackId="1" stroke="#82ca9d" fill="#82ca9d" />
+                  </AreaChart>
+                </ResponsiveContainer>
               </div>
             </CardContent>
           </Card>
