@@ -849,7 +849,13 @@ export async function generateContractTemplate(
   clientName: string,
   projectType: string,
   description: string,
-  scope?: string
+  scope?: string,
+  clientAddress?: string,
+  vendorName?: string,
+  vendorAddress?: string,
+  paymentTerms?: string,
+  startDate?: string,
+  endDate?: string
 ): Promise<{
   title: string;
   content: string;
@@ -857,6 +863,29 @@ export async function generateContractTemplate(
   legalClauses: string[];
   deliverables: string[];
   timeline: { phase: string; description: string; duration: string }[];
+  parties: {
+    clientName: string;
+    clientAddress: string;
+    vendorName: string;
+    vendorAddress: string;
+  };
+  dates: {
+    startDate: string;
+    endDate: string;
+    effectiveDate: string;
+  };
+  paymentDetails: {
+    amount?: string;
+    schedule?: string;
+    method?: string;
+    currency?: string;
+    lateFees?: string;
+  };
+  signatures: {
+    clientSignatureBlock: string;
+    vendorSignatureBlock: string;
+    witnessSignatureBlock?: string;
+  };
 }> {
   if (!isOpenAIConfigured()) {
     return {
@@ -867,7 +896,30 @@ export async function generateContractTemplate(
       deliverables: ["Project completion according to specifications"],
       timeline: [
         { phase: "Project Kickoff", description: "Initial planning and requirements gathering", duration: "2 weeks" }
-      ]
+      ],
+      parties: {
+        clientName: clientName || "CLIENT NAME",
+        clientAddress: clientAddress || "CLIENT ADDRESS",
+        vendorName: vendorName || "VENDOR NAME",
+        vendorAddress: vendorAddress || "VENDOR ADDRESS"
+      },
+      dates: {
+        startDate: startDate || "START DATE",
+        endDate: endDate || "END DATE",
+        effectiveDate: new Date().toISOString().split('T')[0]
+      },
+      paymentDetails: {
+        amount: "TBD",
+        schedule: paymentTerms || "Net 30",
+        method: "Bank transfer",
+        currency: "USD",
+        lateFees: "1.5% per month on overdue amounts"
+      },
+      signatures: {
+        clientSignatureBlock: "Client Signature: _______________ Date: _______________",
+        vendorSignatureBlock: "Vendor Signature: _______________ Date: _______________",
+        witnessSignatureBlock: "Witness Signature: _______________ Date: _______________"
+      }
     };
   }
   
@@ -876,29 +928,62 @@ export async function generateContractTemplate(
       You are a business contract expert. Create a detailed professional contract template for the following:
       
       Client: ${clientName}
+      Client Address: ${clientAddress || "[Client to provide address]"}
+      Vendor Name: ${vendorName || "[Your company name]"}
+      Vendor Address: ${vendorAddress || "[Your company address]"}
       Project Type: ${projectType}
       Description: ${description}
       ${scope ? `Scope: ${scope}` : ''}
+      ${paymentTerms ? `Payment Terms: ${paymentTerms}` : ''}
+      ${startDate ? `Start Date: ${startDate}` : ''}
+      ${endDate ? `End Date: ${endDate}` : ''}
       
       Please format your response as JSON with the following structure:
       {
         "title": "Contract title appropriate for this type of work",
-        "content": "Full contract text with proper legal language, sections, and formatting",
+        "content": "Full contract text with proper legal language, sections, and formatting that includes all necessary contract elements",
         "terms": [Array of key payment and service terms as strings],
         "legalClauses": [Array of important legal clauses included as strings],
         "deliverables": [Array of specific deliverables promised in the contract],
-        "timeline": [Array of objects with {phase, description, duration}]
+        "timeline": [Array of objects with {phase, description, duration}],
+        "parties": {
+          "clientName": "Full legal name of client entity",
+          "clientAddress": "Full registered address of client",
+          "vendorName": "Full legal name of vendor entity",
+          "vendorAddress": "Full registered address of vendor"
+        },
+        "dates": {
+          "startDate": "Start date of contract work",
+          "endDate": "End date or project completion date",
+          "effectiveDate": "Date contract goes into effect"
+        },
+        "paymentDetails": {
+          "amount": "Total contract value if applicable",
+          "schedule": "Payment schedule description",
+          "method": "Acceptable payment methods",
+          "currency": "Currency for payment",
+          "lateFees": "Late payment penalties"
+        },
+        "signatures": {
+          "clientSignatureBlock": "Formatted text for client signature block including name, title, date",
+          "vendorSignatureBlock": "Formatted text for vendor signature block including name, title, date",
+          "witnessSignatureBlock": "Optional formatted text for witness signature block"
+        }
       }
       
-      Make the contract comprehensive, professional, and protective of both parties' interests.
-      Include standard legal language, precise deliverable descriptions, clear payment terms,
-      well-defined scope, and appropriate disclaimers.
+      Make the contract comprehensive, professionally formatted, and legally sound with all necessary elements for a valid legal agreement.
+      Include standard legal language, precise deliverable descriptions, clear payment terms, well-defined scope, and appropriate disclaimers.
+      Add necessary sections like confidentiality, intellectual property rights, termination clauses, indemnification, and dispute resolution.
+      Format the content with proper sections, numbering, and paragraph spacing for a professional legal document.
     `;
     
     const response = await openai.chat.completions.create({
       model: getAIModel(),
       messages: [
-        { role: "system", content: "You are a contracts and legal expert who drafts professional business contracts." },
+        { 
+          role: "system", 
+          content: "You are a contracts and legal expert who drafts comprehensive, professional business contracts with all legally required elements. Your contracts are thorough, precise, and protective of both parties while remaining fair and balanced."
+        },
         { role: "user", content: prompt }
       ],
       response_format: { type: "json_object" },
@@ -921,7 +1006,30 @@ export async function generateContractTemplate(
       deliverables: ["Project completion according to specifications"],
       timeline: [
         { phase: "Project Kickoff", description: "Initial planning", duration: "2 weeks" }
-      ]
+      ],
+      parties: {
+        clientName: "CLIENT NAME",
+        clientAddress: "CLIENT ADDRESS",
+        vendorName: "VENDOR NAME",
+        vendorAddress: "VENDOR ADDRESS"
+      },
+      dates: {
+        startDate: "START DATE",
+        endDate: "END DATE",
+        effectiveDate: new Date().toISOString().split('T')[0]
+      },
+      paymentDetails: {
+        amount: "TBD",
+        schedule: "Net 30",
+        method: "Bank transfer",
+        currency: "USD",
+        lateFees: "1.5% per month on overdue amounts"
+      },
+      signatures: {
+        clientSignatureBlock: "Client Signature: _______________ Date: _______________",
+        vendorSignatureBlock: "Vendor Signature: _______________ Date: _______________",
+        witnessSignatureBlock: "Witness Signature: _______________ Date: _______________"
+      }
     };
   }
 }

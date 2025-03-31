@@ -471,7 +471,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI-powered contract template generation
   app.post("/api/generate-contract-template", requireAuth, async (req, res) => {
     try {
-      const { clientName, projectType, description, scope } = req.body;
+      const { 
+        clientName, 
+        projectType, 
+        description, 
+        scope, 
+        clientAddress,
+        vendorName,
+        vendorAddress,
+        paymentTerms,
+        startDate,
+        endDate
+      } = req.body;
       
       if (!clientName || !projectType || !description) {
         return res.status(400).json({ 
@@ -480,12 +491,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       try {
-        // Call OpenAI to generate contract template
+        // Call OpenAI to generate contract template with enhanced details
         const contractTemplate = await generateContractTemplate(
           clientName,
           projectType,
           description,
-          scope
+          scope,
+          clientAddress,
+          vendorName,
+          vendorAddress,
+          paymentTerms,
+          startDate,
+          endDate
         );
         
         return res.json(contractTemplate);
