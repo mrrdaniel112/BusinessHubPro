@@ -1654,6 +1654,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: "Server error" });
     }
   });
+  
+  // Generate a budget with AI
+  app.post("/api/budgets/generate-with-ai", requireAuth, async (req, res) => {
+    try {
+      const { description } = req.body;
+      
+      if (!description || description.trim() === '') {
+        return res.status(400).json({ message: "Budget description is required" });
+      }
+      
+      const { generateBudgetPlan } = await import('./openai');
+      const result = await generateBudgetPlan(description);
+      
+      return res.json(result);
+    } catch (error) {
+      console.error("Error generating budget with AI:", error);
+      return res.status(500).json({ message: "Failed to generate budget. Please try again." });
+    }
+  });
 
   // ===== INVENTORY COST ANALYSIS ROUTES =====
   app.get("/api/inventory-costs", requireAuth, async (req, res) => {

@@ -108,41 +108,60 @@ export default function BudgetPlanning() {
   });
   const [isCreatingWithAI, setIsCreatingWithAI] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState('');
+  const [budgetDescription, setBudgetDescription] = useState('');
+  const [isAIGeneratorOpen, setIsAIGeneratorOpen] = useState(false);
   
   const handleCreateBudget = () => {
     setIsCreateModalOpen(true);
+  };
+  
+  const handleOpenAIGenerator = () => {
+    setIsCreatingWithAI(false);
+    setAiSuggestion('');
+    setBudgetDescription('');
+    setIsAIGeneratorOpen(true);
   };
   
   const generateBudgetWithAI = async () => {
     setIsCreatingWithAI(true);
     
     try {
-      // Simulating AI response for now
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      if (!budgetDescription.trim()) {
+        toast({
+          title: "Description Required",
+          description: "Please provide a description of your budget needs.",
+          variant: "destructive",
+        });
+        return;
+      }
       
-      const aiGeneratedBudget = {
-        name: 'Q2 2025 Operations Budget',
-        description: 'Quarterly budget for all operational expenses including office supplies, utilities, and staff resources.',
-        startDate: '2025-04-01',
-        endDate: '2025-06-30',
-        amount: '55000',
-        type: 'operational',
-        department: 'Operations',
-        purpose: 'Maintain essential operations for Q2 2025',
-        hasEndDate: true,
-        status: 'planning',
-        recurring: false,
-        recurrenceInterval: 'monthly',
-        categories: [
-          { name: 'Staffing', percentage: 40, amount: 22000 },
-          { name: 'Facilities', percentage: 25, amount: 13750 },
-          { name: 'Equipment', percentage: 20, amount: 11000 },
-          { name: 'Miscellaneous', percentage: 15, amount: 8250 }
-        ]
-      };
+      const response = await fetch('/api/budgets/generate-with-ai', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ description: budgetDescription }),
+      });
       
-      setNewBudget(aiGeneratedBudget);
-      setAiSuggestion(`I've analyzed your previous budgets and financial patterns, and I recommend a quarterly operations budget of $55,000, which is a 10% increase from Q1 due to anticipated cost increases in utilities and office supplies. This budget allocates 40% to staffing, 25% to facilities, 20% to equipment, and 15% to miscellaneous operational expenses.`);
+      if (!response.ok) {
+        throw new Error('Failed to generate budget with AI');
+      }
+      
+      const result = await response.json();
+      
+      // Update the form with the AI-generated budget
+      if (result && result.budget) {
+        setNewBudget({
+          ...result.budget,
+          // Convert amount string to string (in case it's a number)
+          amount: result.budget.amount.toString()
+        });
+        
+        // Set the AI suggestion
+        setAiSuggestion(result.explanation || 'An AI-generated budget based on your description.');
+      } else {
+        throw new Error('Invalid response from AI service');
+      }
     } catch (error) {
       console.error('Error generating budget with AI:', error);
       toast({
@@ -303,10 +322,16 @@ export default function BudgetPlanning() {
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Budget Planning</h2>
-        <Button onClick={handleCreateBudget}>
-          <Plus className="h-4 w-4 mr-2" />
-          Create New Budget
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleOpenAIGenerator} variant="outline">
+            <Sparkles className="h-4 w-4 mr-2" />
+            AI Budget Generator
+          </Button>
+          <Button onClick={handleCreateBudget}>
+            <Plus className="h-4 w-4 mr-2" />
+            Create New Budget
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="overview" className="space-y-4" onValueChange={setActiveTab}>
@@ -557,6 +582,61 @@ export default function BudgetPlanning() {
           </Card>
         </TabsContent>
       </Tabs>
+      {/* Budget Creation Modal */}
+      {/* AI Budget Generator Modal */}
+      <Dialog open={isAIGeneratorOpen} onOpenChange={setIsAIGeneratorOpen}>
+        <DialogContent className="max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>AI Budget Generator</DialogTitle>
+            <DialogDescription>
+              Describe your business needs and our AI will create a suitable budget plan for you.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="budgetDescription">Describe your budget needs</Label>
+              <Textarea 
+                id="budgetDescription"
+                placeholder="Example: I need a quarterly budget for a small marketing agency with 5 employees, focused on digital marketing campaigns."
+                value={budgetDescription}
+                onChange={(e) => setBudgetDescription(e.target.value)}
+                className="min-h-[120px]"
+              />
+            </div>
+            
+            {isCreatingWithAI ? (
+              <div className="flex flex-col items-center space-y-4 py-6">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="text-sm text-muted-foreground">Analyzing your requirements and generating budget...</p>
+              </div>
+            ) : null}
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAIGeneratorOpen(false)}>Cancel</Button>
+            <Button 
+              onClick={() => {
+                if (!budgetDescription.trim()) {
+                  toast({
+                    title: "Description Required",
+                    description: "Please describe your budget needs.",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                generateBudgetWithAI();
+                setIsAIGeneratorOpen(false);
+                setTimeout(() => setIsCreateModalOpen(true), 100);
+              }}
+              disabled={isCreatingWithAI || !budgetDescription.trim()}
+            >
+              Generate Budget
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
       {/* Budget Creation Modal */}
       <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
         <DialogContent className="max-w-[700px]">

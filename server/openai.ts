@@ -1033,3 +1033,154 @@ export async function generateContractTemplate(
     };
   }
 }
+
+/**
+ * Generates a budget plan based on the user's description
+ */
+export async function generateBudgetPlan(
+  description: string
+): Promise<{
+  budget: {
+    name: string;
+    description: string;
+    startDate: string;
+    endDate: string;
+    amount: string;
+    type: string;
+    department: string;
+    purpose: string;
+    hasEndDate: boolean;
+    status: string;
+    recurring: boolean;
+    recurrenceInterval: string;
+    categories: Array<{
+      name: string;
+      percentage: number;
+      amount: number;
+    }>;
+  },
+  explanation: string;
+}> {
+  if (!isOpenAIConfigured()) {
+    return {
+      budget: {
+        name: "Sample Budget Plan",
+        description: "This is a placeholder since the AI service is unavailable.",
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 90 days from now
+        amount: "50000",
+        type: "operational",
+        department: "Operations",
+        purpose: "General operations",
+        hasEndDate: true,
+        status: "planning",
+        recurring: false,
+        recurrenceInterval: "monthly",
+        categories: [
+          { name: "Staffing", percentage: 40, amount: 20000 },
+          { name: "Facilities", percentage: 25, amount: 12500 },
+          { name: "Equipment", percentage: 20, amount: 10000 },
+          { name: "Miscellaneous", percentage: 15, amount: 7500 }
+        ]
+      },
+      explanation: "The AI budget generation service is currently unavailable. Please try again later or create a budget manually."
+    };
+  }
+
+  try {
+    const currentDate = new Date();
+    const formattedDate = currentDate.toISOString().split('T')[0];
+    
+    // Generate quarterly end date (3 months from now)
+    const endDate = new Date();
+    endDate.setMonth(endDate.getMonth() + 3);
+    const formattedEndDate = endDate.toISOString().split('T')[0];
+
+    const prompt = `
+      As an expert financial advisor and budget planner, please create a detailed budget plan based on the following description:
+      
+      "${description}"
+      
+      Today's date is ${formattedDate}.
+      
+      Please analyze the description and generate a comprehensive budget with appropriate categories,
+      percentages, and amounts. The response should be in JSON format with the following structure:
+      
+      {
+        "budget": {
+          "name": "A descriptive name for the budget based on the description",
+          "description": "A detailed description of the budget's purpose and scope",
+          "startDate": "A realistic start date in YYYY-MM-DD format (use today or a near future date)",
+          "endDate": "A realistic end date in YYYY-MM-DD format (typically quarterly or annually from start date)",
+          "amount": "The total budget amount as a string without $ symbol (e.g. '75000')",
+          "type": "One of: operational, capital, project, or periodic",
+          "department": "The most appropriate department for this budget",
+          "purpose": "A concise purpose statement for this budget",
+          "hasEndDate": true or false (typically true unless it's an ongoing budget),
+          "status": "planning",
+          "recurring": true or false (based on if this should be a recurring budget),
+          "recurrenceInterval": "weekly", "monthly", "quarterly", or "annually",
+          "categories": [
+            {
+              "name": "Category name",
+              "percentage": Percentage as a number (e.g., 40),
+              "amount": Amount in dollars with no decimal places (e.g., 30000)
+            },
+            ...more categories with appropriate allocations...
+          ]
+        },
+        "explanation": "A 2-3 sentence explanation of the budget rationale, key allocations, and any assumptions made"
+      }
+      
+      The percentages should add up to 100%, and the category amounts should sum to the total budget amount.
+      Base the budget categories, department, and type on the specific needs described.
+      Make realistic assumptions about timeframes and amounts based on the description.
+    `;
+
+    const response = await openai.chat.completions.create({
+      model: getAIModel(),
+      messages: [
+        { 
+          role: "system", 
+          content: "You are an expert financial advisor specializing in business budget planning. You create detailed, realistic budgets based on business descriptions. Your responses are always in valid JSON format." 
+        },
+        { role: "user", content: prompt }
+      ],
+      temperature: 0.7,
+      max_tokens: 1500,
+      response_format: { type: "json_object" }
+    });
+
+    const content = response.choices[0]?.message?.content || "{}";
+    const parsedResponse = JSON.parse(content);
+    
+    return parsedResponse;
+  } catch (error) {
+    handleAiError(error, "generateBudgetPlan");
+    
+    // Return a fallback budget
+    return {
+      budget: {
+        name: "Fallback Budget Plan",
+        description: "A general budget plan created as a fallback due to an error in AI generation.",
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 90 days from now
+        amount: "50000",
+        type: "operational",
+        department: "Operations",
+        purpose: "General operations",
+        hasEndDate: true,
+        status: "planning",
+        recurring: false,
+        recurrenceInterval: "monthly",
+        categories: [
+          { name: "Staffing", percentage: 40, amount: 20000 },
+          { name: "Facilities", percentage: 25, amount: 12500 },
+          { name: "Equipment", percentage: 20, amount: 10000 },
+          { name: "Miscellaneous", percentage: 15, amount: 7500 }
+        ]
+      },
+      explanation: "An error occurred during budget generation. This is a general budget template you can modify as needed."
+    };
+  }
+}
