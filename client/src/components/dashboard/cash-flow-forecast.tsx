@@ -76,7 +76,6 @@ export default function CashFlowForecast({ data, isLoading = false }: CashFlowFo
                 <Area 
                   type="monotone" 
                   dataKey="value" 
-                  stroke="#16a34a" 
                   fillOpacity={1} 
                   fill="url(#colorPast)"
                   activeDot={{ r: 8 }}
