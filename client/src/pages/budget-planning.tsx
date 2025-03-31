@@ -36,11 +36,18 @@ export default function BudgetPlanning() {
     },
   });
 
+  const handleCreateBudget = () => {
+    toast({
+      title: "Create Budget",
+      description: "Budget creation feature is coming soon.",
+    });
+  };
+
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Budget Planning</h2>
-        <Button>
+        <Button onClick={handleCreateBudget}>
           <Plus className="h-4 w-4 mr-2" />
           Create New Budget
         </Button>
@@ -209,7 +216,7 @@ export default function BudgetPlanning() {
                   <p className="text-muted-foreground mb-4">
                     Create your first budget to start tracking your spending.
                   </p>
-                  <Button>
+                  <Button onClick={handleCreateBudget}>
                     <Plus className="h-4 w-4 mr-2" />
                     Create Budget
                   </Button>
