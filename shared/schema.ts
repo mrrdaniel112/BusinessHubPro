@@ -368,22 +368,31 @@ export const budgets = pgTable("budgets", {
   userId: integer("user_id").notNull(),
   name: text("name").notNull(),
   description: text("description"),
+  purpose: text("purpose"),
   startDate: timestamp("start_date").notNull(),
   endDate: timestamp("end_date").notNull(),
   totalBudget: numeric("total_budget").notNull(),
-  status: text("status").notNull(), // 'planning', 'active', 'completed'
+  status: text("status").notNull().default('planning'), // 'planning', 'active', 'completed'
+  department: text("department"),
+  type: text("type").default('operational'), // 'operational', 'capital', 'project', 'periodic'
+  categoryBreakdown: text("category_breakdown"), // JSON string of category allocations
   notes: text("notes"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export const insertBudgetSchema = createInsertSchema(budgets).pick({
   userId: true,
   name: true,
   description: true,
+  purpose: true,
   startDate: true,
   endDate: true,
   totalBudget: true,
   status: true,
+  department: true,
+  type: true,
+  categoryBreakdown: true,
   notes: true,
 });
 

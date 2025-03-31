@@ -93,7 +93,14 @@ export default function BudgetPlanning() {
     endDate: '',
     amount: '',
     type: 'operational',
-    department: ''
+    department: '',
+    purpose: '',
+    categories: [
+      { name: 'Staffing', percentage: 40, amount: 0 },
+      { name: 'Facilities', percentage: 25, amount: 0 },
+      { name: 'Equipment', percentage: 20, amount: 0 },
+      { name: 'Miscellaneous', percentage: 15, amount: 0 }
+    ]
   });
   const [isCreatingWithAI, setIsCreatingWithAI] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState('');
