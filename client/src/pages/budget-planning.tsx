@@ -16,6 +16,10 @@ import React from 'react';
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { AlertTriangle, Sparkles, Loader2 } from "lucide-react";
 
 interface BudgetCategory {
   id: number;
@@ -81,24 +85,104 @@ export default function BudgetPlanning() {
     }
   };
 
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [newBudget, setNewBudget] = useState({
+    name: '',
+    description: '',
+    startDate: '',
+    endDate: '',
+    amount: '',
+    type: 'operational',
+    department: ''
+  });
+  const [isCreatingWithAI, setIsCreatingWithAI] = useState(false);
+  const [aiSuggestion, setAiSuggestion] = useState('');
+  
   const handleCreateBudget = () => {
-    // First show a loading toast
+    setIsCreateModalOpen(true);
+  };
+  
+  const generateBudgetWithAI = async () => {
+    setIsCreatingWithAI(true);
+    
+    try {
+      // Simulating AI response for now
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      const aiGeneratedBudget = {
+        name: 'Q2 2025 Operations Budget',
+        description: 'Quarterly budget for all operational expenses including office supplies, utilities, and staff resources.',
+        startDate: '2025-04-01',
+        endDate: '2025-06-30',
+        amount: '55000',
+        type: 'operational',
+        department: 'Operations'
+      };
+      
+      setNewBudget(aiGeneratedBudget);
+      setAiSuggestion(`I've analyzed your previous budgets and financial patterns, and I recommend a quarterly operations budget of $55,000, which is a 10% increase from Q1 due to anticipated cost increases in utilities and office supplies. This budget allocates 40% to staffing, 25% to facilities, 20% to equipment, and 15% to miscellaneous operational expenses.`);
+    } catch (error) {
+      console.error('Error generating budget with AI:', error);
+      toast({
+        title: "AI Generation Failed",
+        description: "Could not generate budget with AI. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreatingWithAI(false);
+    }
+  };
+  
+  const handleBudgetSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Input validation
+    if (!newBudget.name || !newBudget.amount || !newBudget.startDate || !newBudget.endDate) {
+      toast({
+        title: "Missing Fields",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Show loading toast
     toast({
       title: "Creating budget...",
-      description: "Your new budget is being created.",
+      description: "Your new budget is being saved.",
     });
     
-    // After a delay, show a success toast
-    setTimeout(() => {
+    try {
+      // Call API (simulated success for now)
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Success toast
       toast({
         title: "Budget Created",
         description: "Your new budget has been created successfully.",
       });
       
-      // Add a new placeholder budget to the list
-      // In a real implementation, we would call the API and refresh the data
+      // Close modal and reset form
+      setIsCreateModalOpen(false);
+      setNewBudget({
+        name: '',
+        description: '',
+        startDate: '',
+        endDate: '',
+        amount: '',
+        type: 'operational',
+        department: ''
+      });
+      
+      // Refresh budget data
       fetchBudgetData();
-    }, 1500);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create budget. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleAddCategory = async () => {
@@ -440,6 +524,163 @@ export default function BudgetPlanning() {
           </Card>
         </TabsContent>
       </Tabs>
+      {/* Budget Creation Modal */}
+      <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+        <DialogContent className="max-w-[700px]">
+          <DialogHeader>
+            <DialogTitle>Create New Budget</DialogTitle>
+            <DialogDescription>
+              Create a new budget to track your expenses and financial goals.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <form onSubmit={handleBudgetSubmit} className="space-y-6">
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="text-sm font-medium">Budget Details</h4>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={generateBudgetWithAI}
+                disabled={isCreatingWithAI}
+                className="flex items-center gap-1"
+              >
+                {isCreatingWithAI ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Generating...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4" />
+                    <span>Generate with AI</span>
+                  </>
+                )}
+              </Button>
+            </div>
+            
+            {aiSuggestion && (
+              <div className="bg-muted p-3 rounded-lg mb-4 text-sm">
+                <div className="flex items-start gap-2">
+                  <Sparkles className="h-4 w-4 mt-1 text-primary" />
+                  <div>
+                    <h5 className="font-medium mb-1">AI Suggestion</h5>
+                    <p>{aiSuggestion}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Budget Name <span className="text-destructive">*</span></Label>
+                <Input
+                  id="name"
+                  placeholder="Q2 2025 Marketing Budget"
+                  value={newBudget.name}
+                  onChange={(e) => setNewBudget({ ...newBudget, name: e.target.value })}
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="department">Department <span className="text-destructive">*</span></Label>
+                <Select 
+                  value={newBudget.department} 
+                  onValueChange={(value) => setNewBudget({ ...newBudget, department: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="operations">Operations</SelectItem>
+                    <SelectItem value="marketing">Marketing</SelectItem>
+                    <SelectItem value="sales">Sales</SelectItem>
+                    <SelectItem value="hr">Human Resources</SelectItem>
+                    <SelectItem value="it">IT</SelectItem>
+                    <SelectItem value="finance">Finance</SelectItem>
+                    <SelectItem value="product">Product Development</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="startDate">Start Date <span className="text-destructive">*</span></Label>
+                <Input
+                  id="startDate"
+                  type="date"
+                  value={newBudget.startDate}
+                  onChange={(e) => setNewBudget({ ...newBudget, startDate: e.target.value })}
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="endDate">End Date <span className="text-destructive">*</span></Label>
+                <Input
+                  id="endDate"
+                  type="date"
+                  value={newBudget.endDate}
+                  onChange={(e) => setNewBudget({ ...newBudget, endDate: e.target.value })}
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="amount">Total Amount <span className="text-destructive">*</span></Label>
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500">$</span>
+                  <Input
+                    id="amount"
+                    type="number"
+                    placeholder="25000"
+                    value={newBudget.amount}
+                    onChange={(e) => setNewBudget({ ...newBudget, amount: e.target.value })}
+                    className="pl-7"
+                    required
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="type">Budget Type <span className="text-destructive">*</span></Label>
+                <Select 
+                  value={newBudget.type} 
+                  onValueChange={(value) => setNewBudget({ ...newBudget, type: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="operational">Operational</SelectItem>
+                    <SelectItem value="capital">Capital</SelectItem>
+                    <SelectItem value="project">Project</SelectItem>
+                    <SelectItem value="periodic">Periodic</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                placeholder="Describe the purpose and scope of this budget"
+                value={newBudget.description}
+                onChange={(e) => setNewBudget({ ...newBudget, description: e.target.value })}
+                rows={3}
+              />
+            </div>
+            
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsCreateModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">Create Budget</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
