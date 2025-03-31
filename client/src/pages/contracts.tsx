@@ -195,7 +195,8 @@ export default function Contracts() {
       title: manualTitle,
       content: manualContent,
       status: "draft",
-      expiryDate: manualExpiryDate ? new Date(manualExpiryDate).toISOString() : null
+      // Convert string date to Date object for Zod validation
+      expiryDate: manualExpiryDate ? new Date(manualExpiryDate) : null
     };
     
     createContractMutation.mutate(contractData);
@@ -216,7 +217,8 @@ export default function Contracts() {
       title: previewTitle,
       content: previewContent,
       status: "draft",
-      expiryDate: endDate ? new Date(endDate).toISOString() : null
+      // Convert string date to Date object for Zod validation
+      expiryDate: endDate ? new Date(endDate) : null
     };
     
     createContractMutation.mutate(contractData);

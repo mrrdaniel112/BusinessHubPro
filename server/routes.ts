@@ -563,7 +563,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       
       if (result.success) {
-        // Update invoice status to sent
+        // Update invoice status and last email sent date
         const updatedInvoice = await storage.updateInvoice(invoiceId, {
           status: 'sent',
           lastEmailSent: new Date()
