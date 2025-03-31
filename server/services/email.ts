@@ -1,141 +1,248 @@
 import nodemailer from 'nodemailer';
+import { Contract, Invoice } from '@shared/schema';
 
-// Helper function to create transporter
-function createTransporter() {
-  // Check for Gmail configuration
-  if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
-    console.log('Using Gmail SMTP configuration');
-    return nodemailer.createTransport({
+// Configure email transporter
+let transporter: nodemailer.Transporter;
+
+export function initializeEmailService() {
+  // Check if email credentials are available
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+    console.warn('Email service credentials not found. Email functionality will be disabled.');
+    return false;
+  }
+
+  try {
+    transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
         user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_APP_PASSWORD // This should be an app password, not the regular Gmail password
-      }
+        pass: process.env.GMAIL_APP_PASSWORD,
+      },
     });
+    
+    console.log('Email service initialized successfully');
+    return true;
+  } catch (error) {
+    console.error('Failed to initialize email service:', error);
+    return false;
   }
-  
-  // Fallback to Ethereal for testing/development
-  console.log('Using Ethereal test mail configuration');
-  return nodemailer.createTransport({
-    host: 'smtp.ethereal.email',
-    port: 587,
-    secure: false,
-    auth: {
-      user: process.env.EMAIL_USER || 'demo_user@example.com',
-      pass: process.env.EMAIL_PASSWORD || 'demo_password'
-    }
+}
+
+export function isEmailServiceAvailable(): boolean {
+  return !!transporter;
+}
+
+interface SendEmailOptions {
+  to: string;
+  subject: string;
+  text?: string;
+  html?: string;
+  attachments?: { 
+    filename: string;
+    content?: string | Buffer;
+    path?: string;
+    contentType?: string;
+  }[];
+}
+
+export async function sendEmail(options: SendEmailOptions): Promise<boolean> {
+  if (!isEmailServiceAvailable()) {
+    console.error('Email service is not available');
+    return false;
+  }
+
+  try {
+    const mailOptions = {
+      from: process.env.GMAIL_USER,
+      to: options.to,
+      subject: options.subject,
+      text: options.text || '',
+      html: options.html || '',
+      attachments: options.attachments || [],
+    };
+
+    await transporter.sendMail(mailOptions);
+    return true;
+  } catch (error) {
+    console.error('Failed to send email:', error);
+    return false;
+  }
+}
+
+export async function sendContractEmail(contract: Contract, recipientEmail: string): Promise<boolean> {
+  if (!isEmailServiceAvailable()) {
+    console.error('Email service is not available');
+    return false;
+  }
+
+  // Format the contract date
+  const formatDate = (date: Date | string | null) => {
+    if (!date) return 'N/A';
+    const d = new Date(date);
+    return d.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
+
+  // Create HTML for the contract
+  const contractHtml = `
+    <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <h1 style="color: #444; margin-bottom: 5px;">${contract.title}</h1>
+        <p style="color: #666; font-size: 14px;">Contract #${contract.id}</p>
+      </div>
+      
+      <div style="margin-bottom: 20px; padding: 15px; background-color: #f9f9f9; border-radius: 4px;">
+        <h3 style="margin-top: 0; color: #444;">Contract Details</h3>
+        <p><strong>Client:</strong> ${contract.clientName}</p>
+        ${contract.vendorName ? `<p><strong>Vendor:</strong> ${contract.vendorName}</p>` : ''}
+        ${contract.startDate ? `<p><strong>Start Date:</strong> ${formatDate(contract.startDate)}</p>` : ''}
+        ${contract.expiryDate ? `<p><strong>Expiry Date:</strong> ${formatDate(contract.expiryDate)}</p>` : ''}
+        ${contract.value ? `<p><strong>Contract Value:</strong> $${parseFloat(contract.value as string).toLocaleString()}</p>` : ''}
+      </div>
+      
+      <div style="margin-bottom: 20px;">
+        <h3 style="color: #444;">Contract Content</h3>
+        <div style="white-space: pre-line; color: #333; line-height: 1.5;">
+          ${contract.content}
+        </div>
+      </div>
+      
+      <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+        <p style="color: #666; font-size: 13px;">
+          This contract was sent via the Business Platform. Please review the contract and respond accordingly.
+        </p>
+      </div>
+    </div>
+  `;
+
+  return await sendEmail({
+    to: recipientEmail,
+    subject: `Contract: ${contract.title}`,
+    html: contractHtml,
   });
 }
 
-// Create the transporter object
-const transporter = createTransporter();
+interface InvoiceEmailResult {
+  success: boolean;
+  error?: any;
+}
 
-/**
- * Send an invoice email
- * @param to Email address to send to
- * @param invoiceNumber The invoice number
- * @param clientName The client name
- * @param amount The total amount
- * @param issueDate The invoice issue date
- * @param dueDate The invoice due date
- * @param items Optional invoice line items
- * @returns Promise with send info
- */
 export async function sendInvoiceEmail(
-  to: string,
+  recipientEmail: string,
   invoiceNumber: string,
   clientName: string,
   amount: number | string,
   issueDate: Date | string,
   dueDate: Date | string,
-  items?: Array<{ description: string, quantity: number, price: number }>
-): Promise<{ success: boolean, info?: any, error?: any }> {
+  items: any[] = []
+): Promise<InvoiceEmailResult> {
+  if (!isEmailServiceAvailable()) {
+    console.error('Email service is not available');
+    return { success: false, error: 'Email service not available' };
+  }
+
   try {
-    // Check if email configuration is available
-    if (!process.env.GMAIL_USER && !process.env.GMAIL_APP_PASSWORD && 
-        !process.env.EMAIL_USER && !process.env.EMAIL_PASSWORD) {
-      console.error('Email configuration missing. Set GMAIL_USER and GMAIL_APP_PASSWORD or EMAIL_USER and EMAIL_PASSWORD.');
-      return { 
-        success: false, 
-        error: new Error('Email configuration missing. Please configure email credentials in the environment.') 
-      };
-    }
-    
-    // Format dates if needed
-    const formattedIssueDate = issueDate instanceof Date 
-      ? issueDate.toLocaleDateString()
-      : new Date(issueDate).toLocaleDateString();
-    
-    const formattedDueDate = dueDate instanceof Date 
-      ? dueDate.toLocaleDateString()
-      : new Date(dueDate).toLocaleDateString();
-    
-    // Generate HTML for items if provided
+    // Format dates
+    const formatDate = (date: Date | string) => {
+      const d = new Date(date);
+      return d.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+    };
+
+    // Format currency
+    const formatCurrency = (value: number | string) => {
+      const numValue = typeof value === 'string' ? parseFloat(value) : value;
+      return numValue.toLocaleString('en-US', {
+        style: 'currency',
+        currency: 'USD',
+      });
+    };
+
+    // Create line items HTML
     let itemsHtml = '';
     if (items && items.length > 0) {
       itemsHtml = `
-        <h3>Invoice Items:</h3>
-        <table border="1" cellpadding="5" style="border-collapse: collapse;">
-          <tr>
-            <th align="left">Description</th>
-            <th align="right">Quantity</th>
-            <th align="right">Price</th>
-            <th align="right">Total</th>
-          </tr>
-          ${items.map(item => {
-            // Safe handling of values
-            const price = typeof item.price === 'number' ? item.price : 0;
-            const quantity = typeof item.quantity === 'number' ? item.quantity : 0;
-            
-            return `
+        <table style="width: 100%; border-collapse: collapse; margin-top: 20px; margin-bottom: 20px;">
+          <thead>
+            <tr style="background-color: #f3f4f6;">
+              <th style="padding: 10px; text-align: left; border-bottom: 1px solid #e5e7eb;">Description</th>
+              <th style="padding: 10px; text-align: right; border-bottom: 1px solid #e5e7eb;">Quantity</th>
+              <th style="padding: 10px; text-align: right; border-bottom: 1px solid #e5e7eb;">Price</th>
+              <th style="padding: 10px; text-align: right; border-bottom: 1px solid #e5e7eb;">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${items.map(item => `
               <tr>
-                <td>${item.description || 'Item'}</td>
-                <td align="right">${quantity}</td>
-                <td align="right">$${price.toFixed(2)}</td>
-                <td align="right">$${(quantity * price).toFixed(2)}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">${item.description}</td>
+                <td style="padding: 10px; text-align: right; border-bottom: 1px solid #e5e7eb;">${item.quantity}</td>
+                <td style="padding: 10px; text-align: right; border-bottom: 1px solid #e5e7eb;">${formatCurrency(item.price)}</td>
+                <td style="padding: 10px; text-align: right; border-bottom: 1px solid #e5e7eb;">${formatCurrency(item.quantity * item.price)}</td>
               </tr>
-            `;
-          }).join('')}
+            `).join('')}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="3" style="padding: 10px; text-align: right; font-weight: bold;">Total:</td>
+              <td style="padding: 10px; text-align: right; font-weight: bold;">${formatCurrency(amount)}</td>
+            </tr>
+          </tfoot>
         </table>
       `;
     }
-    
-    // Create the email HTML
-    const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2>Invoice #${invoiceNumber}</h2>
-        <p><strong>Client:</strong> ${clientName}</p>
-        <p><strong>Amount:</strong> $${typeof amount === 'number' ? amount.toFixed(2) : amount}</p>
-        <p><strong>Issue Date:</strong> ${formattedIssueDate}</p>
-        <p><strong>Due Date:</strong> ${formattedDueDate}</p>
+
+    // Create HTML for the invoice
+    const invoiceHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
+        <div style="text-align: center; margin-bottom: 20px;">
+          <h1 style="color: #444; margin-bottom: 5px;">Invoice #${invoiceNumber}</h1>
+          <p style="color: #666; font-size: 14px;">For ${clientName}</p>
+        </div>
+        
+        <div style="margin-bottom: 20px; padding: 15px; background-color: #f9f9f9; border-radius: 4px;">
+          <h3 style="margin-top: 0; color: #444;">Invoice Details</h3>
+          <p><strong>Invoice Date:</strong> ${formatDate(issueDate)}</p>
+          <p><strong>Due Date:</strong> ${formatDate(dueDate)}</p>
+          <p><strong>Amount Due:</strong> ${formatCurrency(amount)}</p>
+        </div>
+        
         ${itemsHtml}
-        <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
+        
+        <div style="margin-top: 20px; padding: 15px; background-color: #f9f9f9; border-radius: 4px;">
+          <h3 style="margin-top: 0; color: #444;">Payment Instructions</h3>
+          <p>Please make payment by the due date to avoid any late fees.</p>
           <p>Thank you for your business!</p>
+        </div>
+        
+        <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+          <p style="color: #666; font-size: 13px;">
+            This invoice was sent via the Business Platform.
+          </p>
         </div>
       </div>
     `;
-    
-    // Validate email address
-    if (!to || !to.includes('@')) {
-      console.error('Invalid email address:', to);
-      return { 
-        success: false, 
-        error: new Error('Invalid recipient email address') 
-      };
-    }
-    
-    // Send the email
-    const info = await transporter.sendMail({
-      from: '"Business Platform" <noreply@businessplatform.com>',
-      to,
+
+    const emailSent = await sendEmail({
+      to: recipientEmail,
       subject: `Invoice #${invoiceNumber} for ${clientName}`,
-      html
+      html: invoiceHtml,
     });
-    
-    console.log('Email sent successfully:', info.messageId);
-    return { success: true, info };
+
+    return {
+      success: emailSent,
+      error: emailSent ? undefined : 'Failed to send email'
+    };
   } catch (error) {
-    console.error('Error sending email:', error);
-    return { success: false, error };
+    console.error('Failed to send invoice email:', error);
+    return {
+      success: false,
+      error
+    };
   }
 }

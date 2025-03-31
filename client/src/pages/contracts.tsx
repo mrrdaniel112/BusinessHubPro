@@ -12,6 +12,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { AlertTriangle, CheckCircle, Mail, RefreshCw, Info } from "lucide-react";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 
 
@@ -24,6 +27,12 @@ export default function Contracts() {
   const [contractTab, setContractTab] = useState("manual");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContract, setGeneratedContract] = useState<any>(null);
+  
+  // Email dialog state
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
+  const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
+  const [recipientEmail, setRecipientEmail] = useState("");
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
   
   // Contract form state - Manual creation
   const [manualClientName, setManualClientName] = useState("");
@@ -54,6 +63,46 @@ export default function Contracts() {
 
   const { data: contracts = [], isLoading } = useQuery<Contract[]>({
     queryKey: ['/api/contracts'],
+  });
+  
+  // Email sending mutation
+  const sendEmailMutation = useMutation({
+    mutationFn: async (data: { contractId: number, recipientEmail: string }) => {
+      const res = await apiRequest(
+        "POST", 
+        `/api/contracts/${data.contractId}/send-email`, 
+        { recipientEmail: data.recipientEmail }
+      );
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/contracts'] });
+      toast({
+        title: "Email sent successfully",
+        description: "The contract has been sent to the recipient.",
+      });
+      
+      // Close the email dialog
+      setIsEmailDialogOpen(false);
+      setRecipientEmail("");
+      setSelectedContract(null);
+    },
+    onError: (error: any) => {
+      // Check if error indicates missing credentials
+      if (error.response?.data?.missingCredentials) {
+        toast({
+          title: "Email service not configured",
+          description: "Please set up email credentials in environment variables.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Failed to send email",
+          description: error.message || "An error occurred while sending the email",
+          variant: "destructive",
+        });
+      }
+    }
   });
   
   // Contract creation mutation
@@ -268,8 +317,91 @@ export default function Contracts() {
 
   const statusCounts = getContractStatusCounts();
 
+  // Handle email send
+  const handleSendEmail = () => {
+    if (!selectedContract || !recipientEmail) {
+      toast({
+        title: "Missing information",
+        description: "Please enter a recipient email address",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsSendingEmail(true);
+    sendEmailMutation.mutate({
+      contractId: selectedContract.id,
+      recipientEmail
+    });
+  };
+
   return (
     <div>
+      {/* Email Dialog */}
+      <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Send Contract via Email</DialogTitle>
+            <DialogDescription>
+              Enter the recipient's email address to send this contract.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedContract && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="contract-details">Contract Details</Label>
+                <div className="text-sm bg-gray-50 p-3 rounded border">
+                  <p><b>Title:</b> {selectedContract.title}</p>
+                  <p><b>Client:</b> {selectedContract.clientName}</p>
+                  <p><b>Status:</b> {selectedContract.status}</p>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="recipient-email">Recipient Email</Label>
+                <Input 
+                  id="recipient-email" 
+                  type="email" 
+                  placeholder="client@example.com" 
+                  value={recipientEmail}
+                  onChange={(e) => setRecipientEmail(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter className="sm:justify-between">
+            <Button 
+              type="button" 
+              variant="secondary" 
+              onClick={() => {
+                setIsEmailDialogOpen(false);
+                setRecipientEmail("");
+                setSelectedContract(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="button" 
+              onClick={handleSendEmail}
+              disabled={isSendingEmail || sendEmailMutation.isPending}
+            >
+              {isSendingEmail || sendEmailMutation.isPending ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> Sending...
+                </>
+              ) : (
+                <>
+                  <Mail className="h-4 w-4 mr-2" /> Send Email
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    
       {/* Page header */}
       <div className="py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0">
@@ -708,17 +840,39 @@ export default function Contracts() {
                             <span className="font-medium">Expires:</span> {formatDate(contract.expiryDate)}
                           </div>
                         )}
+                        {contract.lastEmailSent && (
+                          <div className="text-sm text-gray-500">
+                            <span className="font-medium">Last Sent:</span> {formatDate(contract.lastEmailSent)}
+                          </div>
+                        )}
+                        {contract.vendorName && (
+                          <div className="text-sm text-gray-500">
+                            <span className="font-medium">Vendor:</span> {contract.vendorName}
+                          </div>
+                        )}
                         <div className="mt-4 line-clamp-2 text-sm text-gray-700">
                           {contract.content}
                         </div>
                       </div>
                     </CardContent>
                     <CardFooter className="flex justify-between p-4 pt-0 border-t mt-4">
-                      <Button variant="ghost" size="sm">
-                        <i className="ri-eye-line mr-1"></i> View
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        <i className="ri-edit-line mr-1"></i> Edit
+                      <div className="flex gap-2">
+                        <Button variant="ghost" size="sm">
+                          <i className="ri-eye-line mr-1"></i> View
+                        </Button>
+                        <Button variant="ghost" size="sm">
+                          <i className="ri-edit-line mr-1"></i> Edit
+                        </Button>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => {
+                          setSelectedContract(contract);
+                          setIsEmailDialogOpen(true);
+                        }}
+                      >
+                        <Mail className="h-4 w-4 mr-1" /> Send
                       </Button>
                     </CardFooter>
                   </Card>

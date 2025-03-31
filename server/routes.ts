@@ -48,6 +48,7 @@ import {
 } from "./openai";
 import { NotificationOptions, sendInvoiceNotifications } from "./services/notification";
 import { UserRole, requireAdmin, hasPermission, Resource, PermissionScope } from "./services/rbac";
+import { initializeEmailService, isEmailServiceAvailable, sendContractEmail } from "./services/email";
 
 import session from "express-session";
 
@@ -144,6 +145,8 @@ const sampleNotifications = [
 ];
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Initialize email service
+  initializeEmailService();
   // User routes
   app.post("/api/auth/login", async (req, res) => {
     try {
@@ -464,6 +467,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedContract = await storage.updateContract(contractId, req.body);
       return res.json(updatedContract);
     } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+  
+  // Send contract via email
+  app.post("/api/contracts/:id/send-email", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const contractId = parseInt(req.params.id);
+      const { recipientEmail } = req.body;
+      
+      if (!recipientEmail) {
+        return res.status(400).json({ message: "Recipient email is required" });
+      }
+      
+      // Check if email service is available
+      if (!isEmailServiceAvailable()) {
+        return res.status(503).json({ 
+          message: "Email service is not available. Please set up email credentials in environment variables.",
+          missingCredentials: true
+        });
+      }
+      
+      const existingContract = await storage.getContractById(contractId);
+      if (!existingContract || existingContract.userId !== userId) {
+        return res.status(404).json({ message: "Contract not found" });
+      }
+      
+      // Send the email
+      const emailSent = await sendContractEmail(existingContract, recipientEmail);
+      
+      if (emailSent) {
+        // Update contract status and last email sent date
+        const updatedContract = await storage.updateContract(contractId, {
+          status: 'sent',
+          lastEmailSent: new Date()
+        });
+        
+        return res.json({ 
+          success: true,
+          message: "Contract has been sent via email",
+          contract: updatedContract
+        });
+      } else {
+        return res.status(500).json({ message: "Failed to send email. Please try again." });
+      }
+    } catch (error) {
+      console.error("Error sending contract email:", error);
       return res.status(500).json({ message: "Server error" });
     }
   });

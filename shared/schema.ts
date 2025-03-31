@@ -74,20 +74,53 @@ export const contracts = pgTable("contracts", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   clientName: text("client_name").notNull(),
+  clientEmail: text("client_email"),
+  clientPhone: text("client_phone"),
+  clientAddress: text("client_address"),
+  vendorName: text("vendor_name"),
+  vendorAddress: text("vendor_address"),
+  vendorEmail: text("vendor_email"),
+  vendorPhone: text("vendor_phone"),
   title: text("title").notNull(),
   content: text("content").notNull(),
   status: text("status").notNull(), // 'draft', 'sent', 'signed', 'expired'
+  category: text("category"), // 'service', 'sales', 'employment', 'consulting', etc.
+  value: numeric("value"), // Contract monetary value
+  startDate: timestamp("start_date"),
+  signatureDate: timestamp("signature_date"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   expiryDate: timestamp("expiry_date"),
+  terms: text("terms"), // JSON string of key terms
+  legalClauses: text("legal_clauses"), // JSON string of legal clauses
+  reminderSent: boolean("reminder_sent").default(false),
+  lastEmailSent: timestamp("last_email_sent"),
+  notes: text("notes"),
 });
 
-export const insertContractSchema = createInsertSchema(contracts).pick({
-  userId: true,
-  clientName: true,
-  title: true,
-  content: true,
-  status: true,
-  expiryDate: true,
+// Create a custom contract schema with flexible date handling
+export const insertContractSchema = z.object({
+  userId: z.number(),
+  clientName: z.string(),
+  clientEmail: z.string().email().optional().nullable(),
+  clientPhone: z.string().optional().nullable(),
+  clientAddress: z.string().optional().nullable(),
+  vendorName: z.string().optional().nullable(),
+  vendorAddress: z.string().optional().nullable(),
+  vendorEmail: z.string().email().optional().nullable(),
+  vendorPhone: z.string().optional().nullable(),
+  title: z.string(),
+  content: z.string(),
+  status: z.string(),
+  category: z.string().optional().nullable(),
+  value: z.string().or(z.number()).optional().nullable().transform(val => val ? val.toString() : null),
+  startDate: z.date().optional().nullable(),
+  signatureDate: z.date().optional().nullable(),
+  expiryDate: z.date().optional().nullable(),
+  terms: z.string().optional().nullable(),
+  legalClauses: z.string().optional().nullable(),
+  reminderSent: z.boolean().optional().default(false),
+  lastEmailSent: z.date().optional().nullable(),
+  notes: z.string().optional().nullable(),
 });
 
 // Receipt schema
