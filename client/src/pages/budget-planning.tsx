@@ -159,7 +159,7 @@ export default function BudgetPlanning() {
     e.preventDefault();
     
     // Input validation
-    if (!newBudget.name || !newBudget.amount || !newBudget.startDate || !newBudget.endDate) {
+    if (!newBudget.name || !newBudget.amount || !newBudget.startDate || (newBudget.hasEndDate && !newBudget.endDate)) {
       toast({
         title: "Missing Fields",
         description: "Please fill in all required fields.",

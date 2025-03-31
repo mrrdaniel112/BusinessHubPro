@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useAuth } from "@/context/auth-context";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,11 +8,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { UploadCloud, X } from "lucide-react";
 import { format } from "date-fns";
 
 export default function Profile() {
   const { user } = useAuth();
   const [editMode, setEditMode] = useState(false);
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Feedback state
+  const [feedback, setFeedback] = useState('');
+  const [feedbackType, setFeedbackType] = useState('suggestion');
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [uploadedFilePreview, setUploadedFilePreview] = useState<string[]>([]);
   
   // Calculate trial end date
   const trialEndDate = user?.trialEndsAt ? format(new Date(user.trialEndsAt), 'MMMM d, yyyy') : 'Not applicable';
@@ -39,6 +50,67 @@ export default function Profile() {
       default:
         return null;
     }
+  };
+  
+  // Handle file upload
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+    
+    const newFiles: File[] = [];
+    const newPreviews: string[] = [];
+    
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (file.type.startsWith('image/')) {
+        newFiles.push(file);
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          if (e.target?.result) {
+            newPreviews.push(e.target.result as string);
+            setUploadedFilePreview([...uploadedFilePreview, ...newPreviews]);
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+    
+    setUploadedFiles([...uploadedFiles, ...newFiles]);
+  };
+  
+  // Remove uploaded file
+  const removeFile = (index: number) => {
+    const newFiles = [...uploadedFiles];
+    const newPreviews = [...uploadedFilePreview];
+    newFiles.splice(index, 1);
+    newPreviews.splice(index, 1);
+    setUploadedFiles(newFiles);
+    setUploadedFilePreview(newPreviews);
+  };
+  
+  // Submit feedback
+  const submitFeedback = async () => {
+    if (!feedback.trim()) {
+      toast({
+        title: "Missing feedback",
+        description: "Please provide some feedback before submitting.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Here you would normally upload the files to a server and send the feedback
+    // For now, we'll just show a success message
+    toast({
+      title: "Feedback Submitted",
+      description: "Thank you for your feedback! We'll review it soon.",
+    });
+    
+    // Reset form
+    setFeedback('');
+    setFeedbackType('suggestion');
+    setUploadedFiles([]);
+    setUploadedFilePreview([]);
   };
 
   return (
@@ -81,6 +153,93 @@ export default function Profile() {
             </CardContent>
             <CardFooter>
               <Button variant="outline" className="w-full">Change Avatar</Button>
+            </CardFooter>
+          </Card>
+          
+          {/* Feedback Card */}
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle>Provide Feedback</CardTitle>
+              <CardDescription>
+                Help us improve by sharing your thoughts or reporting issues
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="feedback-type">Feedback Type</Label>
+                <select 
+                  id="feedback-type"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={feedbackType}
+                  onChange={(e) => setFeedbackType(e.target.value)}
+                >
+                  <option value="suggestion">Suggestion</option>
+                  <option value="bug">Bug Report</option>
+                  <option value="feature">Feature Request</option>
+                  <option value="criticism">Criticism</option>
+                </select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="feedback-text">Your Feedback</Label>
+                <Textarea 
+                  id="feedback-text"
+                  placeholder={feedbackType === 'bug' ? 
+                    "Please describe the issue in detail, including steps to reproduce..." : 
+                    "Tell us what you think or what you'd like to see improved..."
+                  }
+                  value={feedback}
+                  onChange={(e) => setFeedback(e.target.value)}
+                  rows={5}
+                />
+              </div>
+              
+              <div>
+                <Label className="block mb-2">Attach Screenshots (Optional)</Label>
+                <div
+                  className="border-2 border-dashed rounded-md p-4 text-center cursor-pointer hover:bg-muted/50 transition-colors"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <UploadCloud className="mx-auto h-6 w-6 text-muted-foreground" />
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Click to upload screenshot
+                  </p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                    multiple
+                  />
+                </div>
+                
+                {uploadedFilePreview.length > 0 && (
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    {uploadedFilePreview.map((preview, index) => (
+                      <div key={index} className="relative">
+                        <img 
+                          src={preview} 
+                          alt={`Preview ${index}`} 
+                          className="w-full h-auto rounded-md object-cover aspect-video"
+                        />
+                        <button
+                          type="button"
+                          className="absolute top-1 right-1 bg-black/70 rounded-full p-1"
+                          onClick={() => removeFile(index)}
+                        >
+                          <X className="h-4 w-4 text-white" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button onClick={submitFeedback} className="w-full">
+                Submit Feedback
+              </Button>
             </CardFooter>
           </Card>
         </div>
