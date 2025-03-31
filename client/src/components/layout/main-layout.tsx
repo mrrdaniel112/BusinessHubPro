@@ -5,6 +5,7 @@ import MobileNav from "./mobile-nav";
 import { NotificationCenter } from "@/components/notifications/notification-center";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/auth-context";
+import businessHubProLogo from "@assets/2 business hub pro 2logo .png";
 
 type MainLayoutProps = {
   children: React.ReactNode;
@@ -40,7 +41,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
 
       {/* Mobile menu and content */}
       <div className="flex flex-col flex-1 overflow-hidden w-full">
-        <div className="relative z-10 flex-shrink-0 flex h-16 bg-white border-b border-gray-200 md:hidden sticky top-0 pt-safe">
+        <div className="relative z-10 flex-shrink-0 flex h-16 bg-white border-b border-gray-200 md:hidden sticky top-0 pt-safe shadow-sm">
           <button
             type="button"
             className="px-4 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500 touch-target"
@@ -53,7 +54,9 @@ export default function MainLayout({ children }: MainLayoutProps) {
           </button>
           <div className="flex-1 flex justify-center px-2">
             <div className="flex-shrink-0 flex items-center">
-              <span className="text-lg font-semibold text-primary-600 truncate mobile-text-adjust">Business Platform</span>
+              <div className="bg-white p-1.5 rounded-lg shadow-sm">
+                <img src={businessHubProLogo} alt="Business Hub Pro" className="h-7 object-contain" style={{maxWidth: "100%"}} />
+              </div>
             </div>
           </div>
           <div className="flex items-center space-x-2 pr-safe">

@@ -136,7 +136,9 @@ export default function Sidebar() {
       <div className="flex flex-col w-64">
         <div className="flex flex-col flex-grow pt-5 pb-4 overflow-y-auto bg-white border-r">
           <div className="flex items-center flex-shrink-0 px-4 mb-5">
-            <img src={businessHubProLogo} alt="Business Hub Pro" className="h-10" />
+            <div className="bg-white p-2 rounded-lg shadow-sm">
+              <img src={businessHubProLogo} alt="Business Hub Pro" className="h-10 object-contain" style={{maxWidth: "100%"}} />
+            </div>
           </div>
           
           {/* User profile section at top */}
