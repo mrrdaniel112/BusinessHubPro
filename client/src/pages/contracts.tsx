@@ -47,6 +47,9 @@ export default function Contracts() {
   const [previewTitle, setPreviewTitle] = useState("");
   const [previewContent, setPreviewContent] = useState("");
   
+  // Form submission state
+  const [isFormSubmitted, setIsFormSubmitted] = useState(false);
+  
   const { toast } = useToast();
 
   const { data: contracts = [], isLoading } = useQuery<Contract[]>({
@@ -65,7 +68,12 @@ export default function Contracts() {
         title: "Contract created",
         description: "Your contract has been created successfully",
       });
+      
+      // Mark as submitted, then close dialog and reset form
+      setIsFormSubmitted(true);
       setIsDialogOpen(false);
+      
+      // Form will be reset only if isFormSubmitted is true
       resetForm();
     },
     onError: (error: any) => {
@@ -174,31 +182,42 @@ export default function Contracts() {
   };
   
   const resetForm = () => {
-    // Reset manual form
-    setManualClientName("");
-    setManualTitle("");
-    setManualExpiryDate("");
-    setManualContent("");
-    
-    // Reset AI form
-    setAiClientName("");
-    setProjectType("");
-    setDescription("");
-    setScope("");
-    setClientAddress("");
-    setVendorName("");
-    setVendorAddress("");
-    setPaymentTerms("");
-    setStartDate("");
-    setEndDate("");
-    
-    // Reset preview
-    setPreviewTitle("");
-    setPreviewContent("");
-    setGeneratedContract(null);
-    
-    // Reset tab
-    setContractTab("manual");
+    // Only reset if form was actually submitted and saved successfully
+    if (isFormSubmitted) {
+      // Reset manual form
+      setManualClientName("");
+      setManualTitle("");
+      setManualExpiryDate("");
+      setManualContent("");
+      
+      // Reset AI form
+      setAiClientName("");
+      setProjectType("");
+      setDescription("");
+      setScope("");
+      setClientAddress("");
+      setVendorName("");
+      setVendorAddress("");
+      setPaymentTerms("");
+      setStartDate("");
+      setEndDate("");
+      
+      // Reset preview
+      setPreviewTitle("");
+      setPreviewContent("");
+      setGeneratedContract(null);
+      
+      // Reset tab
+      setContractTab("manual");
+      
+      // Reset form submission state
+      setIsFormSubmitted(false);
+      
+      toast({
+        title: "Form reset",
+        description: "The form has been reset after successful submission",
+      });
+    }
   };
 
   const filteredContracts = contracts.filter(contract => {
@@ -458,7 +477,10 @@ export default function Contracts() {
                     
                     <Button 
                       className="mt-4" 
-                      onClick={generateContractTemplate}
+                      onClick={(e) => {
+                        e.preventDefault(); // Prevent form submission
+                        generateContractTemplate();
+                      }}
                       disabled={isGenerating}
                     >
                       {isGenerating ? (
@@ -542,9 +564,24 @@ export default function Contracts() {
               </Tabs>
               
               <DialogFooter>
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
                 <Button 
-                  onClick={handleCreateContract}
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => {
+                    // Don't reset the form immediately - save the current state
+                    setIsFormSubmitted(false);
+                    setIsDialogOpen(false);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault(); // Prevent any default form submission
+                    setIsFormSubmitted(true);
+                    handleCreateContract();
+                  }}
                   disabled={createContractMutation.isPending}
                 >
                   {createContractMutation.isPending ? (
