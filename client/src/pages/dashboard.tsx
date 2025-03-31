@@ -107,11 +107,17 @@ export default function Dashboard() {
                   setProfileMenuOpen(!profileMenuOpen);
                 }}
               >
-                <img 
-                  className="h-8 w-8 rounded-full" 
-                  src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" 
-                  alt="Profile" 
-                />
+                {user?.profilePicture ? (
+                  <img 
+                    className="h-8 w-8 rounded-full object-cover" 
+                    src={user.profilePicture} 
+                    alt="Profile" 
+                  />
+                ) : (
+                  <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-semibold text-xs">
+                    {user?.name ? user.name.substring(0, 2).toUpperCase() : "U"}
+                  </div>
+                )}
                 <span className="ml-2 text-sm font-medium text-gray-700">
                   {user?.name || "Premium User"}
                 </span>
@@ -128,8 +134,23 @@ export default function Dashboard() {
                 >
                   {/* User info section */}
                   <div className="px-4 py-3">
-                    <p className="text-sm font-medium text-gray-900">{user?.name || "Premium User"}</p>
-                    <p className="text-xs text-gray-500 truncate">{user?.email || "premium@example.com"}</p>
+                    <div className="flex items-center mb-2">
+                      {user?.profilePicture ? (
+                        <img 
+                          className="h-10 w-10 rounded-full object-cover mr-3" 
+                          src={user.profilePicture} 
+                          alt="Profile" 
+                        />
+                      ) : (
+                        <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-semibold mr-3">
+                          {user?.name ? user.name.substring(0, 2).toUpperCase() : "U"}
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{user?.name || "Premium User"}</p>
+                        <p className="text-xs text-gray-500 truncate">{user?.email || "premium@example.com"}</p>
+                      </div>
+                    </div>
                   </div>
                   
                   {/* Menu links */}

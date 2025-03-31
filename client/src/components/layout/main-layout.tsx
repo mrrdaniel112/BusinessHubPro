@@ -4,6 +4,7 @@ import Sidebar from "./sidebar";
 import MobileNav from "./mobile-nav";
 import { NotificationCenter } from "@/components/notifications/notification-center";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/auth-context";
 
 type MainLayoutProps = {
   children: React.ReactNode;
@@ -12,6 +13,7 @@ type MainLayoutProps = {
 export default function MainLayout({ children }: MainLayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [location] = useLocation();
+  const { user } = useAuth();
 
   // Function to detect iOS
   const isIOS = () => {
@@ -69,11 +71,17 @@ export default function MainLayout({ children }: MainLayoutProps) {
                   aria-label="Profile menu"
                   style={{ minHeight: '44px', minWidth: '44px' }} /* iOS accessibility standards */
                 >
-                  <img
-                    className="h-8 w-8 rounded-full"
-                    src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-                    alt="Profile"
-                  />
+                  {user?.profilePicture ? (
+                    <img 
+                      className="h-8 w-8 rounded-full object-cover" 
+                      src={user.profilePicture} 
+                      alt="Profile" 
+                    />
+                  ) : (
+                    <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-semibold text-xs">
+                      {user?.name ? user.name.substring(0, 2).toUpperCase() : "U"}
+                    </div>
+                  )}
                 </button>
               </div>
             </div>
