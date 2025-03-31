@@ -43,7 +43,8 @@ import {
   extractReceiptData, 
   generateInvoiceDetails,
   generateInventoryRecommendations,
-  generateSupplyRecommendations
+  generateSupplyRecommendations,
+  generateContractTemplate
 } from "./openai";
 import { NotificationOptions, sendInvoiceNotifications } from "./services/notification";
 import { UserRole, requireAdmin, hasPermission, Resource, PermissionScope } from "./services/rbac";
@@ -463,6 +464,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedContract = await storage.updateContract(contractId, req.body);
       return res.json(updatedContract);
     } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+  
+  // AI-powered contract template generation
+  app.post("/api/generate-contract-template", requireAuth, async (req, res) => {
+    try {
+      const { clientName, projectType, description, scope } = req.body;
+      
+      if (!clientName || !projectType || !description) {
+        return res.status(400).json({ 
+          message: "Client name, project type, and description are required" 
+        });
+      }
+      
+      try {
+        // Call OpenAI to generate contract template
+        const contractTemplate = await generateContractTemplate(
+          clientName,
+          projectType,
+          description,
+          scope
+        );
+        
+        return res.json(contractTemplate);
+      } catch (aiError: any) {
+        console.error("Error generating contract template with AI:", aiError);
+        return res.status(500).json({ 
+          message: "Failed to generate contract template", 
+          error: aiError?.message || "Unknown error" 
+        });
+      }
+    } catch (error) {
+      console.error("Server error in contract template generation:", error);
       return res.status(500).json({ message: "Server error" });
     }
   });

@@ -841,3 +841,87 @@ export async function generateSupplyRecommendations(
     };
   }
 }
+
+/**
+ * Generates a detailed contract template based on client and project information
+ */
+export async function generateContractTemplate(
+  clientName: string,
+  projectType: string,
+  description: string,
+  scope?: string
+): Promise<{
+  title: string;
+  content: string;
+  terms: string[];
+  legalClauses: string[];
+  deliverables: string[];
+  timeline: { phase: string; description: string; duration: string }[];
+}> {
+  if (!isOpenAIConfigured()) {
+    return {
+      title: "Professional Services Agreement",
+      content: "This is a sample contract template. Enable OpenAI integration for actual intelligent contract generation.",
+      terms: ["Payment due within 30 days of invoice", "Services delivered as described in project scope"],
+      legalClauses: ["Limitation of Liability", "Intellectual Property Rights"],
+      deliverables: ["Project completion according to specifications"],
+      timeline: [
+        { phase: "Project Kickoff", description: "Initial planning and requirements gathering", duration: "2 weeks" }
+      ]
+    };
+  }
+  
+  try {
+    const prompt = `
+      You are a business contract expert. Create a detailed professional contract template for the following:
+      
+      Client: ${clientName}
+      Project Type: ${projectType}
+      Description: ${description}
+      ${scope ? `Scope: ${scope}` : ''}
+      
+      Please format your response as JSON with the following structure:
+      {
+        "title": "Contract title appropriate for this type of work",
+        "content": "Full contract text with proper legal language, sections, and formatting",
+        "terms": [Array of key payment and service terms as strings],
+        "legalClauses": [Array of important legal clauses included as strings],
+        "deliverables": [Array of specific deliverables promised in the contract],
+        "timeline": [Array of objects with {phase, description, duration}]
+      }
+      
+      Make the contract comprehensive, professional, and protective of both parties' interests.
+      Include standard legal language, precise deliverable descriptions, clear payment terms,
+      well-defined scope, and appropriate disclaimers.
+    `;
+    
+    const response = await openai.chat.completions.create({
+      model: getAIModel(),
+      messages: [
+        { role: "system", content: "You are a contracts and legal expert who drafts professional business contracts." },
+        { role: "user", content: prompt }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.7,
+    });
+    
+    const content = response.choices[0].message.content;
+    if (!content) {
+      throw new Error("No content returned from OpenAI");
+    }
+    
+    return JSON.parse(content);
+  } catch (error) {
+    console.error("Error generating contract template:", error);
+    return {
+      title: "Professional Services Agreement",
+      content: "Error occurred while generating contract. Please try again later.",
+      terms: ["Payment due within 30 days of invoice"],
+      legalClauses: ["Limitation of Liability"],
+      deliverables: ["Project completion according to specifications"],
+      timeline: [
+        { phase: "Project Kickoff", description: "Initial planning", duration: "2 weeks" }
+      ]
+    };
+  }
+}

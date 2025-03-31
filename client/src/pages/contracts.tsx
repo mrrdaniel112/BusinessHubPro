@@ -1,11 +1,19 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Contract } from "@shared/schema";
+import { Contract, insertContractSchema } from "@shared/schema";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+
+
 
 export default function Contracts() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -43,7 +51,7 @@ export default function Contracts() {
       case 'sent':
         return <Badge variant="secondary">Sent</Badge>;
       case 'signed':
-        return <Badge variant="success" className="bg-success-100 text-success-800 hover:bg-success-100">Signed</Badge>;
+        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Signed</Badge>;
       case 'expired':
         return <Badge variant="destructive">Expired</Badge>;
       default:
@@ -69,9 +77,121 @@ export default function Contracts() {
       <div className="py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0">
           <h1 className="text-2xl font-semibold text-gray-900">Contract Management</h1>
-          <Button>
-            <i className="ri-file-add-line mr-1"></i> New Contract
-          </Button>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button>
+                <i className="ri-file-add-line mr-1"></i> New Contract
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl">
+              <DialogHeader>
+                <DialogTitle>Create New Contract</DialogTitle>
+                <DialogDescription>
+                  Create a contract manually or use AI to generate a contract template.
+                </DialogDescription>
+              </DialogHeader>
+              
+              <Tabs defaultValue="manual" className="w-full mt-4">
+                <TabsList className="grid grid-cols-2 w-full">
+                  <TabsTrigger value="manual">Manual Creation</TabsTrigger>
+                  <TabsTrigger value="ai">AI-Powered</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="manual" className="mt-4 space-y-4">
+                  <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <Label htmlFor="clientName">Client Name</Label>
+                      <Input
+                        id="clientName"
+                        placeholder="Enter client name"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="title">Contract Title</Label>
+                      <Input
+                        id="title"
+                        placeholder="Enter contract title"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="expiryDate">Expiry Date (Optional)</Label>
+                      <Input
+                        id="expiryDate"
+                        type="date"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="content">Contract Content</Label>
+                      <Textarea
+                        id="content"
+                        placeholder="Enter contract content"
+                        className="min-h-[200px]"
+                      />
+                    </div>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="ai" className="mt-4 space-y-4">
+                  <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <Label htmlFor="ai-clientName">Client Name</Label>
+                      <Input
+                        id="ai-clientName"
+                        placeholder="Enter client name"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="projectType">Project Type</Label>
+                      <Select>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select project type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="software">Software Development</SelectItem>
+                          <SelectItem value="consulting">Consulting</SelectItem>
+                          <SelectItem value="design">Design</SelectItem>
+                          <SelectItem value="marketing">Marketing</SelectItem>
+                          <SelectItem value="construction">Construction</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="description">Project Description</Label>
+                      <Textarea
+                        id="description"
+                        placeholder="Describe the project or service in detail"
+                        className="min-h-[100px]"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="scope">Project Scope (Optional)</Label>
+                      <Textarea
+                        id="scope"
+                        placeholder="Define the scope of work"
+                        className="min-h-[100px]"
+                      />
+                    </div>
+                    
+                    <Button className="mt-2">
+                      <i className="ri-magic-line mr-1"></i> Generate Contract Template
+                    </Button>
+                  </div>
+                </TabsContent>
+              </Tabs>
+              
+              <DialogFooter>
+                <Button variant="outline">Cancel</Button>
+                <Button>Create Contract</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
