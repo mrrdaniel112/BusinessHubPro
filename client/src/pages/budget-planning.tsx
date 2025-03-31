@@ -95,6 +95,10 @@ export default function BudgetPlanning() {
     type: 'operational',
     department: '',
     purpose: '',
+    hasEndDate: true,
+    status: 'planning',
+    recurring: false,
+    recurrenceInterval: 'monthly',
     categories: [
       { name: 'Staffing', percentage: 40, amount: 0 },
       { name: 'Facilities', percentage: 25, amount: 0 },
@@ -123,7 +127,18 @@ export default function BudgetPlanning() {
         endDate: '2025-06-30',
         amount: '55000',
         type: 'operational',
-        department: 'Operations'
+        department: 'Operations',
+        purpose: 'Maintain essential operations for Q2 2025',
+        hasEndDate: true,
+        status: 'planning',
+        recurring: false,
+        recurrenceInterval: 'monthly',
+        categories: [
+          { name: 'Staffing', percentage: 40, amount: 22000 },
+          { name: 'Facilities', percentage: 25, amount: 13750 },
+          { name: 'Equipment', percentage: 20, amount: 11000 },
+          { name: 'Miscellaneous', percentage: 15, amount: 8250 }
+        ]
       };
       
       setNewBudget(aiGeneratedBudget);
@@ -178,7 +193,18 @@ export default function BudgetPlanning() {
         endDate: '',
         amount: '',
         type: 'operational',
-        department: ''
+        department: '',
+        purpose: '',
+        hasEndDate: true,
+        status: 'planning',
+        recurring: false,
+        recurrenceInterval: 'monthly',
+        categories: [
+          { name: 'Staffing', percentage: 40, amount: 0 },
+          { name: 'Facilities', percentage: 25, amount: 0 },
+          { name: 'Equipment', percentage: 20, amount: 0 },
+          { name: 'Miscellaneous', percentage: 15, amount: 0 }
+        ]
       });
       
       // Refresh budget data
@@ -623,13 +649,26 @@ export default function BudgetPlanning() {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="endDate">End Date <span className="text-destructive">*</span></Label>
+                <div className="flex justify-between items-center mb-1">
+                  <Label htmlFor="endDate">End Date {newBudget.hasEndDate && <span className="text-destructive">*</span>}</Label>
+                  <div className="flex items-center space-x-2">
+                    <input 
+                      type="checkbox" 
+                      id="hasEndDate" 
+                      className="rounded border-gray-300" 
+                      checked={newBudget.hasEndDate}
+                      onChange={(e) => setNewBudget({ ...newBudget, hasEndDate: e.target.checked })}
+                    />
+                    <Label htmlFor="hasEndDate" className="text-sm">Has End Date</Label>
+                  </div>
+                </div>
                 <Input
                   id="endDate"
                   type="date"
                   value={newBudget.endDate}
                   onChange={(e) => setNewBudget({ ...newBudget, endDate: e.target.value })}
-                  required
+                  required={newBudget.hasEndDate}
+                  disabled={!newBudget.hasEndDate}
                 />
               </div>
               
@@ -668,15 +707,123 @@ export default function BudgetPlanning() {
               </div>
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                placeholder="Describe the purpose and scope of this budget"
-                value={newBudget.description}
-                onChange={(e) => setNewBudget({ ...newBudget, description: e.target.value })}
-                rows={3}
-              />
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="purpose">Budget Purpose</Label>
+                  <Input
+                    id="purpose"
+                    placeholder="What is this budget for? (e.g., Office Supplies, Team Events)"
+                    value={newBudget.purpose}
+                    onChange={(e) => setNewBudget({ ...newBudget, purpose: e.target.value })}
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  placeholder="Describe the purpose and scope of this budget"
+                  value={newBudget.description}
+                  onChange={(e) => setNewBudget({ ...newBudget, description: e.target.value })}
+                  rows={3}
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <input 
+                      type="checkbox" 
+                      id="recurring" 
+                      className="rounded border-gray-300" 
+                      checked={newBudget.recurring}
+                      onChange={(e) => setNewBudget({ ...newBudget, recurring: e.target.checked })}
+                    />
+                    <Label htmlFor="recurring">Recurring Budget</Label>
+                  </div>
+                </div>
+                
+                {newBudget.recurring && (
+                  <div className="space-y-2">
+                    <Label htmlFor="recurrenceInterval">Recurrence Interval</Label>
+                    <Select 
+                      value={newBudget.recurrenceInterval} 
+                      onValueChange={(value) => setNewBudget({ ...newBudget, recurrenceInterval: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select interval" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="weekly">Weekly</SelectItem>
+                        <SelectItem value="monthly">Monthly</SelectItem>
+                        <SelectItem value="quarterly">Quarterly</SelectItem>
+                        <SelectItem value="annually">Annually</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+              
+              <div className="space-y-4 pt-2">
+                <h4 className="text-sm font-medium">Category Breakdown</h4>
+                <div className="border rounded-md p-4">
+                  <table className="w-full">
+                    <thead>
+                      <tr>
+                        <th className="text-left text-sm font-medium">Category</th>
+                        <th className="text-center text-sm font-medium">Percentage</th>
+                        <th className="text-right text-sm font-medium">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {newBudget.categories.map((category, index) => {
+                        // Calculate amount based on percentage and total budget
+                        const amount = newBudget.amount ? (parseFloat(newBudget.amount) * category.percentage / 100) : 0;
+                        
+                        return (
+                          <tr key={index}>
+                            <td className="py-2">
+                              <Input 
+                                value={category.name} 
+                                onChange={(e) => {
+                                  const updatedCategories = [...newBudget.categories];
+                                  updatedCategories[index].name = e.target.value;
+                                  setNewBudget({...newBudget, categories: updatedCategories});
+                                }}
+                              />
+                            </td>
+                            <td className="py-2 px-2">
+                              <Input 
+                                type="number"
+                                min="0"
+                                max="100"
+                                value={category.percentage} 
+                                onChange={(e) => {
+                                  const updatedCategories = [...newBudget.categories];
+                                  updatedCategories[index].percentage = parseFloat(e.target.value);
+                                  setNewBudget({...newBudget, categories: updatedCategories});
+                                }}
+                                className="text-center"
+                              />
+                            </td>
+                            <td className="py-2 text-right">
+                              ${amount.toFixed(2)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      <tr>
+                        <td colSpan={2} className="text-right pt-4 font-medium">Total:</td>
+                        <td className="text-right pt-4 font-medium">
+                          ${newBudget.amount ? parseFloat(newBudget.amount).toFixed(2) : '0.00'}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
             
             <DialogFooter>
