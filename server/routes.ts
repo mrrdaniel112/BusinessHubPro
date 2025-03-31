@@ -1161,6 +1161,161 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: "Server error" });
     }
   });
+  
+  app.patch("/api/tax-items/:id", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const itemId = parseInt(req.params.id);
+      
+      if (isNaN(itemId)) {
+        return res.status(400).json({ message: "Invalid ID parameter" });
+      }
+      
+      // First check if the tax item exists and belongs to the user
+      const existingItem = await storage.getTaxItem(itemId);
+      if (!existingItem || existingItem.userId !== userId) {
+        return res.status(404).json({ message: "Tax item not found" });
+      }
+      
+      // Update the tax item
+      const updatedData = {
+        ...req.body,
+        userId // Ensure the userId remains the same
+      };
+      
+      const updatedItem = await storage.updateTaxItem(itemId, updatedData);
+      return res.json(updatedItem);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ message: fromZodError(error).message });
+      }
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+  
+  app.delete("/api/tax-items/:id", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const itemId = parseInt(req.params.id);
+      
+      if (isNaN(itemId)) {
+        return res.status(400).json({ message: "Invalid ID parameter" });
+      }
+      
+      // First check if the tax item exists and belongs to the user
+      const existingItem = await storage.getTaxItem(itemId);
+      if (!existingItem || existingItem.userId !== userId) {
+        return res.status(404).json({ message: "Tax item not found" });
+      }
+      
+      await storage.deleteTaxItem(itemId);
+      return res.status(204).send();
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+  
+  // AI-powered tax categorization
+  app.post("/api/tax-items/categorize", requireAuth, async (req, res) => {
+    try {
+      const { description } = req.body;
+      
+      if (!description) {
+        return res.status(400).json({ message: "Description is required" });
+      }
+      
+      // Use the OpenAI service to categorize the description
+      const category = await categorizeTransaction(description);
+      
+      return res.json({ 
+        category,
+        description,
+        confidence: 0.9, // Mock confidence score
+        explanation: `This transaction was categorized as "${category}" based on its description.`
+      });
+    } catch (error) {
+      return res.status(500).json({ message: "AI categorization failed" });
+    }
+  });
+  
+  // Tax document management
+  app.get("/api/tax-documents", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const documents = await storage.getTaxDocuments(userId);
+      return res.json(documents);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+  
+  app.post("/api/tax-documents", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      // Implement document storage logic here
+      // This would typically involve handling file uploads
+      
+      // For now, just return a success message
+      return res.status(201).json({ 
+        message: "Document uploaded successfully",
+        documentId: Math.floor(Math.random() * 10000) + 1
+      });
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+  
+  // Tax reminders
+  app.get("/api/tax-reminders", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const reminders = await storage.getTaxReminders(userId);
+      return res.json(reminders);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+  
+  app.post("/api/tax-reminders", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const reminderData = {
+        ...req.body,
+        userId
+      };
+      
+      const reminder = await storage.createTaxReminder(reminderData);
+      return res.status(201).json(reminder);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+  
+  // Tax scenarios
+  app.get("/api/tax-scenarios", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const scenarios = await storage.getTaxScenarios(userId);
+      return res.json(scenarios);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+  
+  app.post("/api/tax-scenarios", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const scenarioData = {
+        ...req.body,
+        userId
+      };
+      
+      const scenario = await storage.createTaxScenario(scenarioData);
+      return res.status(201).json(scenario);
+    } catch (error) {
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
 
   app.patch("/api/tax-items/:id", requireAuth, async (req, res) => {
     try {

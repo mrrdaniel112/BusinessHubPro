@@ -8,6 +8,9 @@ import {
   aiInsights, AiInsight, InsertAiInsight,
   // New schemas
   taxItems, TaxItem, InsertTaxItem,
+  taxDocuments, TaxDocument, InsertTaxDocument,
+  taxReminders, TaxReminder, InsertTaxReminder,
+  taxScenarios, TaxScenario, InsertTaxScenario,
   payrollItems, PayrollItem, InsertPayrollItem,
   timeEntries, TimeEntry, InsertTimeEntry,
   bankAccounts, BankAccount, InsertBankAccount,
@@ -73,9 +76,23 @@ export interface IStorage {
   // Tax Management
   getTaxItems(userId: number): Promise<TaxItem[]>;
   getTaxItemById(id: number): Promise<TaxItem | undefined>;
+  getTaxItem(id: number): Promise<TaxItem | undefined>;
   createTaxItem(item: InsertTaxItem): Promise<TaxItem>;
   updateTaxItem(id: number, item: Partial<InsertTaxItem>): Promise<TaxItem | undefined>;
+  deleteTaxItem(id: number): Promise<void>;
   getTaxItemsByYear(userId: number, year: number): Promise<TaxItem[]>;
+  
+  // Tax Documents
+  getTaxDocuments(userId: number): Promise<TaxDocument[]>;
+  createTaxDocument(item: InsertTaxDocument): Promise<TaxDocument>;
+  
+  // Tax Reminders
+  getTaxReminders(userId: number): Promise<TaxReminder[]>;
+  createTaxReminder(item: InsertTaxReminder): Promise<TaxReminder>;
+  
+  // Tax Scenarios
+  getTaxScenarios(userId: number): Promise<TaxScenario[]>;
+  createTaxScenario(item: InsertTaxScenario): Promise<TaxScenario>;
   
   // Payroll Processing
   getPayrollItems(userId: number): Promise<PayrollItem[]>;
@@ -167,6 +184,9 @@ export class MemStorage implements IStorage {
   
   // New feature collections
   private taxItems: Map<number, TaxItem>;
+  private taxDocuments: Map<number, TaxDocument>;
+  private taxReminders: Map<number, TaxReminder>;
+  private taxScenarios: Map<number, TaxScenario>;
   private payrollItems: Map<number, PayrollItem>;
   private timeEntries: Map<number, TimeEntry>;
   private bankAccounts: Map<number, BankAccount>;
@@ -193,6 +213,9 @@ export class MemStorage implements IStorage {
   
   // New feature IDs
   private taxItemCurrentId: number;
+  private taxDocumentCurrentId: number;
+  private taxReminderCurrentId: number;
+  private taxScenarioCurrentId: number;
   private payrollItemCurrentId: number;
   private timeEntryCurrentId: number;
   private bankAccountCurrentId: number;
@@ -221,6 +244,9 @@ export class MemStorage implements IStorage {
     
     // Initialize new feature maps
     this.taxItems = new Map();
+    this.taxDocuments = new Map();
+    this.taxReminders = new Map();
+    this.taxScenarios = new Map();
     this.payrollItems = new Map();
     this.timeEntries = new Map();
     this.bankAccounts = new Map();
@@ -248,6 +274,9 @@ export class MemStorage implements IStorage {
     
     // Initialize new feature IDs
     this.taxItemCurrentId = 1;
+    this.taxDocumentCurrentId = 1;
+    this.taxReminderCurrentId = 1;
+    this.taxScenarioCurrentId = 1;
     this.payrollItemCurrentId = 1;
     this.timeEntryCurrentId = 1;
     this.bankAccountCurrentId = 1;
@@ -278,6 +307,9 @@ export class MemStorage implements IStorage {
       invoices: Array.from(this.invoices.values()),
       aiInsights: Array.from(this.aiInsights.values()),
       taxItems: Array.from(this.taxItems.values()),
+      taxDocuments: Array.from(this.taxDocuments.values()),
+      taxReminders: Array.from(this.taxReminders.values()),
+      taxScenarios: Array.from(this.taxScenarios.values()),
       payrollItems: Array.from(this.payrollItems.values()),
       timeEntries: Array.from(this.timeEntries.values()),
       bankAccounts: Array.from(this.bankAccounts.values()),
@@ -324,6 +356,9 @@ export class MemStorage implements IStorage {
     this.invoices.clear();
     this.aiInsights.clear();
     this.taxItems.clear();
+    this.taxDocuments.clear();
+    this.taxReminders.clear();
+    this.taxScenarios.clear();
     this.payrollItems.clear();
     this.timeEntries.clear();
     this.bankAccounts.clear();
@@ -405,6 +440,9 @@ export class MemStorage implements IStorage {
       this.invoiceCurrentId = data.counters.invoiceCurrentId || 1;
       this.aiInsightCurrentId = data.counters.aiInsightCurrentId || 1;
       this.taxItemCurrentId = data.counters.taxItemCurrentId || 1;
+      this.taxDocumentCurrentId = data.counters.taxDocumentCurrentId || 1;
+      this.taxReminderCurrentId = data.counters.taxReminderCurrentId || 1;
+      this.taxScenarioCurrentId = data.counters.taxScenarioCurrentId || 1;
       this.payrollItemCurrentId = data.counters.payrollItemCurrentId || 1;
       this.timeEntryCurrentId = data.counters.timeEntryCurrentId || 1;
       this.bankAccountCurrentId = data.counters.bankAccountCurrentId || 1;
@@ -1846,6 +1884,10 @@ export class MemStorage implements IStorage {
     return this.taxItems.get(id);
   }
 
+  async getTaxItem(id: number): Promise<TaxItem | undefined> {
+    return this.taxItems.get(id);
+  }
+
   async createTaxItem(item: InsertTaxItem): Promise<TaxItem> {
     const id = this.taxItemCurrentId++;
     const taxItem: TaxItem = {
@@ -1875,10 +1917,89 @@ export class MemStorage implements IStorage {
     return updatedItem;
   }
 
+  async deleteTaxItem(id: number): Promise<void> {
+    this.taxItems.delete(id);
+  }
+
   async getTaxItemsByYear(userId: number, year: number): Promise<TaxItem[]> {
     return Array.from(this.taxItems.values()).filter(
       (item) => item.userId === userId && item.taxYear === year
     );
+  }
+  
+  // Tax Documents Implementation
+  
+  async getTaxDocuments(userId: number): Promise<TaxDocument[]> {
+    return Array.from(this.taxDocuments.values()).filter(
+      (doc) => doc.userId === userId
+    );
+  }
+  
+  async createTaxDocument(item: InsertTaxDocument): Promise<TaxDocument> {
+    const id = this.taxDocumentCurrentId++;
+    const taxDocument: TaxDocument = {
+      id,
+      userId: item.userId,
+      name: item.name,
+      fileSize: item.fileSize,
+      fileType: item.fileType,
+      category: item.category,
+      taxYear: item.taxYear,
+      uploadDate: new Date(),
+      path: item.path || null
+    };
+    this.taxDocuments.set(id, taxDocument);
+    return taxDocument;
+  }
+  
+  // Tax Reminders Implementation
+  
+  async getTaxReminders(userId: number): Promise<TaxReminder[]> {
+    return Array.from(this.taxReminders.values()).filter(
+      (reminder) => reminder.userId === userId
+    );
+  }
+  
+  async createTaxReminder(item: InsertTaxReminder): Promise<TaxReminder> {
+    const id = this.taxReminderCurrentId++;
+    const taxReminder: TaxReminder = {
+      id,
+      userId: item.userId,
+      title: item.title,
+      taxYear: item.taxYear,
+      dueDate: item.dueDate,
+      description: item.description || null,
+      priority: item.priority || "medium",
+      status: item.status || "upcoming",
+      createdAt: new Date()
+    };
+    this.taxReminders.set(id, taxReminder);
+    return taxReminder;
+  }
+  
+  // Tax Scenarios Implementation
+  
+  async getTaxScenarios(userId: number): Promise<TaxScenario[]> {
+    return Array.from(this.taxScenarios.values()).filter(
+      (scenario) => scenario.userId === userId
+    );
+  }
+  
+  async createTaxScenario(item: InsertTaxScenario): Promise<TaxScenario> {
+    const id = this.taxScenarioCurrentId++;
+    const taxScenario: TaxScenario = {
+      id,
+      userId: item.userId,
+      name: item.name,
+      description: item.description || null,
+      baseAmount: item.baseAmount,
+      scenarioAmount: item.scenarioAmount,
+      savings: item.savings,
+      parameters: item.parameters || null,
+      createdAt: new Date()
+    };
+    this.taxScenarios.set(id, taxScenario);
+    return taxScenario;
   }
 
   // ==== Payroll Processing Implementation ====
@@ -2522,5 +2643,7 @@ export class MemStorage implements IStorage {
       .slice(0, 5); // Return first 5 entries as a mock
   }
 }
+
+
 
 export const storage = new MemStorage();

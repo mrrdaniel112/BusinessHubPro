@@ -16,6 +16,7 @@ import Login from "@/pages/login";
 import Calendar from "@/pages/calendar";
 import Profile from "@/pages/profile";
 import TaxManagement from "@/pages/tax-management";
+import TaxManagementEnhanced from "@/pages/tax-management-enhanced";
 import MainLayout from "@/components/layout/main-layout";
 import { AuthProvider } from "@/context/auth-context";
 import { IntegrationProvider } from "@/context/integration-context";
@@ -152,6 +153,14 @@ function Router() {
         {() => (
           <ProtectedRouteWithLayout>
             <TaxManagement />
+          </ProtectedRouteWithLayout>
+        )}
+      </Route>
+
+      <Route path="/tax-management-enhanced">
+        {() => (
+          <ProtectedRouteWithLayout>
+            <TaxManagementEnhanced />
           </ProtectedRouteWithLayout>
         )}
       </Route>

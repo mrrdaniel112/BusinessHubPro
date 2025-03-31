@@ -218,13 +218,13 @@ export const taxItems = pgTable("tax_items", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   name: text("name").notNull(),
-  category: text("category").notNull(), // 'income', 'expense', 'deduction'
+  category: text("category").notNull(), // 'income', 'expense', 'deduction', 'credit'
   amount: numeric("amount").notNull(),
   taxYear: integer("tax_year").notNull(),
   quarter: integer("quarter"), // For quarterly taxes
   description: text("description"),
   dateFiled: timestamp("date_filed"),
-  status: text("status").notNull(), // 'pending', 'filed', 'paid'
+  status: text("status").notNull(), // 'pending', 'filed', 'paid', 'overdue'
   receiptId: integer("receipt_id"), // Optional link to a receipt
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -240,6 +240,75 @@ export const insertTaxItemSchema = createInsertSchema(taxItems).pick({
   dateFiled: true,
   status: true,
   receiptId: true,
+});
+
+// Tax Document schema
+export const taxDocuments = pgTable("tax_documents", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  name: text("name").notNull(),
+  fileSize: text("file_size").notNull(),
+  fileType: text("file_type").notNull(),
+  category: text("category").notNull(), // 'receipt', 'tax_form', 'invoice', etc.
+  taxYear: integer("tax_year").notNull(),
+  uploadDate: timestamp("upload_date").notNull().defaultNow(),
+  path: text("path"), // File path or URL
+});
+
+export const insertTaxDocumentSchema = createInsertSchema(taxDocuments).pick({
+  userId: true,
+  name: true,
+  fileSize: true,
+  fileType: true,
+  category: true,
+  taxYear: true,
+  path: true,
+});
+
+// Tax Reminder schema
+export const taxReminders = pgTable("tax_reminders", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  title: text("title").notNull(),
+  taxYear: integer("tax_year").notNull(),
+  dueDate: timestamp("due_date").notNull(),
+  description: text("description"),
+  priority: text("priority").notNull().default("medium"), // 'low', 'medium', 'high'
+  status: text("status").notNull().default("upcoming"), // 'upcoming', 'due', 'overdue', 'completed'
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertTaxReminderSchema = createInsertSchema(taxReminders).pick({
+  userId: true,
+  title: true,
+  taxYear: true,
+  dueDate: true,
+  description: true,
+  priority: true,
+  status: true,
+});
+
+// Tax Scenario schema
+export const taxScenarios = pgTable("tax_scenarios", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  baseAmount: numeric("base_amount").notNull(),
+  scenarioAmount: numeric("scenario_amount").notNull(),
+  savings: numeric("savings").notNull(),
+  parameters: text("parameters"), // JSON string containing scenario parameters
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertTaxScenarioSchema = createInsertSchema(taxScenarios).pick({
+  userId: true,
+  name: true,
+  description: true,
+  baseAmount: true,
+  scenarioAmount: true,
+  savings: true,
+  parameters: true,
 });
 
 // Payroll schema
@@ -454,6 +523,15 @@ export type InsertAiInsight = z.infer<typeof insertAiInsightSchema>;
 // New type exports for the added features
 export type TaxItem = typeof taxItems.$inferSelect;
 export type InsertTaxItem = z.infer<typeof insertTaxItemSchema>;
+
+export type TaxDocument = typeof taxDocuments.$inferSelect;
+export type InsertTaxDocument = z.infer<typeof insertTaxDocumentSchema>;
+
+export type TaxReminder = typeof taxReminders.$inferSelect;
+export type InsertTaxReminder = z.infer<typeof insertTaxReminderSchema>;
+
+export type TaxScenario = typeof taxScenarios.$inferSelect;
+export type InsertTaxScenario = z.infer<typeof insertTaxScenarioSchema>;
 
 export type PayrollItem = typeof payrollItems.$inferSelect;
 export type InsertPayrollItem = z.infer<typeof insertPayrollItemSchema>;
