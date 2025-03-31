@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { 
   Dialog, 
   DialogContent, 
@@ -27,22 +27,36 @@ const MobileNavItem = ({ href, icon, label, active, onClick }: {
   const iconClass = icon && icon.trim() !== "" 
     ? `ri-${icon}` 
     : 'ri-question-mark';
+    
+  // Get navigation function from wouter
+  const [location, navigate] = useLocation();
+  
+  // Handle click function that correctly handles navigation and onClick callback
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    // Navigate to the destination
+    navigate(href);
+    
+    // Call the onClick callback (usually to close the menu)
+    if (onClick) {
+      onClick();
+    }
+  };
 
   return (
-    <Link href={href}>
-      <div
-        className={cn(
-          "flex items-center px-3 py-3 text-base font-medium rounded-md cursor-pointer touch-target",
-          active
-            ? "text-white bg-primary-600"
-            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-        )}
-        onClick={onClick}
-      >
-        <i className={cn(`${iconClass} mr-3 text-xl`, active ? "" : "text-gray-400")}></i>
-        <span className="mobile-text-adjust">{label}</span>
-      </div>
-    </Link>
+    <div
+      className={cn(
+        "flex items-center px-3 py-3 text-base font-medium rounded-md cursor-pointer touch-target",
+        active
+          ? "text-white bg-primary-600"
+          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+      )}
+      onClick={handleClick}
+    >
+      <i className={cn(`${iconClass} mr-3 text-xl`, active ? "" : "text-gray-400")}></i>
+      <span className="mobile-text-adjust">{label}</span>
+    </div>
   );
 };
 
@@ -182,7 +196,8 @@ export default function MobileNav({ opened, onClose, location }: MobileNavProps)
               />
               <div 
                 className="flex items-center px-3 py-3 text-base font-medium rounded-md cursor-pointer touch-target text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                onClick={() => {
+                onClick={(e) => {
+                  e.preventDefault();
                   logout();
                   onClose();
                 }}

@@ -42,10 +42,22 @@ const NavItem = ({ href, icon, label, active, onClick }: NavItemProps & { onClic
   const Icon = getIcon(icon);
   const [, navigate] = useLocation();
   
+  // Handle click function to ensure proper navigation
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (onClick) {
+      onClick();
+    } else if (href) {
+      navigate(href);
+    }
+  };
+  
   if (onClick) {
     return (
       <div
-        onClick={onClick}
+        onClick={handleClick}
         className={cn(
           "flex items-center px-3 py-2.5 text-sm font-medium rounded-md group cursor-pointer border",
           active
@@ -71,7 +83,7 @@ const NavItem = ({ href, icon, label, active, onClick }: NavItemProps & { onClic
         boxShadow: active ? "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)" : "none",
         borderLeft: active ? "8px solid #4f46e5" : "8px solid transparent"
       }}
-      onClick={() => navigate(href)}
+      onClick={handleClick}
     >
       {active && (
         <div className="absolute left-0 top-0 h-full w-1 bg-primary-800" />
