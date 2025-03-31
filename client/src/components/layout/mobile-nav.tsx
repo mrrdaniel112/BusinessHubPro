@@ -108,8 +108,8 @@ export default function MobileNav({ opened, onClose, location }: MobileNavProps)
         <div className="flex flex-col h-full bg-white">
           <div className="flex items-center justify-between px-4 pt-5 pb-4 border-b">
             <div className="flex items-center flex-shrink-0">
-              <div className="bg-white p-2 rounded-lg shadow-sm">
-                <img src={businessHubProLogo} alt="Business Hub Pro" className="h-8 object-contain" style={{maxWidth: "100%"}} />
+              <div className="bg-white p-3 rounded-lg shadow-md border border-gray-100" style={{backgroundColor: "#FFFFFF"}}>
+                <img src={businessHubProLogo} alt="Business Hub Pro" className="h-10 object-contain" style={{maxWidth: "100%"}} />
               </div>
             </div>
             <button

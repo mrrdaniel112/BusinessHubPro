@@ -54,8 +54,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
           </button>
           <div className="flex-1 flex justify-center px-2">
             <div className="flex-shrink-0 flex items-center">
-              <div className="bg-white p-1.5 rounded-lg shadow-sm">
-                <img src={businessHubProLogo} alt="Business Hub Pro" className="h-7 object-contain" style={{maxWidth: "100%"}} />
+              <div className="bg-white p-2 rounded-lg shadow-md border border-gray-100" style={{backgroundColor: "#FFFFFF"}}>
+                <img src={businessHubProLogo} alt="Business Hub Pro" className="h-8 object-contain" style={{maxWidth: "100%"}} />
               </div>
             </div>
           </div>
