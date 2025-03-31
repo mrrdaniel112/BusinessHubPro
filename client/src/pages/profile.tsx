@@ -37,7 +37,6 @@ export default function Profile() {
   };
   
   // Profile picture handling
-  const [profilePicture, setProfilePicture] = useState<string | null>(user?.profilePicture || null);
   const profilePictureInputRef = useRef<HTMLInputElement>(null);
   
   // Handle profile picture upload
@@ -55,9 +54,6 @@ export default function Profile() {
           try {
             // Update profile picture in auth context
             await updateProfilePicture(imageDataUrl);
-            
-            // Update local state for immediate UI update
-            setProfilePicture(imageDataUrl);
             
             toast({
               title: "Profile Picture Updated",
@@ -170,7 +166,7 @@ export default function Profile() {
           <Card>
             <CardHeader className="flex flex-col items-center text-center pb-2">
               <Avatar className="w-24 h-24 mb-4">
-                <AvatarImage src={profilePicture || ""} />
+                <AvatarImage src={user?.profilePicture || ""} />
                 <AvatarFallback>{getInitials()}</AvatarFallback>
               </Avatar>
               <CardTitle>{user?.name || "User Name"}</CardTitle>
