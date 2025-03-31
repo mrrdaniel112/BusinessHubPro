@@ -2367,6 +2367,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update the current user's profile picture
+  app.patch("/api/users/profile-picture", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const { profilePicture } = req.body;
+      
+      if (!profilePicture) {
+        return res.status(400).json({ message: "Profile picture data is required" });
+      }
+      
+      const updatedUser = await storage.updateUserProfilePicture(userId, profilePicture);
+      
+      if (!updatedUser) {
+        return res.status(500).json({ message: "Failed to update profile picture" });
+      }
+      
+      return res.status(200).json({ 
+        success: true, 
+        message: "Profile picture updated successfully",
+        user: updatedUser
+      });
+    } catch (error) {
+      console.error("Error updating profile picture:", error);
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
   // Notification routes
   app.get("/api/notifications", requireAuth, (req, res) => {
     try {

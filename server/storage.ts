@@ -39,6 +39,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUserRole(userId: number, role: string): Promise<User | undefined>;
+  updateUserProfilePicture(userId: number, profilePicture: string): Promise<User | undefined>;
   
   // Transactions
   getTransactions(userId: number): Promise<Transaction[]>;
@@ -1580,6 +1581,21 @@ export class MemStorage implements IStorage {
     const updatedUser: User = {
       ...user,
       role,
+      updatedAt: new Date()
+    };
+    
+    this.users.set(userId, updatedUser);
+    return updatedUser;
+  }
+  
+  async updateUserProfilePicture(userId: number, profilePicture: string): Promise<User | undefined> {
+    const user = this.users.get(userId);
+    if (!user) return undefined;
+    
+    // Update the user's profile picture and updatedAt timestamp
+    const updatedUser: User = {
+      ...user,
+      profilePicture,
       updatedAt: new Date()
     };
     

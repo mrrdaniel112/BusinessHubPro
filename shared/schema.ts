@@ -13,6 +13,7 @@ export const users = pgTable("users", {
   fullName: text("full_name").notNull(),
   email: text("email").notNull(),
   role: text("role").notNull().default(UserRole.USER),
+  profilePicture: text("profile_picture"),
   lastLogin: timestamp("last_login"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -24,6 +25,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   fullName: true,
   email: true,
   role: true,
+  profilePicture: true,
 });
 
 // Transaction schema

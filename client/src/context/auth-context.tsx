@@ -8,6 +8,7 @@ interface User {
   role?: 'user' | 'admin';
   subscriptionStatus: 'trial' | 'active' | 'expired' | null;
   trialEndsAt: Date | null;
+  profilePicture?: string | null;
 }
 
 interface AuthContextType {

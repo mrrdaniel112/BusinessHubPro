@@ -35,6 +35,62 @@ export default function Profile() {
     if (nameParts.length === 1) return nameParts[0].charAt(0).toUpperCase();
     return (nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)).toUpperCase();
   };
+  
+  // Profile picture handling
+  const [profilePicture, setProfilePicture] = useState<string | null>(user?.profilePicture || null);
+  const profilePictureInputRef = useRef<HTMLInputElement>(null);
+  
+  // Handle profile picture upload
+  const handleProfilePictureUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+    
+    const file = files[0];
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        if (e.target?.result) {
+          const imageDataUrl = e.target.result.toString();
+          setProfilePicture(imageDataUrl);
+          
+          try {
+            // Save to database with API call
+            const response = await fetch('/api/users/profile-picture', {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ profilePicture: imageDataUrl }),
+            });
+            
+            if (response.ok) {
+              toast({
+                title: "Profile Picture Updated",
+                description: "Your profile picture has been updated successfully.",
+              });
+            } else {
+              const errorData = await response.json();
+              throw new Error(errorData.message || 'Failed to update profile picture');
+            }
+          } catch (error) {
+            console.error('Error updating profile picture:', error);
+            toast({
+              title: "Update Failed",
+              description: error instanceof Error ? error.message : "Something went wrong updating your profile picture",
+              variant: "destructive",
+            });
+          }
+        }
+      };
+      reader.readAsDataURL(file);
+    } else {
+      toast({
+        title: "Invalid File Type",
+        description: "Please upload an image file (JPEG, PNG, etc.).",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Subscription badge color
   const getSubscriptionBadge = () => {
@@ -123,7 +179,7 @@ export default function Profile() {
           <Card>
             <CardHeader className="flex flex-col items-center text-center pb-2">
               <Avatar className="w-24 h-24 mb-4">
-                <AvatarImage src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" />
+                <AvatarImage src={profilePicture || ""} />
                 <AvatarFallback>{getInitials()}</AvatarFallback>
               </Avatar>
               <CardTitle>{user?.name || "User Name"}</CardTitle>
@@ -152,7 +208,20 @@ export default function Profile() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button variant="outline" className="w-full">Change Avatar</Button>
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => profilePictureInputRef.current?.click()}
+              >
+                Change Avatar
+              </Button>
+              <input
+                ref={profilePictureInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleProfilePictureUpload}
+              />
             </CardFooter>
           </Card>
           
