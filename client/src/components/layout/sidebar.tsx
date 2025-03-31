@@ -40,6 +40,7 @@ const getIcon = (iconName: string) => {
 
 const NavItem = ({ href, icon, label, active, onClick }: NavItemProps & { onClick?: () => void }) => {
   const Icon = getIcon(icon);
+  const [, navigate] = useLocation();
   
   if (onClick) {
     return (
@@ -59,39 +60,38 @@ const NavItem = ({ href, icon, label, active, onClick }: NavItemProps & { onClic
   }
   
   return (
-    <Link href={href}>
-      <div
+    <div
+      className={cn(
+        "flex items-center px-3 py-3.5 text-sm font-semibold rounded-md group cursor-pointer transition-all duration-200 relative z-10",
+        active
+          ? "text-white bg-primary-600 shadow-lg transform translate-x-2"
+          : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+      )}
+      style={{
+        boxShadow: active ? "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)" : "none",
+        borderLeft: active ? "8px solid #4f46e5" : "8px solid transparent"
+      }}
+      onClick={() => navigate(href)}
+    >
+      {active && (
+        <div className="absolute left-0 top-0 h-full w-1 bg-primary-800" />
+      )}
+      <Icon 
         className={cn(
-          "flex items-center px-3 py-3.5 text-sm font-semibold rounded-md group cursor-pointer transition-all duration-200 relative",
-          active
-            ? "text-white bg-primary-600 shadow-lg transform translate-x-2"
-            : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
-        )}
-        style={{
-          boxShadow: active ? "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)" : "none",
-          borderLeft: active ? "8px solid #4f46e5" : "8px solid transparent"
-        }}
-      >
-        {active && (
-          <div className="absolute left-0 top-0 h-full w-1 bg-primary-800" />
-        )}
-        <Icon 
-          className={cn(
-            "mr-3 h-6 w-6 transition-all", 
-            active ? "text-white scale-125" : "text-gray-500"
-          )} 
-        />
-        <span className={cn(
-          "transition-all",
-          active ? "font-bold text-base" : "font-medium"
-        )}>
-          {label}
-        </span>
-        {active && (
-          <div className="absolute right-2 h-2 w-2 rounded-full bg-white ml-auto" />
-        )}
-      </div>
-    </Link>
+          "mr-3 h-6 w-6 transition-all", 
+          active ? "text-white scale-125" : "text-gray-500"
+        )} 
+      />
+      <span className={cn(
+        "transition-all",
+        active ? "font-bold text-base" : "font-medium"
+      )}>
+        {label}
+      </span>
+      {active && (
+        <div className="absolute right-2 h-2 w-2 rounded-full bg-white ml-auto" />
+      )}
+    </div>
   );
 };
 
