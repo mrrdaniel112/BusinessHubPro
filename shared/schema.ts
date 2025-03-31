@@ -158,6 +158,7 @@ export const invoices = pgTable("invoices", {
   status: text("status").notNull(), // 'draft', 'sent', 'paid', 'overdue'
   items: text("items").notNull(), // JSON string of line items
   notes: text("notes"),
+  lastEmailSent: timestamp("last_email_sent"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -171,7 +172,8 @@ export const insertInvoiceSchema = z.object({
   dueDate: z.date(),
   status: z.string(),
   items: z.string(),
-  notes: z.string().nullable().optional().transform(val => val || null)
+  notes: z.string().nullable().optional().transform(val => val || null),
+  lastEmailSent: z.date().nullable().optional()
 });
 
 // AI Insight schema

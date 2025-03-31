@@ -48,7 +48,7 @@ import {
 } from "./openai";
 import { NotificationOptions, sendInvoiceNotifications } from "./services/notification";
 import { UserRole, requireAdmin, hasPermission, Resource, PermissionScope } from "./services/rbac";
-import { initializeEmailService, isEmailServiceAvailable, sendContractEmail } from "./services/email";
+import { initializeEmailService, isEmailServiceAvailable, sendContractEmail, sendInvoiceEmail } from "./services/email";
 
 import session from "express-session";
 
@@ -515,6 +515,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       console.error("Error sending contract email:", error);
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+  
+  // New route for sending invoices via email
+  app.post("/api/invoices/:id/send-email", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const invoiceId = parseInt(req.params.id);
+      const { recipientEmail } = req.body;
+      
+      if (!recipientEmail) {
+        return res.status(400).json({ message: "Recipient email is required" });
+      }
+      
+      // Check if email service is available
+      if (!isEmailServiceAvailable()) {
+        return res.status(503).json({ 
+          message: "Email service is not available. Please set up email credentials in environment variables.",
+          missingCredentials: true
+        });
+      }
+      
+      const existingInvoice = await storage.getInvoiceById(invoiceId);
+      if (!existingInvoice || existingInvoice.userId !== userId) {
+        return res.status(404).json({ message: "Invoice not found" });
+      }
+      
+      // Parse the invoice items JSON
+      let items = [];
+      try {
+        items = JSON.parse(existingInvoice.items);
+      } catch (error) {
+        console.error("Error parsing invoice items:", error);
+      }
+      
+      // Send the email
+      const result = await sendInvoiceEmail(
+        recipientEmail,
+        existingInvoice.invoiceNumber,
+        existingInvoice.clientName,
+        existingInvoice.amount,
+        existingInvoice.issueDate,
+        existingInvoice.dueDate,
+        items
+      );
+      
+      if (result.success) {
+        // Update invoice status to sent
+        const updatedInvoice = await storage.updateInvoice(invoiceId, {
+          status: 'sent',
+          lastEmailSent: new Date()
+        });
+        
+        return res.json({ 
+          success: true,
+          message: "Invoice has been sent via email",
+          invoice: updatedInvoice
+        });
+      } else {
+        return res.status(500).json({ 
+          message: "Failed to send email. Please try again.",
+          error: result.error
+        });
+      }
+    } catch (error) {
+      console.error("Error sending invoice email:", error);
       return res.status(500).json({ message: "Server error" });
     }
   });
