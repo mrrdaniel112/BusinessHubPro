@@ -2,6 +2,7 @@ import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import * as Icons from "lucide-react";
 import { useAuth } from "@/context/auth-context";
+import businessHubProLogo from "@assets/business hub pro logo .png";
 
 type NavItemProps = {
   href: string;
@@ -135,17 +136,23 @@ export default function Sidebar() {
       <div className="flex flex-col w-64">
         <div className="flex flex-col flex-grow pt-5 pb-4 overflow-y-auto bg-white border-r">
           <div className="flex items-center flex-shrink-0 px-4 mb-5">
-            <span className="text-xl font-semibold text-primary-600">Business Platform</span>
+            <img src={businessHubProLogo} alt="Business Hub Pro" className="h-10" />
           </div>
           
           {/* User profile section at top */}
           <div className="px-4 mb-5">
             <div className="flex items-center">
-              <img 
-                className="h-10 w-10 rounded-full" 
-                src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" 
-                alt="Profile" 
-              />
+              {user?.profilePicture ? (
+                <img 
+                  className="h-10 w-10 rounded-full object-cover" 
+                  src={user.profilePicture} 
+                  alt="Profile" 
+                />
+              ) : (
+                <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-semibold">
+                  {user?.name ? user.name.substring(0, 2).toUpperCase() : "U"}
+                </div>
+              )}
               <div className="ml-3">
                 <p className="text-sm font-medium text-gray-700">{user?.name || "Premium User"}</p>
                 <p className="text-xs text-gray-500">{user?.subscriptionStatus === 'active' ? 'Premium Subscription' : 'Trial Account'}</p>

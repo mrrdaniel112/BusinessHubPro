@@ -14,7 +14,7 @@ import { UploadCloud, X } from "lucide-react";
 import { format } from "date-fns";
 
 export default function Profile() {
-  const { user } = useAuth();
+  const { user, updateProfilePicture } = useAuth();
   const [editMode, setEditMode] = useState(false);
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -51,27 +51,18 @@ export default function Profile() {
       reader.onload = async (e) => {
         if (e.target?.result) {
           const imageDataUrl = e.target.result.toString();
-          setProfilePicture(imageDataUrl);
           
           try {
-            // Save to database with API call
-            const response = await fetch('/api/users/profile-picture', {
-              method: 'PATCH',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ profilePicture: imageDataUrl }),
-            });
+            // Update profile picture in auth context
+            await updateProfilePicture(imageDataUrl);
             
-            if (response.ok) {
-              toast({
-                title: "Profile Picture Updated",
-                description: "Your profile picture has been updated successfully.",
-              });
-            } else {
-              const errorData = await response.json();
-              throw new Error(errorData.message || 'Failed to update profile picture');
-            }
+            // Update local state for immediate UI update
+            setProfilePicture(imageDataUrl);
+            
+            toast({
+              title: "Profile Picture Updated",
+              description: "Your profile picture has been updated successfully.",
+            });
           } catch (error) {
             console.error('Error updating profile picture:', error);
             toast({

@@ -19,6 +19,7 @@ interface AuthContextType {
   signup: (user: any) => Promise<void>;
   logout: () => void;
   createAdminUser: () => Promise<User>;
+  updateProfilePicture: (profilePicture: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -29,6 +30,7 @@ const AuthContext = createContext<AuthContextType>({
   signup: async () => {},
   logout: () => {},
   createAdminUser: async () => { throw new Error('Not implemented'); },
+  updateProfilePicture: async () => { throw new Error('Not implemented'); },
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -181,6 +183,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(false);
     }
   };
+  
+  const updateProfilePicture = async (profilePicture: string): Promise<void> => {
+    if (!user) {
+      throw new Error("No user logged in");
+    }
+
+    try {
+      // In a real application, this would be an API call to the server
+      // For now, we'll update the user locally and in localStorage
+      const updatedUser: User = {
+        ...user,
+        profilePicture
+      };
+      
+      setUser(updatedUser);
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+    } catch (error) {
+      console.error("Error updating profile picture:", error);
+      throw error;
+    }
+  };
 
   return (
     <AuthContext.Provider
@@ -191,7 +214,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         signup,
         logout,
-        createAdminUser
+        createAdminUser,
+        updateProfilePicture
       }}
     >
       {children}
