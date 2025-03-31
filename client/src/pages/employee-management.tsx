@@ -674,7 +674,16 @@ const EmployeeManagement = () => {
                         </div>
 
                         <div className="pt-2">
-                          <Button variant="outline" className="w-full">
+                          <Button 
+                            variant="outline" 
+                            className="w-full"
+                            onClick={() => {
+                              toast({
+                                title: "Edit feature",
+                                description: "Tax & Banking information edit feature will be available soon.",
+                              });
+                            }}
+                          >
                             Edit Tax & Banking Information
                           </Button>
                         </div>
@@ -712,7 +721,17 @@ const EmployeeManagement = () => {
                         readOnly
                       />
                       <div className="mt-4">
-                        <Button variant="outline">Save Notes</Button>
+                        <Button 
+                          variant="outline"
+                          onClick={() => {
+                            toast({
+                              title: "Save Notes feature",
+                              description: "Notes saving functionality will be available soon.",
+                            });
+                          }}
+                        >
+                          Save Notes
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
