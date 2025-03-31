@@ -27,6 +27,10 @@ import {
 import { UserRole } from './services/rbac';
 
 export interface IStorage {
+  // Storage backup and restore
+  exportData(): Record<string, any>;
+  importData(data: Record<string, any>): void;
+  
   // Users
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
@@ -262,6 +266,158 @@ export class MemStorage implements IStorage {
     
     // No demo user or pre-seeded data - each user will get their own data when created
   }
+  
+  // Export all data for backup
+  exportData(): Record<string, any> {
+    return {
+      users: Array.from(this.users.values()),
+      transactions: Array.from(this.transactions.values()),
+      inventoryItems: Array.from(this.inventoryItems.values()),
+      contracts: Array.from(this.contracts.values()),
+      receipts: Array.from(this.receipts.values()),
+      invoices: Array.from(this.invoices.values()),
+      aiInsights: Array.from(this.aiInsights.values()),
+      taxItems: Array.from(this.taxItems.values()),
+      payrollItems: Array.from(this.payrollItems.values()),
+      timeEntries: Array.from(this.timeEntries.values()),
+      bankAccounts: Array.from(this.bankAccounts.values()),
+      bankTransactions: Array.from(this.bankTransactions.values()),
+      budgets: Array.from(this.budgets.values()),
+      budgetCategories: Array.from(this.budgetCategories.values()),
+      inventoryCosts: Array.from(this.inventoryCosts.values()),
+      clients: Array.from(this.clients.values()),
+      clientInteractions: Array.from(this.clientInteractions.values()),
+      clientDeals: Array.from(this.clientDeals.values()),
+      employees: Array.from(this.employees.values()),
+      counters: {
+        userCurrentId: this.userCurrentId,
+        transactionCurrentId: this.transactionCurrentId,
+        inventoryItemCurrentId: this.inventoryItemCurrentId,
+        contractCurrentId: this.contractCurrentId,
+        receiptCurrentId: this.receiptCurrentId,
+        invoiceCurrentId: this.invoiceCurrentId,
+        aiInsightCurrentId: this.aiInsightCurrentId,
+        taxItemCurrentId: this.taxItemCurrentId,
+        payrollItemCurrentId: this.payrollItemCurrentId,
+        timeEntryCurrentId: this.timeEntryCurrentId,
+        bankAccountCurrentId: this.bankAccountCurrentId,
+        bankTransactionCurrentId: this.bankTransactionCurrentId,
+        budgetCurrentId: this.budgetCurrentId,
+        budgetCategoryCurrentId: this.budgetCategoryCurrentId,
+        inventoryCostCurrentId: this.inventoryCostCurrentId,
+        clientCurrentId: this.clientCurrentId,
+        clientInteractionCurrentId: this.clientInteractionCurrentId,
+        clientDealCurrentId: this.clientDealCurrentId,
+        employeeCurrentId: this.employeeCurrentId,
+      }
+    };
+  }
+  
+  // Import data from backup
+  importData(data: Record<string, any>): void {
+    // Clear existing data
+    this.users.clear();
+    this.transactions.clear();
+    this.inventoryItems.clear();
+    this.contracts.clear();
+    this.receipts.clear();
+    this.invoices.clear();
+    this.aiInsights.clear();
+    this.taxItems.clear();
+    this.payrollItems.clear();
+    this.timeEntries.clear();
+    this.bankAccounts.clear();
+    this.bankTransactions.clear();
+    this.budgets.clear();
+    this.budgetCategories.clear();
+    this.inventoryCosts.clear();
+    this.clients.clear();
+    this.clientInteractions.clear();
+    this.clientDeals.clear();
+    this.employees.clear();
+    
+    // Import data
+    if (data.users) {
+      data.users.forEach((user: User) => this.users.set(user.id, user));
+    }
+    if (data.transactions) {
+      data.transactions.forEach((tx: Transaction) => this.transactions.set(tx.id, tx));
+    }
+    if (data.inventoryItems) {
+      data.inventoryItems.forEach((item: InventoryItem) => this.inventoryItems.set(item.id, item));
+    }
+    if (data.contracts) {
+      data.contracts.forEach((contract: Contract) => this.contracts.set(contract.id, contract));
+    }
+    if (data.receipts) {
+      data.receipts.forEach((receipt: Receipt) => this.receipts.set(receipt.id, receipt));
+    }
+    if (data.invoices) {
+      data.invoices.forEach((invoice: Invoice) => this.invoices.set(invoice.id, invoice));
+    }
+    if (data.aiInsights) {
+      data.aiInsights.forEach((insight: AiInsight) => this.aiInsights.set(insight.id, insight));
+    }
+    if (data.taxItems) {
+      data.taxItems.forEach((item: TaxItem) => this.taxItems.set(item.id, item));
+    }
+    if (data.payrollItems) {
+      data.payrollItems.forEach((item: PayrollItem) => this.payrollItems.set(item.id, item));
+    }
+    if (data.timeEntries) {
+      data.timeEntries.forEach((entry: TimeEntry) => this.timeEntries.set(entry.id, entry));
+    }
+    if (data.bankAccounts) {
+      data.bankAccounts.forEach((account: BankAccount) => this.bankAccounts.set(account.id, account));
+    }
+    if (data.bankTransactions) {
+      data.bankTransactions.forEach((tx: BankTransaction) => this.bankTransactions.set(tx.id, tx));
+    }
+    if (data.budgets) {
+      data.budgets.forEach((budget: Budget) => this.budgets.set(budget.id, budget));
+    }
+    if (data.budgetCategories) {
+      data.budgetCategories.forEach((category: BudgetCategory) => this.budgetCategories.set(category.id, category));
+    }
+    if (data.inventoryCosts) {
+      data.inventoryCosts.forEach((cost: InventoryCost) => this.inventoryCosts.set(cost.id, cost));
+    }
+    if (data.clients) {
+      data.clients.forEach((client: Client) => this.clients.set(client.id, client));
+    }
+    if (data.clientInteractions) {
+      data.clientInteractions.forEach((interaction: ClientInteraction) => this.clientInteractions.set(interaction.id, interaction));
+    }
+    if (data.clientDeals) {
+      data.clientDeals.forEach((deal: ClientDeal) => this.clientDeals.set(deal.id, deal));
+    }
+    if (data.employees) {
+      data.employees.forEach((employee: Employee) => this.employees.set(employee.id, employee));
+    }
+    
+    // Restore counters
+    if (data.counters) {
+      this.userCurrentId = data.counters.userCurrentId || 1;
+      this.transactionCurrentId = data.counters.transactionCurrentId || 1;
+      this.inventoryItemCurrentId = data.counters.inventoryItemCurrentId || 1;
+      this.contractCurrentId = data.counters.contractCurrentId || 1;
+      this.receiptCurrentId = data.counters.receiptCurrentId || 1;
+      this.invoiceCurrentId = data.counters.invoiceCurrentId || 1;
+      this.aiInsightCurrentId = data.counters.aiInsightCurrentId || 1;
+      this.taxItemCurrentId = data.counters.taxItemCurrentId || 1;
+      this.payrollItemCurrentId = data.counters.payrollItemCurrentId || 1;
+      this.timeEntryCurrentId = data.counters.timeEntryCurrentId || 1;
+      this.bankAccountCurrentId = data.counters.bankAccountCurrentId || 1;
+      this.bankTransactionCurrentId = data.counters.bankTransactionCurrentId || 1;
+      this.budgetCurrentId = data.counters.budgetCurrentId || 1;
+      this.budgetCategoryCurrentId = data.counters.budgetCategoryCurrentId || 1;
+      this.inventoryCostCurrentId = data.counters.inventoryCostCurrentId || 1;
+      this.clientCurrentId = data.counters.clientCurrentId || 1;
+      this.clientInteractionCurrentId = data.counters.clientInteractionCurrentId || 1;
+      this.clientDealCurrentId = data.counters.clientDealCurrentId || 1;
+      this.employeeCurrentId = data.counters.employeeCurrentId || 1;
+    }
+  }
 
   private async seedDemoData(userId: number) {
     const currentUserName = `User-${userId}`;
@@ -406,7 +562,8 @@ export class MemStorage implements IStorage {
         ...i, 
         id: this.invoiceCurrentId++,
         createdAt: new Date(),
-        notes: i.notes || null
+        notes: i.notes || null,
+        lastEmailSent: null
       };
       this.invoices.set(invoice.id, invoice);
     });
@@ -419,7 +576,9 @@ export class MemStorage implements IStorage {
         title: "Consulting Agreement",
         content: "This is a consulting agreement contract...",
         status: "signed",
-        expiryDate: new Date(2023, 12, 31)
+        expiryDate: new Date(2023, 12, 31),
+        value: "1500",
+        reminderSent: false
       },
       {
         userId,
@@ -427,7 +586,9 @@ export class MemStorage implements IStorage {
         title: "Web Development Contract",
         content: "This is a web development contract...",
         status: "sent",
-        expiryDate: null
+        expiryDate: null,
+        value: "3000",
+        reminderSent: false
       }
     ];
     
@@ -440,7 +601,23 @@ export class MemStorage implements IStorage {
         clientName: c.clientName,
         title: c.title,
         content: c.content,
-        expiryDate: c.expiryDate || null
+        expiryDate: c.expiryDate || null,
+        value: c.value,
+        category: null,
+        clientEmail: null,
+        clientPhone: null,
+        clientAddress: null,
+        vendorName: null,
+        vendorAddress: null,
+        vendorEmail: null,
+        vendorPhone: null,
+        startDate: null,
+        signatureDate: null,
+        terms: null,
+        legalClauses: null,
+        reminderSent: c.reminderSent,
+        lastEmailSent: null,
+        notes: null
       };
       this.contracts.set(contract.id, contract);
     });
@@ -1483,7 +1660,23 @@ export class MemStorage implements IStorage {
       content: insertContract.content,
       status: insertContract.status,
       expiryDate: insertContract.expiryDate || null,
-      createdAt: new Date()
+      createdAt: new Date(),
+      value: null,
+      category: insertContract.category || null,
+      clientEmail: insertContract.clientEmail || null,
+      clientPhone: insertContract.clientPhone || null,
+      clientAddress: insertContract.clientAddress || null,
+      vendorName: insertContract.vendorName || null,
+      vendorAddress: insertContract.vendorAddress || null,
+      vendorEmail: insertContract.vendorEmail || null,
+      vendorPhone: insertContract.vendorPhone || null,
+      startDate: insertContract.startDate || null,
+      signatureDate: insertContract.signatureDate || null,
+      terms: insertContract.terms || null,
+      legalClauses: insertContract.legalClauses || null,
+      reminderSent: insertContract.reminderSent || false,
+      lastEmailSent: insertContract.lastEmailSent || null,
+      notes: insertContract.notes || null
     };
     this.contracts.set(id, contract);
     return contract;
@@ -1578,7 +1771,8 @@ export class MemStorage implements IStorage {
       createdAt: new Date(),
       issueDate,
       dueDate,
-      notes: insertInvoice.notes || null
+      notes: insertInvoice.notes || null,
+      lastEmailSent: null
     };
     
     this.invoices.set(id, invoice);

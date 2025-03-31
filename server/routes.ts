@@ -1089,7 +1089,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: 'pending',
         items: JSON.stringify(items),
         createdAt: new Date(),
-        notes: text || "Test email from the Business Platform"
+        notes: text || "Test email from the Business Platform",
+        lastEmailSent: null,
+        value: null
       };
       
       // Send test email
