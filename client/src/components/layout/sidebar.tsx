@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import * as Icons from "lucide-react";
 import { useAuth } from "@/context/auth-context";
-import businessHubProLogo from "@assets/business hub pro logo .png";
+import businessHubProLogo from "@assets/2 business hub pro 2logo .png";
 
 type NavItemProps = {
   href: string;

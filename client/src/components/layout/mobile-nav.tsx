@@ -9,6 +9,7 @@ import {
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/auth-context";
+import businessHubProLogo from "@assets/2 business hub pro 2logo .png";
 
 type MobileNavProps = {
   opened: boolean;
@@ -107,7 +108,7 @@ export default function MobileNav({ opened, onClose, location }: MobileNavProps)
         <div className="flex flex-col h-full bg-white">
           <div className="flex items-center justify-between px-4 pt-5 pb-4 border-b">
             <div className="flex items-center flex-shrink-0">
-              <span className="text-xl font-semibold text-primary-600 mobile-text-adjust">Business Platform</span>
+              <img src={businessHubProLogo} alt="Business Hub Pro" className="h-8" />
             </div>
             <button
               type="button"
