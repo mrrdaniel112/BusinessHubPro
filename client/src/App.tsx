@@ -41,6 +41,9 @@ import TermsOfService from "./pages/legal/terms";
 import PrivacyPolicy from "./pages/legal/privacy";
 import LegalDisclaimers from "./pages/legal/disclaimers";
 
+import BusinessAnalytics from "@/pages/business-analytics";
+import BusinessAutomation from "@/pages/business-automation";
+
 function ProtectedRouteWithLayout({ children }: { children: React.ReactNode }) {
   return (
     <ProtectedRoute>
@@ -217,6 +220,22 @@ function Router() {
         {() => (
           <ProtectedRouteWithLayout>
             <EmployeeManagement />
+          </ProtectedRouteWithLayout>
+        )}
+      </Route>
+      
+      <Route path="/business-analytics">
+        {() => (
+          <ProtectedRouteWithLayout>
+            <BusinessAnalytics />
+          </ProtectedRouteWithLayout>
+        )}
+      </Route>
+
+      <Route path="/business-automation">
+        {() => (
+          <ProtectedRouteWithLayout>
+            <BusinessAutomation />
           </ProtectedRouteWithLayout>
         )}
       </Route>

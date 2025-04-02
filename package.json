@@ -1,5 +1,5 @@
 {
-  "name": "rest-express",
+  "name": "businesshubpro",
   "version": "1.0.0",
   "type": "module",
   "license": "MIT",
@@ -12,6 +12,8 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.37.0",
+    "@headlessui/react": "^2.2.0",
+    "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^3.9.1",
     "@jridgewell/trace-mapping": "^0.3.25",
     "@neondatabase/serverless": "^0.10.4",

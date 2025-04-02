@@ -43,68 +43,31 @@ const NavItem = ({ href, icon, label, active, onClick }: NavItemProps & { onClic
   const Icon = getIcon(icon);
   const [, navigate] = useLocation();
   
-  // Handle click function to ensure proper navigation
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
     if (onClick) {
       onClick();
-    } else if (href) {
+    } else {
       navigate(href);
     }
   };
-  
-  if (onClick) {
-    return (
-      <div
-        onClick={handleClick}
-        className={cn(
-          "flex items-center px-3 py-2.5 text-sm font-medium rounded-md group cursor-pointer border",
-          active
-            ? "text-white bg-primary-600 border-primary-700 shadow-sm"
-            : "text-gray-700 hover:bg-gray-100 hover:text-gray-900 border-transparent hover:border-gray-200"
-        )}
-      >
-        <Icon className={cn("mr-3 h-5 w-5", active ? "text-white" : "text-gray-500")} />
-        {label}
-      </div>
-    );
-  }
-  
+
   return (
-    <div
-      className={cn(
-        "flex items-center px-3 py-3.5 text-sm font-semibold rounded-md group cursor-pointer transition-all duration-200 relative z-10",
-        active
-          ? "text-white bg-primary-600 shadow-lg transform translate-x-2"
-          : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
-      )}
-      style={{
-        boxShadow: active ? "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)" : "none",
-        borderLeft: active ? "8px solid #4f46e5" : "8px solid transparent"
-      }}
+    <button
       onClick={handleClick}
+      className={cn(
+        "flex items-center w-full px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200",
+        "hover:bg-primary-50 hover:text-primary-600",
+        "focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2",
+        active
+          ? "bg-primary-50 text-primary-600"
+          : "text-gray-600 hover:bg-gray-50"
+      )}
     >
-      {active && (
-        <div className="absolute left-0 top-0 h-full w-1 bg-primary-800" />
-      )}
-      <Icon 
-        className={cn(
-          "mr-3 h-6 w-6 transition-all", 
-          active ? "text-white scale-125" : "text-gray-500"
-        )} 
-      />
-      <span className={cn(
-        "transition-all",
-        active ? "font-bold text-base" : "font-medium"
-      )}>
-        {label}
-      </span>
-      {active && (
-        <div className="absolute right-2 h-2 w-2 rounded-full bg-white ml-auto" />
-      )}
-    </div>
+      <Icon className="w-5 h-5 mr-3" />
+      <span>{label}</span>
+    </button>
   );
 };
 
@@ -137,7 +100,7 @@ export default function Sidebar() {
         <div className="flex flex-col flex-grow pt-5 pb-4 overflow-y-auto bg-white border-r">
           <div className="flex items-center flex-shrink-0 px-4 mb-5">
             <div className="bg-white p-3 rounded-lg shadow-md border border-gray-100" style={{backgroundColor: "#FFFFFF"}}>
-              <img src={businessHubProLogo} alt="Business Hub Pro" className="h-12 object-contain" style={{maxWidth: "100%"}} />
+              <img src={businessHubProLogo} alt="BusinessHubPro" className="h-12 object-contain" style={{maxWidth: "100%"}} />
             </div>
           </div>
           
@@ -279,7 +242,7 @@ export default function Sidebar() {
             {/* AI Tools */}
             <div className="py-2">
               <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                AI Tools
+                AI & Analytics
               </h3>
               <div className="space-y-1 mt-1">
                 <NavItem
@@ -289,10 +252,16 @@ export default function Sidebar() {
                   active={isActive("/ai-insights")}
                 />
                 <NavItem
-                  href="/business-assistant"
+                  href="/business-analytics"
+                  icon="bar-chart-line"
+                  label="Business Analytics"
+                  active={isActive("/business-analytics")}
+                />
+                <NavItem
+                  href="/business-automation"
                   icon="robot-line"
-                  label="Business Assistant"
-                  active={isActive("/business-assistant")}
+                  label="Business Automation"
+                  active={isActive("/business-automation")}
                 />
               </div>
             </div>

@@ -1,14 +1,9 @@
-import { useState, useEffect } from "react";
+import { Fragment } from "react";
+import { Dialog, Transition } from "@headlessui/react";
+import { XMarkIcon } from "@heroicons/react/24/outline";
 import { Link, useLocation } from "wouter";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogTitle,
-  DialogDescription
-} from "@/components/ui/dialog";
-import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/context/auth-context";
+import * as Icons from "lucide-react";
 import businessHubProLogo from "@assets/2 business hub pro 2logo .png";
 
 type MobileNavProps = {
@@ -17,201 +12,119 @@ type MobileNavProps = {
   location: string;
 };
 
-const MobileNavItem = ({ href, icon, label, active, onClick }: { 
-  href: string; 
-  icon: string; 
-  label: string; 
-  active: boolean;
-  onClick: () => void;
-}) => {
-  // Verify that the icon string is valid
-  const iconClass = icon && icon.trim() !== "" 
-    ? `ri-${icon}` 
-    : 'ri-question-mark';
-    
-  // Get navigation function from wouter
-  const [location, navigate] = useLocation();
-  
-  // Handle click function that correctly handles navigation and onClick callback
-  const handleClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    
-    // Navigate to the destination
-    navigate(href);
-    
-    // Call the onClick callback (usually to close the menu)
-    if (onClick) {
-      onClick();
-    }
-  };
-
-  return (
-    <div
-      className={cn(
-        "flex items-center px-3 py-3 text-base font-medium rounded-md cursor-pointer touch-target",
-        active
-          ? "text-white bg-primary-600"
-          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-      )}
-      onClick={handleClick}
-    >
-      <i className={cn(`${iconClass} mr-3 text-xl`, active ? "" : "text-gray-400")}></i>
-      <span className="mobile-text-adjust">{label}</span>
-    </div>
-  );
-};
+const navigation = [
+  { name: "Dashboard", href: "/", icon: "dashboard-line" },
+  { name: "Financials", href: "/financials", icon: "money-dollar-circle-line" },
+  { name: "Inventory", href: "/inventory", icon: "store-2-line" },
+  { name: "Contracts", href: "/contracts", icon: "file-text-line" },
+  { name: "Expenses", href: "/expenses", icon: "receipt-line" },
+  { name: "Invoices", href: "/invoices", icon: "bill-line" },
+  { name: "Tax Management", href: "/tax-management", icon: "tax-line" },
+  { name: "Payroll", href: "/payroll-processing", icon: "payroll-line" },
+  { name: "Time Tracking", href: "/time-tracking", icon: "time-line" },
+  { name: "Bank Reconciliation", href: "/bank-reconciliation", icon: "bank-line" },
+  { name: "Budget Planning", href: "/budget-planning", icon: "budget-line" },
+  { name: "Client Management", href: "/client-management", icon: "client-line" },
+  { name: "Employee Management", href: "/employee-management", icon: "employee-line" },
+];
 
 export default function MobileNav({ opened, onClose, location }: MobileNavProps) {
-  const { logout } = useAuth();
-  const isActive = (path: string) => {
-    return location === path;
-  };
-
-  // Add effect to prevent body scrolling when the menu is open
-  useEffect(() => {
-    if (opened) {
-      // Prevent body scrolling when menu is open
-      document.body.style.overflow = 'hidden';
-      // For iOS to prevent overscrolling
-      document.body.classList.add('prevent-overscroll');
-    } else {
-      // Restore scrolling when menu is closed
-      document.body.style.overflow = '';
-      document.body.classList.remove('prevent-overscroll');
-    }
-    
-    return () => {
-      // Cleanup when component unmounts
-      document.body.style.overflow = '';
-      document.body.classList.remove('prevent-overscroll');
+  const getIcon = (iconName: string) => {
+    const IconMap: Record<string, React.ElementType> = {
+      "dashboard-line": Icons.Home,
+      "money-dollar-circle-line": Icons.DollarSign,
+      "store-2-line": Icons.Package,
+      "file-text-line": Icons.FileText,
+      "receipt-line": Icons.Receipt,
+      "bill-line": Icons.FileCheck,
+      "tax-line": Icons.Receipt,
+      "payroll-line": Icons.Users,
+      "time-line": Icons.Clock,
+      "bank-line": Icons.Building,
+      "budget-line": Icons.PiggyBank,
+      "client-line": Icons.Users,
+      "employee-line": Icons.UserRound,
     };
-  }, [opened]);
-
-  // Handle touch event inside the menu to prevent propagation
-  const handleTouchStart = (e: React.TouchEvent) => {
-    // Stop propagation to prevent underlying page scroll
-    e.stopPropagation();
+    return IconMap[iconName] || Icons.CircleDot;
   };
 
   return (
-    <Dialog open={opened} onOpenChange={() => onClose()}>
-      <DialogTitle className="sr-only">Navigation Menu</DialogTitle>
-      <DialogDescription className="sr-only">
-        Main navigation menu with links to all sections of the application
-      </DialogDescription>
-      <DialogContent 
-        onTouchStart={handleTouchStart}
-        className="sm:max-w-[425px] p-0 max-h-[100dvh] inset-0 overflow-hidden pt-safe ios-specific transform-gpu"
-        style={{ WebkitOverflowScrolling: 'touch' }}
-        aria-describedby="navigation-description"
-      >
-        <div className="flex flex-col h-full bg-white">
-          <div className="flex items-center justify-between px-4 pt-5 pb-4 border-b">
-            <div className="flex items-center flex-shrink-0">
-              <div className="bg-white p-3 rounded-lg shadow-md border border-gray-100" style={{backgroundColor: "#FFFFFF"}}>
-                <img src={businessHubProLogo} alt="Business Hub Pro" className="h-10 object-contain" style={{maxWidth: "100%"}} />
+    <Transition.Root show={opened} as={Fragment}>
+      <Dialog as="div" className="relative z-50 md:hidden" onClose={onClose}>
+        <Transition.Child
+          as={Fragment}
+          enter="transition-opacity ease-linear duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="transition-opacity ease-linear duration-300"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+        >
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-75" />
+        </Transition.Child>
+
+        <div className="fixed inset-0 z-40 flex">
+          <Transition.Child
+            as={Fragment}
+            enter="transition ease-in-out duration-300 transform"
+            enterFrom="-translate-x-full"
+            enterTo="translate-x-0"
+            leave="transition ease-in-out duration-300 transform"
+            leaveFrom="translate-x-0"
+            leaveTo="-translate-x-full"
+          >
+            <Dialog.Panel className="relative flex w-full max-w-xs flex-1 flex-col bg-white pt-5 pb-4">
+              <div className="absolute top-0 right-0 -mr-12 pt-2">
+                <button
+                  type="button"
+                  className="ml-1 flex h-10 w-10 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+                  onClick={onClose}
+                >
+                  <span className="sr-only">Close sidebar</span>
+                  <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
+                </button>
               </div>
-            </div>
-            <button
-              type="button"
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500 touch-target"
-              onClick={onClose}
-              aria-label="Close menu"
-            >
-              <i className="ri-close-line text-xl"></i>
-            </button>
-          </div>
-          <div 
-            className="flex-1 overflow-y-auto px-2 py-4 space-y-1 pb-safe touch-scroll-content"
-            style={{ WebkitOverflowScrolling: 'touch' }}>
-            <MobileNavItem
-              href="/"
-              icon="dashboard-line"
-              label="Dashboard"
-              active={isActive("/")}
-              onClick={onClose}
-            />
-            <MobileNavItem
-              href="/financials"
-              icon="money-dollar-circle-line"
-              label="Financials"
-              active={isActive("/financials")}
-              onClick={onClose}
-            />
-            <MobileNavItem
-              href="/inventory"
-              icon="store-2-line"
-              label="Inventory"
-              active={isActive("/inventory")}
-              onClick={onClose}
-            />
-            <MobileNavItem
-              href="/contracts"
-              icon="file-text-line"
-              label="Contracts"
-              active={isActive("/contracts")}
-              onClick={onClose}
-            />
-            <MobileNavItem
-              href="/expenses"
-              icon="receipt-line"
-              label="Expenses"
-              active={isActive("/expenses")}
-              onClick={onClose}
-            />
-            <MobileNavItem
-              href="/invoices"
-              icon="bill-line"
-              label="Invoices"
-              active={isActive("/invoices")}
-              onClick={onClose}
-            />
-            <MobileNavItem
-              href="/ai-insights"
-              icon="line-chart-line"
-              label="AI Insights"
-              active={isActive("/ai-insights")}
-              onClick={onClose}
-            />
-            <MobileNavItem
-              href="/business-assistant"
-              icon="robot-line"
-              label="Business Assistant"
-              active={isActive("/business-assistant")}
-              onClick={onClose}
-            />
-            
-            {/* User profile menu items with divider */}
-            <div className="border-t border-gray-200 mt-4 pt-4">
-              <MobileNavItem
-                href="/calendar"
-                icon="calendar-line"
-                label="Calendar"
-                active={isActive("/calendar")}
-                onClick={onClose}
-              />
-              <MobileNavItem
-                href="/profile"
-                icon="user-line"
-                label="Profile"
-                active={isActive("/profile")}
-                onClick={onClose}
-              />
-              <div 
-                className="flex items-center px-3 py-3 text-base font-medium rounded-md cursor-pointer touch-target text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                onClick={(e) => {
-                  e.preventDefault();
-                  logout();
-                  onClose();
-                }}
-              >
-                <i className="ri-logout-box-line mr-3 text-xl text-gray-400"></i>
-                <span className="mobile-text-adjust">Logout</span>
+              <div className="flex flex-shrink-0 items-center px-4">
+                <img
+                  className="h-8 w-auto"
+                  src={businessHubProLogo}
+                  alt="BusinessHubPro"
+                />
               </div>
-            </div>
-          </div>
+              <div className="mt-5 h-0 flex-1 overflow-y-auto">
+                <nav className="space-y-1 px-2">
+                  {navigation.map((item) => {
+                    const Icon = getIcon(item.icon);
+                    const isActive = location === item.href;
+                    return (
+                      <Link
+                        key={item.name}
+                        href={item.href}
+                        className={cn(
+                          "group flex items-center px-2 py-2 text-base font-medium rounded-md",
+                          isActive
+                            ? "bg-primary-50 text-primary-600"
+                            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                        )}
+                        onClick={onClose}
+                      >
+                        <Icon
+                          className={cn(
+                            "mr-4 h-6 w-6 flex-shrink-0",
+                            isActive ? "text-primary-600" : "text-gray-400 group-hover:text-gray-500"
+                          )}
+                          aria-hidden="true"
+                        />
+                        {item.name}
+                      </Link>
+                    );
+                  })}
+                </nav>
+              </div>
+            </Dialog.Panel>
+          </Transition.Child>
         </div>
-      </DialogContent>
-    </Dialog>
+      </Dialog>
+    </Transition.Root>
   );
 }

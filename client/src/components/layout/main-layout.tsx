@@ -28,9 +28,11 @@ export default function MainLayout({ children }: MainLayoutProps) {
   };
   
   return (
-    <div className="flex h-screen w-screen overflow-hidden">
+    <div className="flex h-screen w-screen overflow-hidden bg-gray-50">
       {/* Sidebar - hidden on mobile */}
-      <Sidebar />
+      <div className="hidden md:flex md:flex-shrink-0">
+        <Sidebar />
+      </div>
 
       {/* Mobile navigation */}
       <MobileNav 
@@ -39,8 +41,9 @@ export default function MainLayout({ children }: MainLayoutProps) {
         location={location}
       />
 
-      {/* Mobile menu and content */}
-      <div className="flex flex-col flex-1 overflow-hidden w-full">
+      {/* Main content */}
+      <div className="flex flex-col flex-1 overflow-hidden">
+        {/* Top bar */}
         <div className="relative z-10 flex-shrink-0 flex h-16 bg-white border-b border-gray-200 md:hidden sticky top-0 pt-safe shadow-sm">
           <button
             type="button"
@@ -48,57 +51,32 @@ export default function MainLayout({ children }: MainLayoutProps) {
             onClick={() => setMobileMenuOpen(true)}
             onTouchStart={handleTouchStart}
             aria-label="Open menu"
-            style={{ minHeight: '44px', minWidth: '44px' }} /* iOS accessibility standards */
           >
-            <i className="ri-menu-line text-2xl"></i>
+            <span className="sr-only">Open sidebar</span>
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
           </button>
-          <div className="flex-1 flex justify-center px-2">
-            <div className="flex-shrink-0 flex items-center">
-              <div className="bg-white p-2 rounded-lg shadow-md border border-gray-100" style={{backgroundColor: "#FFFFFF"}}>
-                <img src={businessHubProLogo} alt="Business Hub Pro" className="h-8 object-contain" style={{maxWidth: "100%"}} />
-              </div>
+          <div className="flex-1 px-4 flex justify-between">
+            <div className="flex-1 flex items-center">
+              <img
+                className="h-8 w-auto"
+                src={businessHubProLogo}
+                alt="BusinessHubPro"
+              />
             </div>
-          </div>
-          <div className="flex items-center space-x-2 pr-safe">
-            {/* Notification Center */}
-            <div className="relative">
+            <div className="flex items-center">
               <NotificationCenter />
-            </div>
-            {/* User profile */}
-            <div className="relative">
-              <div>
-                <button
-                  type="button"
-                  className="touch-target max-w-xs rounded-full flex items-center text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-                  onTouchStart={handleTouchStart}
-                  aria-label="Profile menu"
-                  style={{ minHeight: '44px', minWidth: '44px' }} /* iOS accessibility standards */
-                >
-                  {user?.profilePicture ? (
-                    <img 
-                      className="h-8 w-8 rounded-full object-cover" 
-                      src={user.profilePicture} 
-                      alt="Profile" 
-                    />
-                  ) : (
-                    <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-semibold text-xs">
-                      {user?.name ? user.name.substring(0, 2).toUpperCase() : "U"}
-                    </div>
-                  )}
-                </button>
-              </div>
             </div>
           </div>
         </div>
 
-        {/* Main content - with iOS and Android specific optimizations */}
-        <main 
-          className="flex-1 relative overflow-y-auto focus:outline-none pb-safe touch-scroll-content"
-          onTouchStart={handleTouchStart}
-          style={{ WebkitOverflowScrolling: 'touch' }}
-        >
-          <div className={`min-h-screen ios-specific android-specific ${isIOS() ? 'transform-gpu' : ''}`}>
-            {children}
+        {/* Main content area */}
+        <main className="flex-1 relative overflow-y-auto focus:outline-none">
+          <div className="py-6">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+              {children}
+            </div>
           </div>
         </main>
       </div>

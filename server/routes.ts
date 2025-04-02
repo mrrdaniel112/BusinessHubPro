@@ -46,6 +46,15 @@ import {
   generateSupplyRecommendations,
   generateContractTemplate
 } from "./openai";
+
+// Import Claude AI functions
+import {
+  generateBusinessInsightsClaude,
+  generateBusinessAssistantResponse,
+  generateBudgetPlanClaude,
+  generateContractTemplateClaude,
+  analyzeImageWithClaude
+} from "./anthropic";
 import { NotificationOptions, sendInvoiceNotifications } from "./services/notification";
 import { UserRole, requireAdmin, hasPermission, Resource, PermissionScope } from "./services/rbac";
 import { initializeEmailService, isEmailServiceAvailable, sendContractEmail, sendInvoiceEmail } from "./services/email";
@@ -2437,6 +2446,112 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       return res.status(500).json({ message: "Server error" });
     }
+  });
+
+  // Claude AI API endpoints
+  app.post("/api/claude/business-insights", requireAuth, async (req, res) => {
+    try {
+      const { financialData, salesData, timeframe } = req.body;
+      
+      if (!financialData || !salesData) {
+        return res.status(400).json({ message: "Financial and sales data are required" });
+      }
+      
+      const insights = await generateBusinessInsightsClaude(
+        financialData,
+        salesData,
+        timeframe || 'month'
+      );
+      
+      return res.json(insights);
+    } catch (error: any) {
+      console.error("Error generating business insights with Claude:", error);
+      return res.status(500).json({ message: `Failed to generate insights: ${error.message}` });
+    }
+  });
+  
+  app.post("/api/claude/assistant", requireAuth, async (req, res) => {
+    try {
+      const { query, context } = req.body;
+      
+      if (!query) {
+        return res.status(400).json({ message: "Query is required" });
+      }
+      
+      const response = await generateBusinessAssistantResponse(query, context);
+      return res.json({ response });
+    } catch (error: any) {
+      console.error("Error generating assistant response with Claude:", error);
+      return res.status(500).json({ message: `Failed to generate response: ${error.message}` });
+    }
+  });
+  
+  app.post("/api/claude/budget-plan", requireAuth, async (req, res) => {
+    try {
+      const { description, timeframe, amount } = req.body;
+      
+      if (!description) {
+        return res.status(400).json({ message: "Budget description is required" });
+      }
+      
+      const budgetPlan = await generateBudgetPlanClaude(
+        description,
+        timeframe || 'monthly',
+        amount
+      );
+      
+      return res.json(budgetPlan);
+    } catch (error: any) {
+      console.error("Error generating budget plan with Claude:", error);
+      return res.status(500).json({ message: `Failed to generate budget plan: ${error.message}` });
+    }
+  });
+  
+  app.post("/api/claude/contract-template", requireAuth, async (req, res) => {
+    try {
+      const { clientInfo, projectInfo } = req.body;
+      
+      if (!clientInfo || !projectInfo) {
+        return res.status(400).json({ message: "Client and project information are required" });
+      }
+      
+      const contractTemplate = await generateContractTemplateClaude(clientInfo, projectInfo);
+      return res.json({ template: contractTemplate });
+    } catch (error: any) {
+      console.error("Error generating contract template with Claude:", error);
+      return res.status(500).json({ message: `Failed to generate contract template: ${error.message}` });
+    }
+  });
+  
+  app.post("/api/claude/analyze-image", requireAuth, async (req, res) => {
+    try {
+      const { imageBase64, analysisType } = req.body;
+      
+      if (!imageBase64) {
+        return res.status(400).json({ message: "Image data is required" });
+      }
+      
+      const analysisResult = await analyzeImageWithClaude(
+        imageBase64,
+        analysisType || 'receipt'
+      );
+      
+      return res.json(analysisResult);
+    } catch (error: any) {
+      console.error("Error analyzing image with Claude:", error);
+      return res.status(500).json({ message: `Failed to analyze image: ${error.message}` });
+    }
+  });
+
+  // Check if Anthropic API is configured endpoint
+  app.get("/api/claude/status", async (req, res) => {
+    const anthropicConfigured = !!process.env.ANTHROPIC_API_KEY;
+    return res.json({ 
+      available: anthropicConfigured,
+      message: anthropicConfigured 
+        ? "Claude AI is available" 
+        : "Claude AI is not configured. Please set ANTHROPIC_API_KEY environment variable."
+    });
   });
 
   const httpServer = createServer(app);
