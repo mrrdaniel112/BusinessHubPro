@@ -19,10 +19,11 @@ import TaxManagement from "@/pages/tax-management";
 import TaxManagementEnhanced from "@/pages/tax-management-enhanced";
 import MainLayout from "@/components/layout/main-layout";
 import { AuthProvider } from "@/context/auth-context";
-import { IntegrationProvider } from "@/context/integration-context";
 import { NotificationProvider } from "@/context/notification-context";
+import { IntegrationProvider } from "@/context/integration-context";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { lazy, Suspense, useEffect } from "react";
+import { Router } from "@/components/router";
 
 // No need to declare global types when we use a proper debounce approach
 

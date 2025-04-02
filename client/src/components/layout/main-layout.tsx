@@ -28,7 +28,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
   };
   
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-gray-50">
+    <div className="flex h-screen w-screen overflow-hidden bg-white">
       {/* Sidebar - hidden on mobile */}
       <div className="hidden md:flex md:flex-shrink-0">
         <Sidebar />
@@ -72,7 +72,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
         </div>
 
         {/* Main content area */}
-        <main className="flex-1 relative overflow-y-auto focus:outline-none">
+        <main className="flex-1 relative overflow-y-auto focus:outline-none bg-white">
           <div className="py-6">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
               {children}
