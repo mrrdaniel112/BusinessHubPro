@@ -29,9 +29,9 @@ export default function MainLayout({ children }: MainLayoutProps) {
   };
   
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-gray-50">
-      {/* Sidebar - hidden on mobile */}
-      <div className="hidden md:flex md:flex-shrink-0">
+    <div className="min-h-screen bg-background">
+      {/* Desktop sidebar */}
+      <div className="hidden md:fixed md:inset-y-0 md:left-0 md:z-50 md:w-72 md:flex md:flex-col">
         <Sidebar />
       </div>
 
@@ -42,43 +42,44 @@ export default function MainLayout({ children }: MainLayoutProps) {
         location={location}
       />
 
-      {/* Main content */}
-      <div className="flex flex-col flex-1 overflow-hidden">
+      {/* Main content wrapper */}
+      <div className="md:pl-72">
         {/* Top bar */}
-        <div className="relative z-10 flex-shrink-0 flex h-16 bg-white border-b border-gray-200 md:hidden sticky top-0 pt-safe shadow-sm">
+        <header className="sticky top-0 z-40 flex h-16 items-center gap-x-4 border-b bg-background px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
+          {/* Mobile menu button */}
           <button
             type="button"
-            className="px-4 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500 touch-target"
+            className="md:hidden -m-2.5 p-2.5 text-muted-foreground hover:text-foreground"
             onClick={() => setMobileMenuOpen(true)}
-            onTouchStart={handleTouchStart}
-            aria-label="Open menu"
           >
             <span className="sr-only">Open sidebar</span>
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <div className="flex-1 px-4 flex justify-between">
-            <div className="flex-1 flex items-center">
+
+          {/* Logo - only show on mobile */}
+          <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
+            <div className="flex items-center gap-x-4 lg:gap-x-6">
               <img
-                className="h-8 w-auto"
+                className="h-8 w-auto md:hidden"
                 src={businessHubProLogo}
                 alt="BusinessHubPro"
               />
             </div>
-            <div className="flex items-center gap-4">
-              <ThemeToggle />
-              <NotificationCenter />
-            </div>
           </div>
-        </div>
+
+          {/* Right side actions */}
+          <div className="flex items-center gap-x-4 lg:gap-x-6">
+            <ThemeToggle />
+            <NotificationCenter />
+          </div>
+        </header>
 
         {/* Main content area */}
-        <main className="flex-1 relative overflow-y-auto focus:outline-none">
-          <div className="py-6">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-              {children}
-            </div>
+        <main className="min-h-screen py-10">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            {children}
           </div>
         </main>
       </div>
