@@ -17,6 +17,12 @@ export const users = pgTable("users", {
   lastLogin: timestamp("last_login"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  emailVerified: boolean("email_verified").notNull().default(false),
+  emailVerificationToken: text("email_verification_token"),
+  emailVerificationExpires: timestamp("email_verification_expires"),
+  twoFactorEnabled: boolean("two_factor_enabled").notNull().default(false),
+  twoFactorSecret: text("two_factor_secret"),
+  twoFactorBackupCodes: text("two_factor_backup_codes"),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -26,6 +32,8 @@ export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
   role: true,
   profilePicture: true,
+  emailVerified: true,
+  twoFactorEnabled: true,
 });
 
 // Transaction schema

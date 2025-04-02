@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { Contract, Invoice } from '@shared/schema';
+import { generateToken } from './auth';
 
 // Configure email transporter
 let transporter: nodemailer.Transporter;
@@ -245,4 +246,33 @@ export async function sendInvoiceEmail(
       error
     };
   }
+}
+
+export async function sendVerificationEmail(email: string, token: string) {
+  const verificationUrl = `${process.env.APP_URL}/verify-email?token=${token}`;
+  
+  await transporter.sendMail({
+    from: process.env.SMTP_FROM,
+    to: email,
+    subject: 'Verify your email address',
+    html: `
+      <h1>Welcome to Business Hub Pro!</h1>
+      <p>Please click the link below to verify your email address:</p>
+      <a href="${verificationUrl}">${verificationUrl}</a>
+      <p>This link will expire in 24 hours.</p>
+    `,
+  });
+}
+
+export async function send2FACode(email: string, code: string) {
+  await transporter.sendMail({
+    from: process.env.SMTP_FROM,
+    to: email,
+    subject: '2FA Verification Code',
+    html: `
+      <h1>Your 2FA Code</h1>
+      <p>Your verification code is: <strong>${code}</strong></p>
+      <p>This code will expire in 5 minutes.</p>
+    `,
+  });
 }

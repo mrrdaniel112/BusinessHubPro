@@ -23,6 +23,7 @@ import { IntegrationProvider } from "@/context/integration-context";
 import { NotificationProvider } from "@/context/notification-context";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { lazy, Suspense, useEffect } from "react";
+import { ThemeProvider } from "@/components/theme-provider"
 
 // No need to declare global types when we use a proper debounce approach
 
@@ -308,14 +309,16 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <NotificationProvider>
-          <IntegrationProvider>
-            <Router />
-            <Toaster />
-          </IntegrationProvider>
-        </NotificationProvider>
-      </AuthProvider>
+      <ThemeProvider defaultTheme="dark" storageKey="business-hub-theme">
+        <AuthProvider>
+          <NotificationProvider>
+            <IntegrationProvider>
+              <Router />
+              <Toaster />
+            </IntegrationProvider>
+          </NotificationProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

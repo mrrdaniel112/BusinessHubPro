@@ -6,6 +6,7 @@ import { NotificationCenter } from "@/components/notifications/notification-cent
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/auth-context";
 import businessHubProLogo from "@assets/2 business hub pro 2logo .png";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 type MainLayoutProps = {
   children: React.ReactNode;
@@ -65,7 +66,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 alt="BusinessHubPro"
               />
             </div>
-            <div className="flex items-center">
+            <div className="flex items-center gap-4">
+              <ThemeToggle />
               <NotificationCenter />
             </div>
           </div>
