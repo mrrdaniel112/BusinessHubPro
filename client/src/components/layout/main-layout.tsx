@@ -57,16 +57,57 @@ export default function MainLayout({ children }: MainLayoutProps) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <div className="flex-1 px-4 flex justify-between">
-            <div className="flex-1 flex items-center">
-              <img
-                className="h-8 w-auto"
-                src={businessHubProLogo}
-                alt="BusinessHubPro"
-              />
-            </div>
+          <div className="flex-1 px-3 flex justify-between items-center">
             <div className="flex items-center">
+              <div className="h-10 w-auto bg-white rounded-md shadow-sm p-1 border border-gray-100 flex items-center justify-center">
+                <img
+                  className="h-7 w-auto"
+                  src={businessHubProLogo}
+                  alt="BusinessHubPro"
+                />
+              </div>
+            </div>
+            <div className="flex items-center space-x-3">
+              {/* Quick add button */}
+              <button 
+                type="button" 
+                className="bg-primary-50 p-2 rounded-full text-primary-500 hover:text-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                aria-label="Quick actions"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+              </button>
+              
+              {/* Search button */}
+              <button 
+                type="button" 
+                className="bg-gray-100 p-2 rounded-full text-gray-500 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                aria-label="Search"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+              </button>
+              
               <NotificationCenter />
+              
+              {/* User profile icon */}
+              {user?.profilePicture ? (
+                <button className="h-8 w-8 rounded-full overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
+                  <img 
+                    src={user.profilePicture} 
+                    alt="User profile" 
+                    className="h-full w-full object-cover"
+                  />
+                </button>
+              ) : (
+                <button className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
+                  {user?.username ? user.username.substring(0, 1).toUpperCase() : "U"}
+                </button>
+              )}
             </div>
           </div>
         </div>

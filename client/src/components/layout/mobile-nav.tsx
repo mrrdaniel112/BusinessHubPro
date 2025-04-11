@@ -85,15 +85,38 @@ export default function MobileNav({ opened, onClose, location }: MobileNavProps)
                 </button>
               </div>
               <div className="flex flex-shrink-0 items-center px-4">
-                <img
-                  className="h-8 w-auto"
-                  src={businessHubProLogo}
-                  alt="BusinessHubPro"
-                />
+                <div className="h-14 w-auto bg-white rounded-md shadow-md p-1 mb-2 flex items-center justify-center">
+                  <img
+                    className="h-10 w-auto"
+                    src={businessHubProLogo}
+                    alt="BusinessHubPro"
+                  />
+                </div>
               </div>
-              <div className="mt-5 h-0 flex-1 overflow-y-auto">
-                <nav className="space-y-1 px-2">
-                  {navigation.map((item) => {
+              <div className="mt-2 h-0 flex-1 overflow-y-auto">
+                <div className="px-3 mb-4">
+                  <div className="relative rounded-md shadow-sm">
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                      <Icons.Search className="h-4 w-4 text-gray-400" aria-hidden="true" />
+                    </div>
+                    <input
+                      type="text"
+                      name="search"
+                      id="mobile-search"
+                      className="block w-full rounded-md border-0 py-2.5 pl-10 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-500"
+                      placeholder="Search..."
+                    />
+                  </div>
+                </div>
+                
+                <div className="px-2 mb-2">
+                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2">
+                    Main Menu
+                  </h3>
+                </div>
+                
+                <nav className="space-y-1 px-2 mb-6">
+                  {navigation.slice(0, 6).map((item) => {
                     const Icon = getIcon(item.icon);
                     const isActive = location === item.href;
                     return (
@@ -101,7 +124,7 @@ export default function MobileNav({ opened, onClose, location }: MobileNavProps)
                         key={item.name}
                         href={item.href}
                         className={cn(
-                          "group flex items-center px-2 py-2 text-base font-medium rounded-md",
+                          "group flex items-center px-3 py-2.5 text-base font-medium rounded-md",
                           isActive
                             ? "bg-primary-50 text-primary-600"
                             : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
@@ -110,7 +133,7 @@ export default function MobileNav({ opened, onClose, location }: MobileNavProps)
                       >
                         <Icon
                           className={cn(
-                            "mr-4 h-6 w-6 flex-shrink-0",
+                            "mr-4 h-5 w-5 flex-shrink-0",
                             isActive ? "text-primary-600" : "text-gray-400 group-hover:text-gray-500"
                           )}
                           aria-hidden="true"
@@ -120,6 +143,59 @@ export default function MobileNav({ opened, onClose, location }: MobileNavProps)
                     );
                   })}
                 </nav>
+                
+                <div className="px-2 mb-2">
+                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2">
+                    Business Management
+                  </h3>
+                </div>
+                
+                <nav className="space-y-1 px-2 mb-6">
+                  {navigation.slice(6).map((item) => {
+                    const Icon = getIcon(item.icon);
+                    const isActive = location === item.href;
+                    return (
+                      <Link
+                        key={item.name}
+                        href={item.href}
+                        className={cn(
+                          "group flex items-center px-3 py-2.5 text-base font-medium rounded-md",
+                          isActive
+                            ? "bg-primary-50 text-primary-600"
+                            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                        )}
+                        onClick={onClose}
+                      >
+                        <Icon
+                          className={cn(
+                            "mr-4 h-5 w-5 flex-shrink-0",
+                            isActive ? "text-primary-600" : "text-gray-400 group-hover:text-gray-500"
+                          )}
+                          aria-hidden="true"
+                        />
+                        {item.name}
+                      </Link>
+                    );
+                  })}
+                </nav>
+                
+                <div className="px-4 py-3 mt-auto">
+                  <div className="bg-primary-50 rounded-lg p-3">
+                    <h4 className="text-sm font-medium text-primary-700 mb-2">Need help?</h4>
+                    <p className="text-xs text-primary-600 mb-2">
+                      Have questions or need assistance with your business operations?
+                    </p>
+                    <a 
+                      href="/business-assistant" 
+                      className="text-xs font-medium text-primary-700 flex items-center"
+                      onClick={onClose}
+                    >
+                      <Icons.HelpCircle className="h-3.5 w-3.5 mr-1" />
+                      Business Assistant
+                      <Icons.ChevronRight className="h-3.5 w-3.5 ml-auto" />
+                    </a>
+                  </div>
+                </div>
               </div>
             </Dialog.Panel>
           </Transition.Child>

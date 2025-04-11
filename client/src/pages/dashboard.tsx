@@ -229,6 +229,63 @@ export default function Dashboard() {
         <DateFilter onRangeChange={handleDateRangeChange} />
       </div>
 
+      {/* Mobile Quick Action Cards */}
+      <div className="md:hidden px-3 pb-5">
+        <div className="overflow-x-auto pb-2 no-scrollbar">
+          <div className="flex space-x-3" style={{ minWidth: "500px" }}>
+            <div className="flex-shrink-0 w-32 bg-white rounded-lg shadow-sm border border-gray-100 p-3">
+              <div className="flex flex-col items-center justify-center text-center">
+                <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 mb-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 6h7M9 12h7M9 18h7M5 6v.01M5 12v.01M5 18v.01"></path>
+                  </svg>
+                </div>
+                <span className="text-xs font-medium text-gray-700">New Transaction</span>
+              </div>
+            </div>
+            
+            <div className="flex-shrink-0 w-32 bg-white rounded-lg shadow-sm border border-gray-100 p-3">
+              <div className="flex flex-col items-center justify-center text-center">
+                <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mb-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                    <path d="M7 15h0m5 0h0m5 0h0"></path>
+                    <path d="M7 8h10"></path>
+                  </svg>
+                </div>
+                <span className="text-xs font-medium text-gray-700">Create Invoice</span>
+              </div>
+            </div>
+            
+            <div className="flex-shrink-0 w-32 bg-white rounded-lg shadow-sm border border-gray-100 p-3">
+              <div className="flex flex-col items-center justify-center text-center">
+                <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 mb-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <line x1="10" y1="9" x2="8" y2="9"></line>
+                  </svg>
+                </div>
+                <span className="text-xs font-medium text-gray-700">Add Expense</span>
+              </div>
+            </div>
+            
+            <div className="flex-shrink-0 w-32 bg-white rounded-lg shadow-sm border border-gray-100 p-3">
+              <div className="flex flex-col items-center justify-center text-center">
+                <div className="h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 mb-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+                  </svg>
+                </div>
+                <span className="text-xs font-medium text-gray-700">AI Insights</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Key metrics */}
       <div className="max-w-7xl mx-auto px-3 sm:px-6 md:px-8">
         <KeyMetrics data={displayData.metrics} isLoading={isLoading} />
@@ -236,7 +293,7 @@ export default function Dashboard() {
 
       {/* Charts section */}
       <div className="max-w-7xl mx-auto px-3 sm:px-6 md:px-8 mt-6 sm:mt-8">
-        <div className="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
           <FinancialChart data={displayData.chartData} isLoading={isLoading} />
           <CashFlowForecast data={displayData.cashFlowForecast} isLoading={isLoading} />
         </div>
@@ -244,7 +301,7 @@ export default function Dashboard() {
 
       {/* Transactions and Invoices section */}
       <div className="max-w-7xl mx-auto px-3 sm:px-6 md:px-8 mt-6 sm:mt-8">
-        <div className="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
           <RecentTransactions transactions={displayData.recentTransactions} isLoading={isLoading} />
           <InvoicesOverview 
             invoices={displayData.recentInvoices} 
@@ -259,9 +316,59 @@ export default function Dashboard() {
         <AiInsights insights={displayData.insights} isLoading={isLoading} />
       </div>
 
-      {/* Quick Actions section */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 md:px-8 mt-6 sm:mt-8 mb-6 sm:mb-8">
+      {/* Quick Actions section - hidden on mobile */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 md:px-8 mt-6 sm:mt-8 mb-6 sm:mb-8 hidden md:block">
         <QuickActions />
+      </div>
+      
+      {/* Mobile bottom navigation */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 pb-safe z-10 md:hidden">
+        <div className="flex justify-around items-center h-16">
+          <a href="/" className="flex flex-col items-center justify-center w-1/5 py-1 text-primary-600">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            <span className="text-xs mt-1">Home</span>
+          </a>
+          
+          <a href="/financials" className="flex flex-col items-center justify-center w-1/5 py-1 text-gray-500">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="20" x2="12" y2="10"></line>
+              <line x1="18" y1="20" x2="18" y2="4"></line>
+              <line x1="6" y1="20" x2="6" y2="16"></line>
+            </svg>
+            <span className="text-xs mt-1">Financials</span>
+          </a>
+          
+          <div className="w-1/5 flex justify-center">
+            <button className="h-14 w-14 rounded-full bg-primary-600 flex items-center justify-center text-white shadow-lg transform -translate-y-5">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+            </button>
+          </div>
+          
+          <a href="/invoices" className="flex flex-col items-center justify-center w-1/5 py-1 text-gray-500">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            <span className="text-xs mt-1">Invoices</span>
+          </a>
+          
+          <a href="/profile" className="flex flex-col items-center justify-center w-1/5 py-1 text-gray-500">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <span className="text-xs mt-1">Profile</span>
+          </a>
+        </div>
       </div>
     </div>
   );

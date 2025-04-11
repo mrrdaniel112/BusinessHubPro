@@ -53,21 +53,21 @@ const MetricCard = ({
   footer?: React.ReactNode;
   isLoading?: boolean;
 }) => (
-  <Card className="overflow-hidden">
+  <Card className="overflow-hidden shadow-md border-2 border-gray-100 hover:border-gray-200 transition-all duration-200">
     <CardContent className="p-0">
-      <div className="p-5">
+      <div className="p-6">
         <div className="flex items-center">
-          <div className={cn("flex-shrink-0 p-3 rounded-md", bgColor)}>
-            <i className={cn(`ri-${icon} text-xl`, iconColor)}></i>
+          <div className={cn("flex-shrink-0 p-4 rounded-md shadow", bgColor)}>
+            <i className={cn(`ri-${icon} text-2xl`, iconColor)}></i>
           </div>
-          <div className="ml-5 w-0 flex-1">
+          <div className="ml-6 w-0 flex-1">
             <dl>
-              <dt className="text-sm font-medium text-gray-500 truncate">{title}</dt>
+              <dt className="text-base font-medium text-gray-600 truncate mb-1">{title}</dt>
               <dd>
                 {isLoading ? (
-                  <div className="h-7 w-24 bg-gray-200 animate-pulse rounded"></div>
+                  <div className="h-8 w-28 bg-gray-200 animate-pulse rounded"></div>
                 ) : (
-                  <div className="text-lg font-medium text-gray-900">{value}</div>
+                  <div className="text-2xl font-bold text-gray-900">{value}</div>
                 )}
               </dd>
             </dl>
@@ -75,18 +75,18 @@ const MetricCard = ({
         </div>
       </div>
       {(change !== undefined || footer) && (
-        <div className="bg-gray-50 px-5 py-3">
+        <div className="bg-gray-50 border-t-2 border-gray-100 px-6 py-4">
           {isLoading ? (
-            <div className="h-5 w-32 bg-gray-200 animate-pulse rounded"></div>
+            <div className="h-6 w-32 bg-gray-200 animate-pulse rounded"></div>
           ) : change !== undefined ? (
-            <div className="text-sm">
+            <div className="text-sm font-medium">
               <span className={cn(
-                "font-medium",
-                change >= 0 ? "text-success-600" : "text-danger-600"
+                "font-bold text-base",
+                change >= 0 ? "text-green-600" : "text-red-600"
               )}>
                 {change >= 0 ? "↑" : "↓"} {Math.abs(change).toFixed(0)}%
               </span>
-              <span className="text-gray-500 ml-2">from last period</span>
+              <span className="text-gray-600 ml-2">from last period</span>
             </div>
           ) : (
             footer
