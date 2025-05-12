@@ -1,6 +1,13 @@
 # Business Hub Pro
 
-A comprehensive business management platform that leverages cutting-edge AI and technology to simplify financial operations and provide intelligent insights.
+Business Hub Pro is an all-in-one platform that integrates financial management, inventory tracking, contract handling, and employee management with AI-powered features for generating contracts, analyzing data, and providing actionable insights. With a fixed $25 monthly subscription, it eliminates the need for multiple software subscriptions by offering comprehensive business management capabilities without tiered pricing or hidden fees. The mobile-responsive design ensures business owners can access critical information and perform essential tasks from any device, anytime, anywhere.
+
+![Business Hub Pro Dashboard](attached_assets/business%20hub%20pro%20logo%20.png)
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+![TypeScript](https://img.shields.io/badge/TypeScript-4.9-blue)
+![React](https://img.shields.io/badge/React-18.0-blue)
+![Express](https://img.shields.io/badge/Express-4.18-green)
 
 ## Features
 
@@ -87,6 +94,63 @@ TWILIO_PHONE_NUMBER=your_twilio_phone_number
 4. Set up the database: `npm run db:push`
 5. Start the application: `npm run dev`
 
+## Screenshots
+
+<details>
+<summary>Click to expand screenshots</summary>
+
+### Dashboard
+![Dashboard](attached_assets/Screenshot%202025-03-29%20at%208.29.31%20PM.png)
+
+### Budget Planning with AI
+![Budget Planning](attached_assets/Screenshot%202025-03-29%20at%208.45.03%20PM.png)
+
+### Financial Analytics
+![Financial Analytics](attached_assets/Screenshot%202025-03-29%20at%209.11.55%20PM.png)
+
+</details>
+
+## Demo
+
+A live demo of the application is available at: [https://businesshubpro.demo.com](https://businesshubpro.demo.com)
+
+Test credentials:
+- Username: `demo@businessplatform.com`
+- Password: `demo123`
+
+## Roadmap
+
+- [ ] Enhanced AI financial forecasting
+- [ ] Multi-currency support
+- [ ] Advanced inventory management features
+- [ ] Mobile application development
+- [ ] Integration with additional payment gateways
+- [ ] Multi-language support
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+Please make sure to update tests as appropriate and adhere to the existing coding standards.
+
+## Contact
+
+Project Link: [https://github.com/yourusername/business-hub-pro](https://github.com/yourusername/business-hub-pro)
+
 ## License
 
 [MIT License](LICENSE)
+
+## Acknowledgements
+
+* [OpenAI](https://openai.com/) - For AI-powered insights
+* [Anthropic (Claude)](https://www.anthropic.com/) - For AI contract generation
+* [Recharts](https://recharts.org/) - For data visualization
+* [shadcn/ui](https://ui.shadcn.com/) - For UI components
+* [TanStack Query](https://tanstack.com/query/latest) - For data fetching
