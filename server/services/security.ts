@@ -13,7 +13,9 @@ const __dirname = path.dirname(__filename);
 
 // Data Encryption - AES-256-GCM is industry standard for high security
 const ENCRYPTION_ALGORITHM = 'aes-256-gcm';
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'business-platform-encryption-key-32chars'; // Should be 32 bytes (256 bits)
+// Generate a random encryption key if one is not provided via environment variables
+// In production, always set this via environment variable
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex'); // 32 bytes (256 bits)
 const IV_LENGTH = 16; // For AES, this is always 16 bytes
 const AUTH_TAG_LENGTH = 16; // For GCM mode
 const KEY_ROTATION_DAYS = 90; // Key rotation period

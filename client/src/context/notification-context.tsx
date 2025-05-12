@@ -38,7 +38,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   // Query to fetch notifications
   const {
-    data: notifications = [],
+    data: notificationsData,
     error,
     isLoading,
     refetch
@@ -49,6 +49,9 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     enabled: true,
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
+
+  // Ensure notifications is always an array, even if API returns null
+  const notifications = notificationsData || [];
 
   // Calculate unread count
   const unreadCount = notifications.filter(n => !n.isRead).length;

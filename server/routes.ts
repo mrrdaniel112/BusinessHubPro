@@ -75,12 +75,8 @@ const requireAuth = (req: Request, res: Response, next: Function) => {
     req.user = { id: req.session.userId };
     next();
   } else {
-    // For demonstration purposes, we'll automatically authenticate as user 1
-    // In a production app, this would redirect to login
-    req.session.authenticated = true;
-    req.session.userId = 1;
-    req.user = { id: 1 };
-    next();
+    // User is not authenticated, return 401 Unauthorized
+    res.status(401).json({ message: "Authentication required" });
   }
 };
 
@@ -167,7 +163,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const user = await storage.getUserByUsername(username);
       
-      if (!user || user.password !== password) {
+      if (!user) {
+        // Use constant-time comparison to prevent timing attacks
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+      
+      // Import the secure password verification function
+      const { verifyPassword } = await import('./services/security.js');
+      
+      // Verify password securely
+      const isPasswordValid = await verifyPassword(password, user.password);
+      
+      if (!isPasswordValid) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
       
@@ -182,7 +189,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(500).json({ message: "Error creating session" });
         }
         
-        // Return the user object
+        // Return the user object (without password)
         return res.json({
           id: user.id,
           username: user.username,
@@ -191,6 +198,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       });
     } catch (error) {
+      console.error("Login error:", error);
       return res.status(500).json({ message: "Server error" });
     }
   });
@@ -204,7 +212,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(409).json({ message: "Username already exists" });
       }
       
-      const user = await storage.createUser(userData);
+      // Import secure password hashing function
+      const { hashPassword } = await import('./services/security.js');
+      
+      // Hash the password before storing
+      const hashedPassword = await hashPassword(userData.password);
+      
+      // Create user with hashed password
+      const user = await storage.createUser({
+        ...userData,
+        password: hashedPassword
+      });
       
       // Set session data after successful registration
       req.session.authenticated = true;
@@ -225,6 +243,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       });
     } catch (error) {
+      console.error("Registration error:", error);
       if (error instanceof ZodError) {
         return res.status(400).json({ message: fromZodError(error).message });
       }

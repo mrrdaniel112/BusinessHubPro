@@ -23,7 +23,10 @@ const twoFactorAuth: Map<number, TwoFactorData> = new Map();
 // Configuration
 const ACCESS_TOKEN_EXPIRY = 15 * 60 * 1000; // 15 minutes
 const REFRESH_TOKEN_EXPIRY = 7 * 24 * 60 * 60 * 1000; // 7 days
-const JWT_SECRET = process.env.JWT_SECRET || 'business-platform-jwt-secret-key';
+
+// Generate a random JWT secret if one is not provided
+// In production, always set this via environment variable
+const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex');
 
 /**
  * Enhanced user authentication with support for:
@@ -71,37 +74,23 @@ export class EnhancedAuth {
       throw new Error(`Too many login attempts. Please try again in ${rateLimit.timeLeft} minutes.`);
     }
 
-    // Mock user lookup - in production, this would query the database
-    const mockUsers = [
-      { 
-        id: 1, 
-        email: 'user@example.com', 
-        name: 'Test User', 
-        password: await hashPassword('password123'),
-        role: 'user'
-      },
-      { 
-        id: 2, 
-        email: 'demo@businessplatform.com', 
-        name: 'Demo User', 
-        password: await hashPassword('demo123'),
-        role: 'user'
-      },
-      { 
-        id: 3, 
-        email: 'premium@businessplatform.com', 
-        name: 'Premium User', 
-        password: await hashPassword('premium2024'),
-        role: 'premium'
-      },
-      { 
-        id: 999, 
-        email: 'd9174207593@gmail.com', 
-        name: 'Admin', 
-        password: await hashPassword('admin123'),
-        role: 'admin'
-      }
-    ];
+    // This is just a placeholder for a database query
+    // In production, this should be replaced with an actual database query
+    // SECURITY NOTE: In a real implementation, users should be stored in a database,
+    // and passwords should be properly hashed. The code below is just for demonstration.
+    
+    // FOR GITHUB: This should be replaced with actual database queries in production
+    // Remove this mock data before deploying to production!
+    interface MockUser {
+      id: number;
+      email: string;
+      name: string;
+      password: string;
+      role: string;
+    }
+    
+    // Empty array for security - in production, query a real database
+    const mockUsers: MockUser[] = [];
 
     const user = mockUsers.find(u => u.email === email);
 
